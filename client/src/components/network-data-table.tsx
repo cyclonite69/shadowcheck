@@ -151,7 +151,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
       <CardContent>
         <div className="space-y-2">
           {/* Table Header */}
-          <div className="grid grid-cols-12 gap-2 p-3 bg-muted/30 rounded-lg border border-border/30 text-xs font-medium">
+          <div className="grid grid-cols-11 gap-2 p-3 bg-muted/30 rounded-lg border border-border/30 text-xs font-medium">
             <div className="col-span-1 text-center">Visible</div>
             <div className="col-span-2">
               <SortButton field="ssid">Network Name</SortButton>
@@ -164,9 +164,6 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
             </div>
             <div className="col-span-2">
               <SortButton field="capabilities">Security</SortButton>
-            </div>
-            <div className="col-span-1 text-center">
-              <SortButton field="channel">Channel</SortButton>
             </div>
             <div className="col-span-1 text-center">
               <SortButton field="frequency">Frequency</SortButton>
@@ -188,7 +185,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
               return (
                 <div
                   key={network.bssid}
-                  className={`grid grid-cols-12 gap-2 p-3 rounded-lg border transition-all duration-200 ${
+                  className={`grid grid-cols-11 gap-2 p-3 rounded-lg border transition-all duration-200 ${
                     isVisible 
                       ? 'border-primary/30 bg-primary/5' 
                       : 'border-border/30 bg-background/60 opacity-70'
@@ -250,11 +247,6 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
                         {securityInfo.level}
                       </Badge>
                     </div>
-                  </div>
-
-                  {/* Channel */}
-                  <div className="col-span-1 text-center">
-                    <span className="text-xs font-mono">{network.channel || 'N/A'}</span>
                   </div>
 
                   {/* Frequency */}

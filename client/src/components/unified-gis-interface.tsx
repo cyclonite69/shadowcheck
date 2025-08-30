@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { generateColorFromBSSID } from '@/lib/color-utils';
-import { Map, Table, RotateCcw, Maximize2 } from 'lucide-react';
+import { Map, Table, RotateCcw, Maximize2, Satellite } from 'lucide-react';
 
 export function UnifiedGISInterface() {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -137,7 +137,7 @@ export function UnifiedGISInterface() {
                   <div><strong>BSSID:</strong> ${properties.bssid}</div>
                   <div><strong>Signal:</strong> ${properties.signal_strength} dBm</div>
                   <div><strong>Security:</strong> ${properties.capabilities}</div>
-                  <div><strong>Channel:</strong> ${properties.channel || 'N/A'}</div>
+                  <div><strong>Frequency:</strong> ${properties.frequency || 'N/A'} MHz</div>
                 </div>
               </div>
             `)
@@ -172,7 +172,7 @@ export function UnifiedGISInterface() {
 
     // Update individual point colors based on BSSID
     if (visibleFeatures.length > 0) {
-      const colorExpression = ['case'];
+      const colorExpression: any[] = ['case'];
       
       visibleFeatures.forEach((feature: any) => {
         const color = generateColorFromBSSID(feature.properties.bssid);
@@ -182,7 +182,7 @@ export function UnifiedGISInterface() {
       
       colorExpression.push('#00ffff'); // Default color
       
-      map.current.setPaintProperty('g63-networks-visible', 'circle-color', colorExpression);
+      map.current.setPaintProperty('g63-networks-visible', 'circle-color', colorExpression as any);
     }
 
   }, [mapLoaded, visualizationData, visibleNetworks, networks]);
