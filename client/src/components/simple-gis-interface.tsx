@@ -32,18 +32,46 @@ export function SimpleGISInterface() {
 
     mapboxgl.accessToken = (config as any).data.mapboxToken;
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: [-83.697, 43.023],
-      zoom: 12,
-      attributionControl: false
+    try {
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/dark-v11',
+        center: [-83.697, 43.023],
+        zoom: 12,
+        attributionControl: false,
+        preserveDrawingBuffer: true,
+        failIfMajorPerformanceCaveat: false
+      });
+      console.log('Map instance created successfully');
+    } catch (error) {
+      console.error('Error creating map:', error);
+      // Fallback to immediate load
+      setTimeout(() => setMapLoaded(true), 500);
+      return;
+    }
+
+    // Debug map loading
+    console.log('Map created, waiting for load event...');
+    
+    map.current.on('load', () => {
+      console.log('Map load event fired!');
+      setMapLoaded(true);
     });
 
-    // Force map loaded state after creation
+    map.current.on('error', (e) => {
+      console.error('Map error:', e);
+      // Force load even on error
+      setTimeout(() => {
+        console.log('Force loading map after error');
+        setMapLoaded(true);
+      }, 2000);
+    });
+
+    // Backup force load
     setTimeout(() => {
+      console.log('Backup force load after 3 seconds');
       setMapLoaded(true);
-    }, 1000);
+    }, 3000);
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
@@ -134,43 +162,22 @@ export function SimpleGISInterface() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {mapLoaded ? (
+          <div className="relative">
             <div 
               ref={mapContainer} 
               className="w-full h-96 rounded-lg overflow-hidden border border-border/30"
               style={{ minHeight: '384px' }}
             />
-          ) : (
-            <div className="w-full h-96 rounded-lg border border-cyan-500/20 bg-gray-900 relative overflow-hidden">
-              <div className="absolute inset-0 p-4">
-                <div className="grid grid-cols-8 gap-1 h-full">
-                  {(visualizationData as any)?.data?.features?.slice(0, 64).map((feature: any, index: number) => (
-                    <div
-                      key={index}
-                      className="rounded-sm cursor-pointer transition-opacity hover:opacity-100"
-                      style={{
-                        height: `${Math.random() * 40 + 10}px`,
-                        marginTop: `${Math.random() * 50}px`,
-                        backgroundColor: feature.properties?.encryption === 'Open' ? '#ef4444' : '#22d3ee',
-                        opacity: 0.7
-                      }}
-                      title={`${feature.properties?.ssid || 'Hidden'} - ${feature.properties?.signal_strength}dBm`}
-                      onClick={() => {
-                        alert(`Network: ${feature.properties?.ssid || 'Hidden'}\nBSSID: ${feature.properties?.bssid}\nSignal: ${feature.properties?.signal_strength}dBm\nEncryption: ${feature.properties?.encryption || 'Unknown'}`);
-                      }}
-                      data-testid={`network-dot-${index}`}
-                    />
-                  ))}
-                </div>
-                <div className="absolute bottom-2 left-2 text-xs text-cyan-400">
-                  Network Visualization ({(visualizationData as any)?.data?.features?.length || 0} detected)
-                </div>
-                <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
-                  Red: Open Networks | Blue: Secured Networks
+            {!mapLoaded && (
+              <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                <div className="text-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <p className="text-sm text-muted-foreground">Initializing Mapbox...</p>
+                  <p className="text-xs text-muted-foreground mt-1">Check console for debug info</p>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
 
