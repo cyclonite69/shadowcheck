@@ -24,13 +24,46 @@ export function SvgNetworkMap() {
 
   const features = (visualizationData as any)?.data?.features || [];
   
-  // Calculate map bounds
-  const lats = features.map((f: any) => f.geometry.coordinates[1]);
-  const lngs = features.map((f: any) => f.geometry.coordinates[0]);
-  const minLat = Math.min(...lats) - 0.01;
-  const maxLat = Math.max(...lats) + 0.01;
-  const minLng = Math.min(...lngs) - 0.01;
-  const maxLng = Math.max(...lngs) + 0.01;
+  // If no features, show placeholder
+  if (features.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card className="border-yellow-500/20 bg-card/80 backdrop-blur-sm">
+          <CardContent className="p-8 text-center">
+            <Satellite className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+            <p className="text-white">No network data available for mapping</p>
+            <p className="text-gray-400 text-sm">Data is being fetched...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Calculate map bounds with validation
+  const coords = features
+    .map((f: any) => f.geometry?.coordinates)
+    .filter((coord: any) => coord && coord.length >= 2 && !isNaN(coord[0]) && !isNaN(coord[1]));
+  
+  if (coords.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card className="border-red-500/20 bg-card/80 backdrop-blur-sm">
+          <CardContent className="p-8 text-center">
+            <Map className="h-12 w-12 text-red-400 mx-auto mb-4" />
+            <p className="text-white">Invalid coordinate data</p>
+            <p className="text-gray-400 text-sm">Unable to render map from current data</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const lats = coords.map((coord: number[]) => coord[1]);
+  const lngs = coords.map((coord: number[]) => coord[0]);
+  const minLat = Math.min(...lats) - 0.001;
+  const maxLat = Math.max(...lats) + 0.001;
+  const minLng = Math.min(...lngs) - 0.001;
+  const maxLng = Math.max(...lngs) + 0.001;
 
   // Map projection function
   const projectToSVG = (lat: number, lng: number) => {
@@ -56,7 +89,12 @@ export function SvgNetworkMap() {
         <CardHeader>
           <CardTitle className="text-cyan-400 flex items-center gap-2">
             <Map className="h-5 w-5" />
-            Network GIS Map ({features.length} networks)
+            Network GIS Map ({features.length} networks) 
+            {coords.length > 0 && (
+              <span className="text-xs text-gray-400">
+                [{coords.length} valid coordinates]
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -77,14 +115,23 @@ export function SvgNetworkMap() {
               
               {/* Networks */}
               {features.map((feature: any, index: number) => {
-                const { x, y } = projectToSVG(
-                  feature.geometry.coordinates[1], 
-                  feature.geometry.coordinates[0]
-                );
+                // Validate coordinates
+                if (!feature.geometry?.coordinates || feature.geometry.coordinates.length < 2) {
+                  return null;
+                }
+                
+                const lat = feature.geometry.coordinates[1];
+                const lng = feature.geometry.coordinates[0];
+                
+                if (isNaN(lat) || isNaN(lng)) {
+                  return null;
+                }
+                
+                const { x, y } = projectToSVG(lat, lng);
                 const isOpen = feature.properties?.encryption === 'Open';
                 const color = generateColorFromBSSID(feature.properties?.bssid || '').hex;
                 const signalStrength = Math.abs(feature.properties?.signal_strength || -50);
-                const radius = Math.max(3, Math.min(12, (100 - signalStrength) / 8));
+                const radius = Math.max(4, Math.min(10, (100 - signalStrength) / 10));
 
                 return (
                   <g key={index}>
@@ -95,10 +142,13 @@ export function SvgNetworkMap() {
                       r={radius}
                       fill={isOpen ? '#ef4444' : color}
                       stroke={isOpen ? '#ffffff' : '#64748b'}
-                      strokeWidth="1"
-                      opacity="0.8"
-                      className="cursor-pointer hover:opacity-100 transition-opacity"
-                      onClick={() => setSelectedNetwork(feature.properties)}
+                      strokeWidth="2"
+                      opacity="0.9"
+                      className="cursor-pointer hover:opacity-100 hover:stroke-white transition-all"
+                      onClick={() => {
+                        console.log('Network clicked:', feature.properties);
+                        setSelectedNetwork(feature.properties);
+                      }}
                       data-testid={`network-point-${index}`}
                     />
                     
@@ -179,27 +229,54 @@ export function SvgNetworkMap() {
         </CardContent>
       </Card>
 
-      {/* Stats */}
-      <Card className="border-green-500/20 bg-card/80 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-lg font-bold text-green-400">{(networks as any)?.data?.length || 0}</p>
-              <p className="text-xs text-muted-foreground">Total Networks</p>
+      {/* Debug & Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="border-green-500/20 bg-card/80 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <h3 className="text-green-400 font-semibold mb-3">Network Statistics</h3>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-lg font-bold text-green-400">{(networks as any)?.data?.length || 0}</p>
+                <p className="text-xs text-muted-foreground">Total Networks</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-blue-400">{features.length}</p>
+                <p className="text-xs text-muted-foreground">On Map</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-red-400">
+                  {features.filter((f: any) => f.properties?.encryption === 'Open').length}
+                </p>
+                <p className="text-xs text-muted-foreground">Open Networks</p>
+              </div>
             </div>
-            <div>
-              <p className="text-lg font-bold text-blue-400">{features.length}</p>
-              <p className="text-xs text-muted-foreground">On Map</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-yellow-500/20 bg-card/80 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <h3 className="text-yellow-400 font-semibold mb-3">Map Debug Info</h3>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Valid coordinates:</span>
+                <span className="text-white">{coords.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Lat range:</span>
+                <span className="text-cyan-400">{coords.length > 0 ? `${minLat.toFixed(4)} → ${maxLat.toFixed(4)}` : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Lng range:</span>
+                <span className="text-cyan-400">{coords.length > 0 ? `${minLng.toFixed(4)} → ${maxLng.toFixed(4)}` : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Selected:</span>
+                <span className="text-white">{selectedNetwork ? selectedNetwork.ssid || 'Hidden' : 'None'}</span>
+              </div>
             </div>
-            <div>
-              <p className="text-lg font-bold text-red-400">
-                {features.filter((f: any) => f.properties?.encryption === 'Open').length}
-              </p>
-              <p className="text-xs text-muted-foreground">Open Networks</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
