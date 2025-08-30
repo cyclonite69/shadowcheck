@@ -50,28 +50,34 @@ export function SimpleGISInterface() {
       return;
     }
 
-    // Debug map loading
-    console.log('Map created, waiting for load event...');
-    
-    map.current.on('load', () => {
-      console.log('Map load event fired!');
-      setMapLoaded(true);
-    });
-
-    map.current.on('error', (e) => {
-      console.error('Map error:', e);
-      // Force load even on error
-      setTimeout(() => {
-        console.log('Force loading map after error');
+    // Alternative loading detection - check if map is interactive
+    const checkMapReady = () => {
+      if (map.current && map.current.isStyleLoaded && map.current.isStyleLoaded()) {
         setMapLoaded(true);
-      }, 2000);
-    });
+        return true;
+      }
+      return false;
+    };
 
-    // Backup force load
+    // Try multiple loading detection methods
+    map.current.on('load', () => setMapLoaded(true));
+    map.current.on('idle', () => setMapLoaded(true));
+    map.current.on('styledata', () => {
+      if (checkMapReady()) return;
+    });
+    
+    // Polling fallback - check every 500ms if map is ready
+    const loadCheck = setInterval(() => {
+      if (checkMapReady()) {
+        clearInterval(loadCheck);
+      }
+    }, 500);
+
+    // Absolute fallback after 5 seconds
     setTimeout(() => {
-      console.log('Backup force load after 3 seconds');
       setMapLoaded(true);
-    }, 3000);
+      clearInterval(loadCheck);
+    }, 5000);
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
