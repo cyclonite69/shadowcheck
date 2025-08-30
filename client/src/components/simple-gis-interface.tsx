@@ -11,9 +11,10 @@ export function SimpleGISInterface() {
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  const { data: config } = useQuery({
+  const { data: config, isLoading: configLoading } = useQuery({
     queryKey: ['/api/v1/config'],
-    refetchInterval: 300000,
+    staleTime: Infinity, // Config doesn't change often
+    refetchInterval: false, // Don't refetch automatically
   });
 
   const { data: visualizationData, isLoading } = useQuery({
@@ -30,10 +31,17 @@ export function SimpleGISInterface() {
   useEffect(() => {
     const token = (config as any)?.mapboxToken;
     
-    if (!token) {
-      console.log('Waiting for Mapbox token...');
+    if (configLoading) {
+      console.log('Config loading...');
       return;
     }
+    
+    if (!token) {
+      console.log('Waiting for Mapbox token...', { config, hasConfig: !!config });
+      return;
+    }
+    
+    console.log('Token available, proceeding with map init');
     
     if (map.current) {
       console.log('Map already exists');
