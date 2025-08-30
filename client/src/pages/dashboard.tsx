@@ -35,7 +35,7 @@ export default function Dashboard() {
   const overview = g63Analytics?.data?.overview || {};
   const secureNetworks = (securityAnalysis?.data || []).filter((s: any) => 
     s.security && (s.security.includes('WPA') || s.security.includes('WEP'))
-  ).reduce((acc: number, curr: any) => acc + (Number(curr.count) || 0), 0);
+  ).reduce((acc: number, curr: any) => acc + (Number(curr.network_count) || 0), 0);
   const strongSignals = signalAnalysis?.data?.find((s: any) => 
     s.signal_range.includes('Good') || s.signal_range.includes('Excellent')
   )?.count || 0;
@@ -74,7 +74,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-purple-400" data-testid="metric-locations">
-                    {Number(overview.unique_bssids || 0).toLocaleString()}
+                    {Number(overview.unique_ssids || 0).toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground">Distinct Networks</p>
                 </div>
@@ -127,24 +127,38 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {(securityAnalysis?.data || []).map((item: any, index: number) => {
-                const count = Number(item.count) || 0;
+            <div className="space-y-3">
+              {(securityAnalysis?.data || []).slice(0, 8).map((item: any, index: number) => {
+                const count = Number(item.network_count) || 0;
                 return (
                   <div
                     key={index}
-                    className="text-center p-4 rounded-lg border border-border/30 bg-background/40"
+                    className="flex items-center justify-between p-4 rounded-lg border border-border/30 bg-background/40"
                     data-testid={`security-${item.security?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'unknown'}`}
                   >
-                    <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${
-                      item.security?.includes('WPA') ? 'bg-green-400' :
-                      item.security?.includes('WEP') ? 'bg-yellow-400' :
-                      item.security === 'Open' ? 'bg-red-400' : 'bg-gray-400'
-                    }`}></div>
-                    <p className="text-lg font-bold text-foreground">
-                      {count.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{item.security || 'Unknown'}</p>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${
+                        item.security?.includes('WPA') ? 'bg-green-400' :
+                        item.security?.includes('WEP') ? 'bg-yellow-400' :
+                        item.security === '[ESS]' ? 'bg-red-400' : 'bg-gray-400'
+                      }`}></div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {item.security_level || 'Unknown Security'}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                          {item.security || 'Unknown'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-foreground">
+                        {count.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.percentage?.toFixed(1)}%
+                      </p>
+                    </div>
                   </div>
                 );
               })}

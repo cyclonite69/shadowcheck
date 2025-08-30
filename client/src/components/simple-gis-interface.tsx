@@ -25,8 +25,8 @@ export function SimpleGISInterface() {
     refetchInterval: 30000,
   });
 
-  const { data: networks } = useQuery({
-    queryKey: ['/api/v1/g63/networks'],
+  const { data: analytics } = useQuery({
+    queryKey: ['/api/v1/g63/analytics'],
     refetchInterval: 30000,
   });
 
@@ -217,7 +217,7 @@ export function SimpleGISInterface() {
         <CardContent className="p-4">
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>
-              <p className="text-lg font-bold text-green-400">{(networks as any)?.data?.length || 0}</p>
+              <p className="text-lg font-bold text-green-400">{Number((analytics as any)?.data?.overview?.unique_ssids) || 0}</p>
               <p className="text-xs text-muted-foreground">Distinct Networks</p>
             </div>
             <div>
