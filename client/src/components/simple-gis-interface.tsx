@@ -13,8 +13,11 @@ export function SimpleGISInterface() {
 
   const { data: config, isLoading: configLoading } = useQuery({
     queryKey: ['/api/v1/config'],
-    staleTime: Infinity, // Config doesn't change often
-    refetchInterval: false, // Don't refetch automatically
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: 3,
   });
 
   const { data: visualizationData, isLoading } = useQuery({
@@ -101,7 +104,11 @@ export function SimpleGISInterface() {
 
     return () => {
       if (map.current) {
-        map.current.remove();
+        try {
+          map.current.remove();
+        } catch (e) {
+          console.warn('Error removing map:', e);
+        }
         map.current = null;
         setMapLoaded(false);
       }

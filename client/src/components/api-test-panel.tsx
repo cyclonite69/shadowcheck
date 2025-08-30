@@ -73,14 +73,14 @@ export function ApiTestPanel() {
       path: "/api/v1/health",
       endpoint: "health",
       available: true,
-      description: "Check API health status",
+      description: "Check system health status",
     },
     {
       method: "GET",
       path: "/api/v1/version",
       endpoint: "version",
       available: true,
-      description: "Get API version information",
+      description: "Get system version information",
     },
     {
       method: "GET",
@@ -96,9 +96,9 @@ export function ApiTestPanel() {
       <div className="p-6 border-b border-border">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <i className="fas fa-flask text-primary"></i>
-          API Testing
+          System Testing
         </h3>
-        <p className="text-sm text-muted-foreground mt-1">Test active endpoints</p>
+        <p className="text-sm text-muted-foreground mt-1">Test system endpoints</p>
       </div>
       <div className="p-6 space-y-4">
         {endpoints.map((ep) => (

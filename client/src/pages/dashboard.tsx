@@ -44,7 +44,7 @@ export default function Dashboard() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <EnhancedHeader 
         title="SIGINT Forensics Dashboard"
-        subtitle="Real-time intelligence from G63 wireless observations and cellular detections"
+        subtitle="Real-time intelligence from wireless observations and cellular detections"
       />
       
       <main className="flex-1 overflow-y-auto p-6 grid-pattern">
@@ -115,21 +115,46 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* Security Analysis */}
+        <Card className="border-orange-500/20 bg-card/80 backdrop-blur-sm mb-8">
+          <CardHeader>
+            <CardTitle className="text-orange-400 flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Network Security Breakdown
+            </CardTitle>
+            <CardDescription>
+              Encryption and security analysis of detected networks
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {securityAnalysis?.data?.map((item: any, index: number) => (
+                <div
+                  key={index}
+                  className="text-center p-4 rounded-lg border border-border/30 bg-background/40"
+                  data-testid={`security-${item.security.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                >
+                  <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${
+                    item.security.includes('WPA') ? 'bg-green-400' :
+                    item.security.includes('WEP') ? 'bg-yellow-400' :
+                    item.security === 'Open' ? 'bg-red-400' : 'bg-gray-400'
+                  }`}></div>
+                  <p className="text-lg font-bold text-foreground">
+                    {Number(item.count).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{item.security}</p>
+                </div>
+              )) || (
+                <div className="col-span-full text-center py-4">
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Quick Access Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <Link href="/g63-forensics" className="block">
-            <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm hover:border-cyan-400/40 transition-colors cursor-pointer">
-              <CardHeader>
-                <CardTitle className="text-cyan-400 flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  G63 Forensics Data
-                </CardTitle>
-                <CardDescription>
-                  Browse {Number(overview.total_networks || 0).toLocaleString()} network observations from real SIGINT operations
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
 
           <Link href="/visualization" className="block">
             <Card className="border-purple-500/20 bg-card/80 backdrop-blur-sm hover:border-purple-400/40 transition-colors cursor-pointer">
@@ -160,7 +185,7 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* Recent G63 Activity */}
+        {/* Recent Network Activity */}
         <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-cyan-400 flex items-center gap-2">
@@ -168,7 +193,7 @@ export default function Dashboard() {
               Recent SIGINT Activity
             </CardTitle>
             <CardDescription>
-              Latest wireless network observations from G63 forensics database
+              Latest wireless network observations from forensics database
             </CardDescription>
           </CardHeader>
           <CardContent>
