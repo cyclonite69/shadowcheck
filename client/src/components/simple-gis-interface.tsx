@@ -28,7 +28,7 @@ export function SimpleGISInterface() {
 
   // Initialize map with proper timing
   useEffect(() => {
-    const token = (config as any)?.data?.mapboxToken;
+    const token = (config as any)?.mapboxToken;
     
     if (!token) {
       console.log('Waiting for Mapbox token...');
