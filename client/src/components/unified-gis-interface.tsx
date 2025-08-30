@@ -50,26 +50,24 @@ export function UnifiedGISInterface() {
         attributionControl: false
       });
 
-      map.current.on('load', () => {
-        setMapLoaded(true);
-      });
-
-      map.current.on('style.load', () => {
+      // Multiple ways to detect when map is ready
+      const markAsLoaded = () => {
         if (!mapLoaded) {
           setMapLoaded(true);
         }
-      });
+      };
 
-      map.current.on('error', (e) => {
-        console.error('Map error:', e);
-      });
+      map.current.on('load', markAsLoaded);
+      map.current.on('style.load', markAsLoaded);
+      map.current.on('styledata', markAsLoaded);
+      
+      // Immediate fallback if map is already ready
+      if (map.current.isStyleLoaded()) {
+        setTimeout(markAsLoaded, 100);
+      }
 
-      // Fallback for map loading
-      setTimeout(() => {
-        if (map.current && !mapLoaded) {
-          setMapLoaded(true);
-        }
-      }, 5000);
+      // Backup timeout
+      setTimeout(markAsLoaded, 2000);
 
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
     } catch (error) {
