@@ -87,135 +87,96 @@ export function UnifiedGISInterface() {
 
   // Update map layers when data or visibility changes
   useEffect(() => {
-    if (!map.current || !mapLoaded || !visualizationData?.data || !networks?.data) {
+    if (!map.current || !mapLoaded || !visualizationData?.data) {
       return;
     }
 
     try {
-      // Remove existing layers
-    ['g63-networks-visible', 'g63-networks-hidden', 'g63-networks-clusters', 'g63-cluster-count'].forEach(layerId => {
-      if (map.current!.getLayer(layerId)) {
-        map.current!.removeLayer(layerId);
+      // Clean up existing layers
+      if (map.current.getLayer('networks')) {
+        map.current.removeLayer('networks');
       }
-    });
+      if (map.current.getSource('networks')) {
+        map.current.removeSource('networks');
+      }
 
-    if (map.current.getSource('g63-networks')) {
-      map.current.removeSource('g63-networks');
-    }
+      // Filter features for visible networks
+      const filteredFeatures = visualizationData.data.features.filter((feature: any) => 
+        visibleNetworks.size === 0 || visibleNetworks.has(feature.properties.bssid)
+      );
 
-    // Create filtered GeoJSON for visible networks
-    const visibleFeatures = visualizationData.data.features.filter((feature: any) => 
-      visibleNetworks.size === 0 || visibleNetworks.has(feature.properties.bssid)
-    );
+      if (filteredFeatures.length > 0) {
+        // Build color expression for each BSSID
+        const colorExpression: any[] = ['case'];
+        filteredFeatures.forEach((feature: any) => {
+          const color = generateColorFromBSSID(feature.properties.bssid);
+          colorExpression.push(['==', ['get', 'bssid'], feature.properties.bssid]);
+          colorExpression.push(color.hex);
+        });
+        colorExpression.push('#666666'); // Default color
 
-    const hiddenFeatures = visualizationData.data.features.filter((feature: any) => 
-      visibleNetworks.size > 0 && !visibleNetworks.has(feature.properties.bssid)
-    );
+        // Add source
+        map.current.addSource('networks', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: filteredFeatures
+          }
+        });
 
-    // Add visible networks
-    if (visibleFeatures.length > 0) {
-      map.current.addSource('g63-networks-visible', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: visibleFeatures
-        }
-      });
+        // Add layer
+        map.current.addLayer({
+          id: 'networks',
+          type: 'circle',
+          source: 'networks',
+          paint: {
+            'circle-radius': [
+              'interpolate', ['linear'], ['get', 'signal_strength'],
+              -100, 4, -30, 12
+            ],
+            'circle-color': colorExpression as any,
+            'circle-stroke-width': 1,
+            'circle-stroke-color': '#ffffff',
+            'circle-opacity': 0.8
+          }
+        });
 
-      map.current.addLayer({
-        id: 'g63-networks-visible',
-        type: 'circle',
-        source: 'g63-networks-visible',
-        paint: {
-          'circle-radius': [
-            'interpolate',
-            ['linear'],
-            ['get', 'signal_strength'],
-            -90, 6,
-            -30, 12
-          ],
-          'circle-color': [
-            'case',
-            ['has', 'bssid'],
-            ['literal', '#00ffff'],
-            '#666666'
-          ],
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
-          'circle-opacity': 0.8
-        }
-      });
-
-      // Add popups for visible networks
-      map.current.on('click', 'g63-networks-visible', (e) => {
-        const properties = e.features?.[0]?.properties;
-        if (properties) {
-          const color = generateColorFromBSSID(properties.bssid);
-          
-          new mapboxgl.Popup()
-            .setLngLat(e.lngLat)
-            .setHTML(`
-              <div class="p-3">
-                <div class="flex items-center gap-2 mb-2">
-                  <div class="w-4 h-4 rounded" style="background-color: ${color.hex}"></div>
-                  <strong class="text-sm">${properties.ssid || 'Hidden Network'}</strong>
+        // Add interactivity
+        map.current.on('click', 'networks', (e) => {
+          const properties = e.features?.[0]?.properties;
+          if (properties) {
+            const color = generateColorFromBSSID(properties.bssid);
+            new mapboxgl.Popup()
+              .setLngLat(e.lngLat)
+              .setHTML(`
+                <div style="padding: 12px;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <div style="width: 12px; height: 12px; border-radius: 3px; background-color: ${color.hex};"></div>
+                    <strong>${properties.ssid || 'Hidden Network'}</strong>
+                  </div>
+                  <div style="font-size: 11px;">
+                    <div><strong>BSSID:</strong> ${properties.bssid}</div>
+                    <div><strong>Signal:</strong> ${properties.signal_strength} dBm</div>
+                    <div><strong>Security:</strong> ${properties.capabilities}</div>
+                  </div>
                 </div>
-                <div class="space-y-1 text-xs">
-                  <div><strong>BSSID:</strong> ${properties.bssid}</div>
-                  <div><strong>Signal:</strong> ${properties.signal_strength} dBm</div>
-                  <div><strong>Security:</strong> ${properties.capabilities}</div>
-                  <div><strong>Frequency:</strong> ${properties.frequency || 'N/A'} MHz</div>
-                </div>
-              </div>
-            `)
-            .addTo(map.current!);
-        }
-      });
-    }
+              `)
+              .addTo(map.current!);
+          }
+        });
 
-    // Add hidden networks as dimmed points
-    if (hiddenFeatures.length > 0) {
-      map.current.addSource('g63-networks-hidden', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: hiddenFeatures
-        }
-      });
+        map.current.on('mouseenter', 'networks', () => {
+          if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+        });
 
-      map.current.addLayer({
-        id: 'g63-networks-hidden',
-        type: 'circle',
-        source: 'g63-networks-hidden',
-        paint: {
-          'circle-radius': 4,
-          'circle-color': '#444444',
-          'circle-stroke-width': 1,
-          'circle-stroke-color': '#666666',
-          'circle-opacity': 0.3
-        }
-      });
-    }
-
-    // Update individual point colors based on BSSID
-    if (visibleFeatures.length > 0) {
-      const colorExpression: any[] = ['case'];
-      
-      visibleFeatures.forEach((feature: any) => {
-        const color = generateColorFromBSSID(feature.properties.bssid);
-        colorExpression.push(['==', ['get', 'bssid'], feature.properties.bssid]);
-        colorExpression.push(color.hex);
-      });
-      
-      colorExpression.push('#00ffff'); // Default color
-      
-      map.current.setPaintProperty('g63-networks-visible', 'circle-color', colorExpression as any);
-    }
-
+        map.current.on('mouseleave', 'networks', () => {
+          if (map.current) map.current.getCanvas().style.cursor = '';
+        });
+      }
     } catch (error) {
       console.error('Error updating map layers:', error);
     }
-  }, [mapLoaded, visualizationData, visibleNetworks, networks]);
+  }, [mapLoaded, visualizationData, visibleNetworks]);
 
   // Initialize all networks as visible
   useEffect(() => {

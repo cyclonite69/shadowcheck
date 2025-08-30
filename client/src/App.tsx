@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import VisualizationPage from "@/pages/visualization";
-import G63ForensicsPage from "@/pages/g63-forensics";
 import { Sidebar } from "@/components/sidebar";
 import { AdminPanel } from "@/components/admin-panel";
 
@@ -20,7 +19,6 @@ function Router() {
         <Route path="/networks" component={() => <div className="flex-1 p-6"><h1>Networks Page - Coming Soon</h1></div>} />
         <Route path="/spatial" component={() => <div className="flex-1 p-6"><h1>Spatial Query Page - Coming Soon</h1></div>} />
         <Route path="/visualization" component={VisualizationPage} />
-        <Route path="/g63-forensics" component={G63ForensicsPage} />
         <Route path="/admin" component={() => <div className="flex-1 p-6"><AdminPanel /></div>} />
         <Route component={NotFound} />
       </Switch>

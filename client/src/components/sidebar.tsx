@@ -8,7 +8,6 @@ export function Sidebar() {
     { href: "/networks", icon: "fas fa-wifi", label: "Networks" },
     { href: "/spatial", icon: "fas fa-map-marked-alt", label: "Spatial Query" },
     { href: "/visualization", icon: "fas fa-chart-line", label: "Visualization" },
-    { href: "/g63-forensics", icon: "fas fa-user-secret", label: "G63 Forensics" },
     { href: "/admin", icon: "fas fa-shield-alt", label: "Admin Panel" },
   ];
 
