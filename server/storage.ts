@@ -31,6 +31,11 @@ export interface IStorage {
   getG63Locations(limit?: number): Promise<G63Location[]>;
   getG63LocationsByBssid(bssid: string): Promise<G63Location[]>;
   
+  // G63 Analytics methods
+  getG63NetworkAnalytics(): Promise<any>;
+  getG63SignalStrengthDistribution(): Promise<any>;
+  getG63SecurityAnalysis(): Promise<any>;
+  
   isDatabaseConnected(): Promise<boolean>;
   getConnectionInfo(): Promise<{ activeConnections: number; maxConnections: number; postgisEnabled: boolean }>;
 }
@@ -262,6 +267,152 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+
+  async getG63NetworkAnalytics(): Promise<any> {
+    const dbInstance = await getDb();
+    if (!dbInstance) return {};
+
+    try {
+      // Get basic analytics using the existing G63 methods
+      const networks = await this.getG63Networks(1000);
+      
+      if (!networks || networks.length === 0) {
+        return { overview: {}, securityBreakdown: [] };
+      }
+
+      const uniqueBssids = new Set(networks.map(n => n.bssid)).size;
+      const uniqueSsids = new Set(networks.map(n => n.ssid).filter(Boolean)).size;
+      const signalValues = networks.map(n => n.bestlevel).filter(s => s !== null && s !== undefined);
+      const avgSignal = signalValues.length > 0 ? signalValues.reduce((a, b) => a + b, 0) / signalValues.length : null;
+      
+      // Group by security capabilities
+      const securityCounts = networks.reduce((acc, network) => {
+        const security = network.capabilities || 'Open';
+        acc[security] = (acc[security] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const securityBreakdown = Object.entries(securityCounts)
+        .map(([security, count]) => ({ security, count }))
+        .sort((a, b) => b.count - a.count);
+      
+      return {
+        overview: {
+          total_networks: networks.length,
+          unique_bssids: uniqueBssids,
+          unique_ssids: uniqueSsids,
+          avg_signal_strength: avgSignal,
+          min_signal: Math.min(...signalValues),
+          max_signal: Math.max(...signalValues)
+        },
+        securityBreakdown
+      };
+    } catch (error) {
+      console.error("Error getting G63 network analytics:", error);
+      return { overview: {}, securityBreakdown: [] };
+    }
+  }
+
+  async getG63SignalStrengthDistribution(): Promise<any> {
+    try {
+      // Get networks and process signal strength distribution in memory
+      const networks = await this.getG63Networks(1000);
+      
+      if (!networks || networks.length === 0) {
+        return [];
+      }
+
+      const signalRanges = {
+        'Excellent (-30 to 0 dBm)': [],
+        'Good (-50 to -30 dBm)': [],
+        'Fair (-60 to -50 dBm)': [],
+        'Weak (-70 to -60 dBm)': [],
+        'Very Weak (< -70 dBm)': [],
+        'No Signal Data': []
+      } as Record<string, number[]>;
+
+      networks.forEach(network => {
+        const signal = network.bestlevel;
+        if (signal === null || signal === undefined) {
+          signalRanges['No Signal Data'].push(0);
+        } else if (signal >= -30) {
+          signalRanges['Excellent (-30 to 0 dBm)'].push(signal);
+        } else if (signal >= -50) {
+          signalRanges['Good (-50 to -30 dBm)'].push(signal);
+        } else if (signal >= -60) {
+          signalRanges['Fair (-60 to -50 dBm)'].push(signal);
+        } else if (signal >= -70) {
+          signalRanges['Weak (-70 to -60 dBm)'].push(signal);
+        } else {
+          signalRanges['Very Weak (< -70 dBm)'].push(signal);
+        }
+      });
+
+      return Object.entries(signalRanges)
+        .map(([range, values]) => ({
+          signal_range: range,
+          count: values.length,
+          avg_signal_in_range: values.length > 0 ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100 : null
+        }))
+        .filter(item => item.count > 0)
+        .sort((a, b) => b.count - a.count);
+    } catch (error) {
+      console.error("Error getting G63 signal strength distribution:", error);
+      return [];
+    }
+  }
+
+  async getG63SecurityAnalysis(): Promise<any> {
+    try {
+      // Get networks and process security analysis in memory
+      const networks = await this.getG63Networks(1000);
+      
+      if (!networks || networks.length === 0) {
+        return [];
+      }
+
+      const securityCounts = networks.reduce((acc, network) => {
+        const security = network.capabilities || 'Open Network';
+        if (!acc[security]) {
+          acc[security] = {
+            devices: new Set(),
+            count: 0
+          };
+        }
+        acc[security].devices.add(network.bssid);
+        acc[security].count++;
+        return acc;
+      }, {} as Record<string, { devices: Set<string>; count: number }>);
+
+      const totalNetworks = networks.length;
+      
+      return Object.entries(securityCounts)
+        .map(([security, data]) => {
+          let securityLevel = 'Unknown Security';
+          if (security.toLowerCase().includes('wpa3')) {
+            securityLevel = 'High Security';
+          } else if (security.toLowerCase().includes('wpa2')) {
+            securityLevel = 'Medium Security';
+          } else if (security.toLowerCase().includes('wep')) {
+            securityLevel = 'Low Security';
+          } else if (security === 'Open Network' || security === '') {
+            securityLevel = 'Open Network';
+          }
+
+          return {
+            security,
+            network_count: data.count,
+            unique_devices: data.devices.size,
+            percentage: Math.round((data.count / totalNetworks) * 100 * 100) / 100,
+            security_level: securityLevel
+          };
+        })
+        .sort((a, b) => b.network_count - a.network_count);
+    } catch (error) {
+      console.error("Error getting G63 security analysis:", error);
+      return [];
+    }
+  }
 }
 
 // Use in-memory storage as fallback
@@ -323,6 +474,19 @@ export class MemStorage implements IStorage {
   }
 
   async getG63LocationsByBssid(bssid: string): Promise<G63Location[]> {
+    return [];
+  }
+
+  // G63 Analytics methods - fallback
+  async getG63NetworkAnalytics(): Promise<any> {
+    return {};
+  }
+
+  async getG63SignalStrengthDistribution(): Promise<any> {
+    return [];
+  }
+
+  async getG63SecurityAnalysis(): Promise<any> {
     return [];
   }
 }

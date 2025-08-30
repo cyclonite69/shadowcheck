@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { EnhancedHeader } from '@/components/enhanced-header';
 import { G63MapVisualization } from '@/components/g63-map-visualization';
+import { G63AnalyticsDashboard } from '@/components/g63-analytics-dashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -73,8 +74,11 @@ export default function G63ForensicsPage() {
           {/* G63 Map Visualization */}
           <G63MapVisualization />
 
-          <Tabs defaultValue="networks" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-card/50">
+          <Tabs defaultValue="analytics" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 bg-card/50">
+              <TabsTrigger value="analytics" data-testid="tab-analytics">
+                Analytics
+              </TabsTrigger>
               <TabsTrigger value="networks" data-testid="tab-networks">
                 Network Observations ({networks?.count || 0})
               </TabsTrigger>
@@ -82,6 +86,10 @@ export default function G63ForensicsPage() {
                 Location Data ({locations?.count || 0})
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="analytics" className="space-y-4">
+              <G63AnalyticsDashboard />
+            </TabsContent>
 
             <TabsContent value="networks" className="space-y-4">
               <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm">

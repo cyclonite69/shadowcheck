@@ -170,5 +170,21 @@ export const api = {
   async getG63Visualization(): Promise<any> {
     const res = await apiRequest("GET", "/api/v1/g63/visualize");
     return res.json();
+  },
+
+  // G63 Analytics API methods
+  async getG63Analytics(): Promise<any> {
+    const res = await apiRequest("GET", "/api/v1/g63/analytics");
+    return res.json();
+  },
+
+  async getG63SignalStrengthDistribution(): Promise<any> {
+    const res = await apiRequest("GET", "/api/v1/g63/signal-strength");
+    return res.json();
+  },
+
+  async getG63SecurityAnalysis(): Promise<any> {
+    const res = await apiRequest("GET", "/api/v1/g63/security-analysis");
+    return res.json();
   }
 };

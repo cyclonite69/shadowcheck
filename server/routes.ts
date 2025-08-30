@@ -400,6 +400,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // G63 Analytics endpoints
+  app.get("/api/v1/g63/analytics", async (req, res) => {
+    try {
+      const analytics = await storage.getG63NetworkAnalytics();
+      res.json({ ok: true, data: analytics });
+    } catch (error) {
+      console.error("Error fetching G63 analytics:", error);
+      res.status(500).json({ error: "Failed to fetch G63 analytics" });
+    }
+  });
+
+  app.get("/api/v1/g63/signal-strength", async (req, res) => {
+    try {
+      const distribution = await storage.getG63SignalStrengthDistribution();
+      res.json({ ok: true, data: distribution });
+    } catch (error) {
+      console.error("Error fetching G63 signal strength distribution:", error);
+      res.status(500).json({ error: "Failed to fetch G63 signal strength distribution" });
+    }
+  });
+
+  app.get("/api/v1/g63/security-analysis", async (req, res) => {
+    try {
+      const securityAnalysis = await storage.getG63SecurityAnalysis();
+      res.json({ ok: true, data: securityAnalysis });
+    } catch (error) {
+      console.error("Error fetching G63 security analysis:", error);
+      res.status(500).json({ error: "Failed to fetch G63 security analysis" });
+    }
+  });
+
   // Graceful shutdown handling
   process.on('SIGTERM', async () => {
     console.log('SIGTERM received, shutting down gracefully');
