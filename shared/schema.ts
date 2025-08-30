@@ -1,7 +1,10 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, decimal, integer, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, pgSchema, text, varchar, timestamp, decimal, integer, boolean, index, bigint, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// G63 Forensics Schema
+export const g63Schema = pgSchema("g63");
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -66,3 +69,38 @@ export type InsertNetwork = z.infer<typeof insertNetworkSchema>;
 export type Network = typeof networks.$inferSelect;
 export type InsertCell = z.infer<typeof insertCellSchema>;
 export type Cell = typeof cells.$inferSelect;
+
+// G63 Forensics Tables
+export const g63Networks = g63Schema.table("network", {
+  bssid: text("bssid").primaryKey(),
+  ssid: text("ssid").notNull(),
+  frequency: integer("frequency").notNull(),
+  capabilities: text("capabilities").notNull(),
+  lasttime: bigint("lasttime", { mode: "bigint" }).notNull(),
+  lastlat: doublePrecision("lastlat").notNull(),
+  lastlon: doublePrecision("lastlon").notNull(),
+  type: text("type").default("W").notNull(),
+  bestlevel: integer("bestlevel").default(0).notNull(),
+  bestlat: doublePrecision("bestlat").default(0).notNull(),
+  bestlon: doublePrecision("bestlon").default(0).notNull(),
+  rcois: text("rcois").default("").notNull(),
+  mfgrid: integer("mfgrid").default(0).notNull(),
+  service: text("service").default("").notNull(),
+});
+
+export const g63Locations = g63Schema.table("location", {
+  _id: bigint("_id", { mode: "bigint" }).primaryKey().generatedByDefaultAsIdentity(),
+  bssid: text("bssid").notNull(),
+  level: integer("level").notNull(),
+  lat: doublePrecision("lat").notNull(),
+  lon: doublePrecision("lon").notNull(),
+  altitude: doublePrecision("altitude").notNull(),
+  accuracy: doublePrecision("accuracy").notNull(),
+  time: bigint("time", { mode: "bigint" }).notNull(),
+  external: integer("external").default(0).notNull(),
+  mfgrid: integer("mfgrid").default(0).notNull(),
+});
+
+// G63 Types
+export type G63Network = typeof g63Networks.$inferSelect;
+export type G63Location = typeof g63Locations.$inferSelect;

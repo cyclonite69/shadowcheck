@@ -1,4 +1,4 @@
-import { users, networks, cells, type User, type InsertUser, type Network, type InsertNetwork } from "@shared/schema";
+import { users, networks, cells, g63Networks, g63Locations, type User, type InsertUser, type Network, type InsertNetwork, type G63Network, type G63Location } from "@shared/schema";
 import { eq, sql, and, lt, gte } from "drizzle-orm";
 
 let db: any = null;
@@ -24,6 +24,13 @@ export interface IStorage {
   getNetworks(limit?: number): Promise<Network[]>;
   getNetworksWithin(lat: number, lon: number, radius: number, limit?: number): Promise<Network[]>;
   createNetwork(network: InsertNetwork): Promise<Network>;
+  
+  // G63 Forensics methods
+  getG63Networks(limit?: number): Promise<G63Network[]>;
+  getG63NetworksWithin(lat: number, lon: number, radius: number, limit?: number): Promise<G63Network[]>;
+  getG63Locations(limit?: number): Promise<G63Location[]>;
+  getG63LocationsByBssid(bssid: string): Promise<G63Location[]>;
+  
   isDatabaseConnected(): Promise<boolean>;
   getConnectionInfo(): Promise<{ activeConnections: number; maxConnections: number; postgisEnabled: boolean }>;
 }
@@ -152,6 +159,109 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return createdNetwork;
   }
+
+  // G63 Forensics methods
+  async getG63Networks(limit: number = 50): Promise<G63Network[]> {
+    const dbInstance = await getDb();
+    if (!dbInstance) return [];
+
+    try {
+      const result = await dbInstance
+        .select()
+        .from(g63Networks)
+        .orderBy(sql`${g63Networks.lasttime} DESC`)
+        .limit(limit);
+      
+      // Convert BigInt to string for JSON serialization
+      return result.map(network => ({
+        ...network,
+        lasttime: network.lasttime.toString()
+      }));
+    } catch (error) {
+      console.error("Error getting G63 networks:", error);
+      return [];
+    }
+  }
+
+  async getG63NetworksWithin(lat: number, lon: number, radius: number, limit: number = 50): Promise<G63Network[]> {
+    const dbInstance = await getDb();
+    if (!dbInstance) return [];
+
+    try {
+      // Calculate bounding box for efficient filtering
+      const lat_min = lat - (radius / 111320);
+      const lat_max = lat + (radius / 111320);
+      const lon_min = lon - (radius / (111320 * Math.cos(lat * Math.PI / 180)));
+      const lon_max = lon + (radius / (111320 * Math.cos(lat * Math.PI / 180)));
+
+      const result = await dbInstance
+        .select()
+        .from(g63Networks)
+        .where(and(
+          gte(g63Networks.lastlat, lat_min),
+          lte(g63Networks.lastlat, lat_max),
+          gte(g63Networks.lastlon, lon_min),
+          lte(g63Networks.lastlon, lon_max)
+        ))
+        .orderBy(sql`${g63Networks.lasttime} DESC`)
+        .limit(limit);
+      
+      // Convert BigInt to string for JSON serialization
+      return result.map(network => ({
+        ...network,
+        lasttime: network.lasttime.toString()
+      }));
+    } catch (error) {
+      console.error("Error getting G63 networks within radius:", error);
+      return [];
+    }
+  }
+
+  async getG63Locations(limit: number = 50): Promise<G63Location[]> {
+    const dbInstance = await getDb();
+    if (!dbInstance) return [];
+
+    try {
+      const result = await dbInstance
+        .select()
+        .from(g63Locations)
+        .orderBy(sql`${g63Locations.time} DESC`)
+        .limit(limit);
+      
+      // Convert BigInt to string for JSON serialization
+      return result.map(location => ({
+        ...location,
+        _id: location._id.toString(),
+        time: location.time.toString()
+      }));
+    } catch (error) {
+      console.error("Error getting G63 locations:", error);
+      return [];
+    }
+  }
+
+  async getG63LocationsByBssid(bssid: string): Promise<G63Location[]> {
+    const dbInstance = await getDb();
+    if (!dbInstance) return [];
+
+    try {
+      const result = await dbInstance
+        .select()
+        .from(g63Locations)
+        .where(eq(g63Locations.bssid, bssid))
+        .orderBy(sql`${g63Locations.time} DESC`);
+      
+      // Convert BigInt to string for JSON serialization
+      return result.map(location => ({
+        ...location,
+        _id: location._id.toString(),
+        time: location.time.toString()
+      }));
+    } catch (error) {
+      console.error("Error getting G63 locations for BSSID:", error);
+      return [];
+    }
+  }
 }
 
 // Use in-memory storage as fallback
@@ -197,6 +307,23 @@ export class MemStorage implements IStorage {
 
   async createNetwork(network: InsertNetwork): Promise<Network> {
     throw new Error("Database not connected");
+  }
+
+  // G63 Forensics methods - fallback
+  async getG63Networks(limit?: number): Promise<G63Network[]> {
+    return [];
+  }
+
+  async getG63NetworksWithin(lat: number, lon: number, radius: number, limit?: number): Promise<G63Network[]> {
+    return [];
+  }
+
+  async getG63Locations(limit?: number): Promise<G63Location[]> {
+    return [];
+  }
+
+  async getG63LocationsByBssid(bssid: string): Promise<G63Location[]> {
+    return [];
   }
 }
 
