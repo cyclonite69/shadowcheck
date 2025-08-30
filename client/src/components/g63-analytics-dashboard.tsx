@@ -42,6 +42,7 @@ export function G63AnalyticsDashboard() {
   const signalData = signalDistribution?.data || [];
   const securityData = securityAnalysis?.data || [];
 
+
   return (
     <div className="space-y-6">
       {/* Header */}

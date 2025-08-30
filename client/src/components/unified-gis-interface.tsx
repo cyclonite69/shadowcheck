@@ -226,6 +226,7 @@ export function UnifiedGISInterface() {
     );
   }
 
+
   return (
     <div className="space-y-6">
       {/* View Controls */}

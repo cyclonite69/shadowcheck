@@ -91,6 +91,24 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
     );
   }
 
+  if (!g63Networks?.data || g63Networks.data.length === 0) {
+    return (
+      <Card className="border-blue-500/20 bg-card/80 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-blue-400 flex items-center gap-2">
+            <Wifi className="h-5 w-5" />
+            G63 Network Data Table
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            No G63 network data available. API returned: {JSON.stringify(g63Networks)}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const SortButton = ({ field, children }: { field: string; children: React.ReactNode }) => (
     <Button
       variant="ghost"
@@ -174,13 +192,18 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
           </div>
 
           {/* Table Rows */}
-          <div className="max-h-96 overflow-y-auto space-y-1">
-            {sortedAndFilteredNetworks.map((network) => {
-              const color = generateColorFromBSSID(network.bssid);
-              const signalInfo = getSignalStrengthCategory(network.bestlevel);
-              const securityInfo = getSecurityStyling(network.capabilities);
-              const isVisible = visibleNetworks.has(network.bssid);
-              const lastSeen = new Date(Number(network.lasttime) * 1000);
+          <div className="max-h-96 overflow-y-auto space-y-1 bg-background/20 border border-dashed border-yellow-500/50 min-h-[200px]">
+            {sortedAndFilteredNetworks.length === 0 ? (
+              <div className="p-8 text-center text-red-400 bg-red-500/10 rounded">
+                No networks to display after filtering. Total available: {g63Networks?.data?.length || 0}
+              </div>
+            ) : (
+              sortedAndFilteredNetworks.map((network) => {
+                const color = generateColorFromBSSID(network.bssid);
+                const signalInfo = getSignalStrengthCategory(network.bestlevel);
+                const securityInfo = getSecurityStyling(network.capabilities);
+                const isVisible = visibleNetworks.has(network.bssid);
+                const lastSeen = new Date(Number(network.lasttime));
 
               return (
                 <div
@@ -264,7 +287,8 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
                   </div>
                 </div>
               );
-            })}
+            })
+            )}
           </div>
 
           {/* Table Footer */}
