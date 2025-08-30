@@ -24,17 +24,17 @@ import {
   MapPin,
   Calendar
 } from 'lucide-react';
-import { bssidToColor, signalStrengthToColor, formatBSSID, getBSSIDOctets, calculateColorSimilarity } from '@/utils/bssid-color';
+import { bssidToColor, bestlevelToDbm, formatBSSID, getBSSIDOctets, calculateColorSimilarity } from '@/utils/bssid-color';
 
 interface NetworkEntry {
   bssid: string;
   ssid: string;
-  security: string;
-  signal_strength: number;
+  capabilities: string;
+  bestlevel: number;
   frequency: number;
-  latitude?: number;
-  longitude?: number;
-  last_seen?: string;
+  lastlat?: number;
+  lastlon?: number;
+  lasttime?: bigint;
   network_count?: number;
 }
 
@@ -55,8 +55,8 @@ export default function NetworksPage() {
   });
 
   const networks = useMemo(() => {
-    if (!networksData || !('data' in networksData) || !networksData.data) return [];
-    return networksData.data as NetworkEntry[];
+    if (!networksData || !(networksData as any)?.data) return [];
+    return (networksData as any).data as NetworkEntry[];
   }, [networksData]);
 
   // Filter and sort networks
@@ -67,12 +67,12 @@ export default function NetworksPage() {
         network.bssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
         network.ssid?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // Security filter
+      // Security filter  
       const securityMatch = securityFilter === 'all' || 
-        (securityFilter === 'encrypted' && network.security && network.security !== '[ESS]') ||
-        (securityFilter === 'open' && (!network.security || network.security === '[ESS]')) ||
-        (securityFilter === 'wpa' && network.security?.includes('WPA')) ||
-        (securityFilter === 'wep' && network.security?.includes('WEP'));
+        (securityFilter === 'encrypted' && network.capabilities && network.capabilities !== '[ESS]') ||
+        (securityFilter === 'open' && (!network.capabilities || network.capabilities === '[ESS]')) ||
+        (securityFilter === 'wpa' && network.capabilities?.includes('WPA')) ||
+        (securityFilter === 'wep' && network.capabilities?.includes('WEP'));
 
       return searchMatch && securityMatch;
     });
@@ -91,20 +91,20 @@ export default function NetworksPage() {
           bVal = b.ssid || '';
           break;
         case 'signal_strength':
-          aVal = a.signal_strength || -100;
-          bVal = b.signal_strength || -100;
+          aVal = bestlevelToDbm(a.bestlevel || 0);
+          bVal = bestlevelToDbm(b.bestlevel || 0);
           break;
         case 'security':
-          aVal = a.security || '';
-          bVal = b.security || '';
+          aVal = a.capabilities || '';
+          bVal = b.capabilities || '';
           break;
         case 'frequency':
           aVal = a.frequency || 0;
           bVal = b.frequency || 0;
           break;
         case 'last_seen':
-          aVal = a.last_seen || '';
-          bVal = b.last_seen || '';
+          aVal = a.lasttime || '';
+          bVal = b.lasttime || '';
           break;
         default:
           aVal = a.bssid;
@@ -160,10 +160,10 @@ export default function NetworksPage() {
     return sortDirection === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />;
   };
 
-  const getSecurityLevel = (security: string) => {
-    if (!security || security === '[ESS]') return 'Open';
-    if (security.includes('WPA')) return 'WPA';
-    if (security.includes('WEP')) return 'WEP';
+  const getSecurityLevel = (capabilities: string) => {
+    if (!capabilities || capabilities === '[ESS]') return 'Open';
+    if (capabilities.includes('WPA')) return 'WPA';
+    if (capabilities.includes('WEP')) return 'WEP';
     return 'Other';
   };
 
@@ -202,7 +202,7 @@ export default function NetworksPage() {
         <CardHeader>
           <CardTitle className="text-blue-400 flex items-center gap-2">
             <Network className="h-5 w-5" />
-            Network Forensic Analysis
+            Observed Networks
             <Badge variant="outline" className="ml-auto">
               {filteredAndSortedNetworks.length} networks
             </Badge>
@@ -299,8 +299,9 @@ export default function NetworksPage() {
           <CardContent className="p-0">
             <div className="space-y-0">
               {filteredAndSortedNetworks.map((network, index) => {
-                const color = signalStrengthToColor(network.signal_strength);
-                const securityLevel = getSecurityLevel(network.security);
+                const color = bssidToColor(network.bssid);
+                const securityLevel = getSecurityLevel(network.capabilities);
+                const dbmSignal = bestlevelToDbm(network.bestlevel || 0);
                 const isSelected = selectedNetworks.has(network.bssid);
                 
                 return (
@@ -353,9 +354,9 @@ export default function NetworksPage() {
                         <div className="w-20 text-right">
                           <p 
                             className="text-xs font-medium"
-                            style={{ color: getSignalStrengthColor(network.signal_strength) }}
+                            style={{ color: getSignalStrengthColor(network.bestlevel || 0) }}
                           >
-                            {network.signal_strength} dBm
+                            {dbmSignal} dBm
                           </p>
                         </div>
 
@@ -390,13 +391,13 @@ export default function NetworksPage() {
                           <div>
                             <span className="text-muted-foreground">Security:</span>
                             <br />
-                            <span>{network.security || 'Open'}</span>
+                            <span>{network.capabilities || 'Open'}</span>
                           </div>
                           <div>
                             <span className="text-muted-foreground">Signal:</span>
                             <br />
-                            <span style={{ color: getSignalStrengthColor(network.signal_strength) }}>
-                              {network.signal_strength} dBm
+                            <span style={{ color: getSignalStrengthColor(network.bestlevel || 0) }}>
+                              {bestlevelToDbm(network.bestlevel || 0)} dBm
                             </span>
                           </div>
                           <div>
@@ -404,12 +405,12 @@ export default function NetworksPage() {
                             <br />
                             <span>{network.frequency ? `${network.frequency} MHz` : 'Unknown'}</span>
                           </div>
-                          {network.latitude && network.longitude && (
+                          {network.lastlat && network.lastlon && (
                             <div className="col-span-2">
                               <span className="text-muted-foreground">Location:</span>
                               <br />
                               <span className="font-mono">
-                                {network.latitude.toFixed(6)}, {network.longitude.toFixed(6)}
+                                {network.lastlat.toFixed(6)}, {network.lastlon.toFixed(6)}
                               </span>
                             </div>
                           )}

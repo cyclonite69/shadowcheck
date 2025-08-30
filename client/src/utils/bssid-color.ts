@@ -7,38 +7,11 @@ export interface BSSIDColor {
 }
 
 /**
- * Converts signal strength to Mapbox-style color (matches visualization)
- * Strong signals are green, weak signals are red
- */
-export function signalStrengthToColor(signalStrength: number): BSSIDColor {
-  let hex: string;
-  
-  if (signalStrength >= -40) {
-    hex = '#00ff00'; // Strong signal - green
-  } else if (signalStrength >= -60) {
-    hex = '#ffff00'; // Medium signal - yellow
-  } else if (signalStrength >= -80) {
-    hex = '#ff8800'; // Weak signal - orange
-  } else {
-    hex = '#ff0000'; // Very weak signal - red
-  }
-  
-  // Convert hex to HSL for consistency
-  const hsl = hexToHsl(hex);
-  return { hex, hsl };
-}
-
-/**
  * Converts BSSID to a deterministic color based on MAC address patterns
  * Similar BSSIDs (same OUI, sequential addresses) get similar colors
- * Falls back to signal strength color if no specific pattern needed
+ * This is for forensic analysis where we want to visually group related devices
  */
-export function bssidToColor(bssid: string, signalStrength?: number): BSSIDColor {
-  // Use signal strength color if available (matches Mapbox)
-  if (typeof signalStrength === 'number') {
-    return signalStrengthToColor(signalStrength);
-  }
-  
+export function bssidToColor(bssid: string): BSSIDColor {
   if (!bssid || typeof bssid !== 'string') {
     return { hex: '#6b7280', hsl: { h: 0, s: 0, l: 42 } };
   }
@@ -79,6 +52,18 @@ export function bssidToColor(bssid: string, signalStrength?: number): BSSIDColor
   const hex = hslToHex(finalHue, saturation, lightness);
 
   return { hex, hsl };
+}
+
+/**
+ * Converts G63 bestlevel to dBm signal strength
+ * G63 stores signal as positive integers, convert to dBm
+ */
+export function bestlevelToDbm(bestlevel: number): number {
+  // G63 bestlevel is typically 0-100, convert to realistic dBm range
+  if (!bestlevel || bestlevel === 0) return -100;
+  
+  // Map 0-100 range to -100 to -30 dBm (typical WiFi range)
+  return Math.round(-100 + (bestlevel * 0.7));
 }
 
 /**
