@@ -62,6 +62,8 @@ Preferred communication style: Simple, everyday language.
 - **Neon Database**: Serverless PostgreSQL hosting with built-in connection pooling
 - **PostGIS**: Spatial database extension for geographic information systems
 - **WebSocket Support**: For real-time database connections via `ws` package
+- **Security**: SCRAM-SHA-256 password encryption with SSL/TLS certificate validation
+- **Authentication**: Session-based with PostgreSQL session store for production security
 
 ### UI and Component Libraries
 - **Radix UI**: Comprehensive set of accessible UI primitives including dialogs, dropdowns, navigation

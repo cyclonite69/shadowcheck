@@ -17,6 +17,7 @@ export function Sidebar() {
     { href: "/spatial", icon: "fas fa-map-marked-alt", label: "Spatial Query" },
     { href: "/visualization", icon: "fas fa-chart-line", label: "Visualization" },
     { href: "/database", icon: "fas fa-database", label: "Database Status" },
+    { href: "/admin", icon: "fas fa-shield-alt", label: "Admin Panel" },
   ];
 
   const endpoints = [
@@ -70,28 +71,21 @@ export function Sidebar() {
           ))}
         </div>
         
-        {/* API Endpoints */}
+        {/* Quick Actions */}
         <div className="mt-8">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-            <i className="fas fa-plug text-xs"></i>
-            API Endpoints
+            <i className="fas fa-bolt text-xs"></i>
+            Quick Actions
           </h3>
           <div className="space-y-2">
-            {endpoints.map((endpoint, index) => (
-              <div key={index} className="flex items-center gap-3 px-3 py-2 rounded-md bg-muted/30 border border-border/30">
-                <span 
-                  className={`w-2 h-2 rounded-full ${
-                    endpoint.active ? "bg-accent status-indicator shadow-sm shadow-accent/50" : "bg-destructive"
-                  }`}
-                ></span>
-                <span className="text-xs font-mono text-muted-foreground flex-1">{endpoint.path}</span>
-                <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                  endpoint.active ? "bg-accent/20 text-accent" : "bg-destructive/20 text-destructive"
-                }`}>
-                  {endpoint.active ? "OK" : "501"}
-                </span>
-              </div>
-            ))}
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md bg-muted/30 border border-border/30 hover:bg-muted/50 transition-colors text-left">
+              <i className="fas fa-sync text-primary text-xs"></i>
+              <span className="text-xs text-muted-foreground">Refresh Data</span>
+            </button>
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md bg-muted/30 border border-border/30 hover:bg-muted/50 transition-colors text-left">
+              <i className="fas fa-download text-primary text-xs"></i>
+              <span className="text-xs text-muted-foreground">Export Data</span>
+            </button>
           </div>
         </div>
       </nav>

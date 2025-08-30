@@ -12,6 +12,8 @@ export function SpatialQueryInterface() {
     limit: "50"
   });
   const [queryResults, setQueryResults] = useState<any>(null);
+  const [encryptionFilter, setEncryptionFilter] = useState("all");
+  const [signalFilter, setSignalFilter] = useState("all");
 
   const { data: systemStatus } = useQuery({
     queryKey: ["/api/v1/status"],
@@ -103,15 +105,56 @@ export function SpatialQueryInterface() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-2">Radius (meters)</label>
-            <input
-              type="number"
-              placeholder="1000"
+            <select
               value={queryParams.radius}
               onChange={(e) => handleInputChange("radius", e.target.value)}
               disabled={!isConnected}
-              className="w-full px-3 py-2 bg-input border border-border rounded-md text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-              data-testid="input-radius"
-            />
+              className="w-full px-3 py-2 bg-input border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              data-testid="select-radius"
+            >
+              <option value="">Select radius</option>
+              <option value="100">100m - Building</option>
+              <option value="500">500m - Block</option>
+              <option value="1000">1km - Neighborhood</option>
+              <option value="2000">2km - District</option>
+              <option value="5000">5km - City Area</option>
+              <option value="10000">10km - Metropolitan</option>
+            </select>
+          </div>
+        </div>
+        
+        {/* Advanced Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium mb-2">Encryption Type</label>
+            <select
+              value={encryptionFilter}
+              onChange={(e) => setEncryptionFilter(e.target.value)}
+              disabled={!isConnected}
+              className="w-full px-3 py-2 bg-input border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              data-testid="select-encryption"
+            >
+              <option value="all">All Types</option>
+              <option value="open">Open Networks</option>
+              <option value="wep">WEP Encryption</option>
+              <option value="wpa">WPA/WPA2</option>
+              <option value="wpa3">WPA3</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Signal Strength</label>
+            <select
+              value={signalFilter}
+              onChange={(e) => setSignalFilter(e.target.value)}
+              disabled={!isConnected}
+              className="w-full px-3 py-2 bg-input border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              data-testid="select-signal"
+            >
+              <option value="all">All Strengths</option>
+              <option value="strong">Strong (-30 to -60 dBm)</option>
+              <option value="medium">Medium (-60 to -80 dBm)</option>
+              <option value="weak">Weak (-80+ dBm)</option>
+            </select>
           </div>
         </div>
         
