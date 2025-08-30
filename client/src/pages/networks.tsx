@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,7 +24,7 @@ import {
   MapPin,
   Calendar
 } from 'lucide-react';
-import { bssidToColor, formatBSSID, getBSSIDOctets, calculateColorSimilarity } from '@/utils/bssid-color';
+import { bssidToColor, signalStrengthToColor, formatBSSID, getBSSIDOctets, calculateColorSimilarity } from '@/utils/bssid-color';
 
 interface NetworkEntry {
   bssid: string;
@@ -46,6 +47,7 @@ export default function NetworksPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [securityFilter, setSecurityFilter] = useState<string>('all');
   const [selectedOctet, setSelectedOctet] = useState<number | null>(null);
+  const [selectedNetworks, setSelectedNetworks] = useState<Set<string>>(new Set());
 
   const { data: networksData, isLoading } = useQuery({
     queryKey: ['/api/v1/g63/networks'],
@@ -165,10 +167,21 @@ export default function NetworksPage() {
     return 'Other';
   };
 
+  const toggleNetworkSelection = (bssid: string) => {
+    const newSelected = new Set(selectedNetworks);
+    if (newSelected.has(bssid)) {
+      newSelected.delete(bssid);
+    } else {
+      newSelected.add(bssid);
+    }
+    setSelectedNetworks(newSelected);
+  };
+
   const getSignalStrengthColor = (signal: number) => {
-    if (signal >= -50) return 'text-green-400';
-    if (signal >= -70) return 'text-yellow-400';
-    return 'text-red-400';
+    if (signal >= -40) return '#00ff00'; // Strong signal - green
+    if (signal >= -60) return '#ffff00'; // Medium signal - yellow  
+    if (signal >= -80) return '#ff8800'; // Weak signal - orange
+    return '#ff0000'; // Very weak signal - red
   };
 
   if (isLoading) {
@@ -266,115 +279,157 @@ export default function NetworksPage() {
         </CardContent>
       </Card>
 
-      {/* Network Groups */}
-      <div className="space-y-6">
-        {Object.entries(octetGroups).map(([groupKey, groupNetworks]) => (
-          <Card key={groupKey} className="border-green-500/20 bg-card/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-green-400 flex items-center gap-2">
-                <Wifi className="h-5 w-5" />
-                {selectedOctet !== null ? `Octet ${selectedOctet + 1}: ${groupKey}` : `OUI: ${groupKey}`}
-                <Badge variant="outline" className="ml-auto">
-                  {groupNetworks.length} networks
+      {/* Network List */}
+      <TooltipProvider>
+        <Card className="border-green-500/20 bg-card/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-green-400 flex items-center gap-2">
+              <Wifi className="h-5 w-5" />
+              Network Directory
+              <Badge variant="outline" className="ml-auto">
+                {filteredAndSortedNetworks.length} networks
+              </Badge>
+              {selectedNetworks.size > 0 && (
+                <Badge variant="default" className="bg-blue-500/20 text-blue-400">
+                  {selectedNetworks.size} selected
                 </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {groupNetworks.map((network, index) => {
-                  const color = bssidToColor(network.bssid);
-                  const securityLevel = getSecurityLevel(network.security);
-                  
-                  return (
-                    <div
-                      key={`${network.bssid}-${index}`}
-                      className="flex items-center gap-4 p-3 rounded-lg border border-border/30 bg-background/40 hover:bg-background/60 transition-colors"
-                      data-testid={`network-${network.bssid.replace(/:/g, '-')}`}
-                    >
-                      {/* BSSID Color Indicator */}
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="space-y-0">
+              {filteredAndSortedNetworks.map((network, index) => {
+                const color = signalStrengthToColor(network.signal_strength);
+                const securityLevel = getSecurityLevel(network.security);
+                const isSelected = selectedNetworks.has(network.bssid);
+                
+                return (
+                  <Tooltip key={`${network.bssid}-${index}`}>
+                    <TooltipTrigger asChild>
                       <div
-                        className="w-4 h-4 rounded-full border border-border/50"
-                        style={{ backgroundColor: color.hex }}
-                        title={`Color: ${color.hex} (H:${Math.round(color.hsl.h)} S:${Math.round(color.hsl.s)} L:${Math.round(color.hsl.l)})`}
-                      />
+                        className={`flex items-center gap-3 p-3 border-b border-border/20 cursor-pointer transition-all duration-200 hover:bg-background/30 ${
+                          isSelected ? 'bg-background/50' : ''
+                        }`}
+                        style={{
+                          backgroundColor: isSelected 
+                            ? `${color.hex}10` 
+                            : 'transparent',
+                          borderLeft: `3px solid ${color.hex}`
+                        }}
+                        onClick={() => toggleNetworkSelection(network.bssid)}
+                        data-testid={`network-${network.bssid.replace(/:/g, '-')}`}
+                      >
+                        {/* Color Circle */}
+                        <div
+                          className="w-3 h-3 rounded-full border border-border/30"
+                          style={{ backgroundColor: color.hex }}
+                        />
 
-                      {/* Network Info */}
-                      <div className="flex-1 grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
                         {/* BSSID */}
-                        <div>
-                          <p className="font-mono text-sm font-medium text-foreground">
+                        <div className="w-36">
+                          <p className="font-mono text-xs font-medium text-foreground">
                             {formatBSSID(network.bssid)}
                           </p>
-                          <p className="text-xs text-muted-foreground">BSSID</p>
                         </div>
 
                         {/* SSID */}
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">
                             {network.ssid || 'Hidden Network'}
                           </p>
-                          <p className="text-xs text-muted-foreground">SSID</p>
                         </div>
 
-                        {/* Security */}
-                        <div>
+                        {/* Security Badge */}
+                        <div className="w-16">
                           <Badge 
-                            variant={securityLevel === 'Open' ? 'destructive' : 'default'}
-                            className="text-xs"
+                            variant={securityLevel === 'Open' ? 'destructive' : 'secondary'}
+                            className="text-xs h-5"
                           >
-                            <Shield className="h-3 w-3 mr-1" />
                             {securityLevel}
                           </Badge>
                         </div>
 
                         {/* Signal Strength */}
-                        <div>
-                          <p className={`text-sm font-medium ${getSignalStrengthColor(network.signal_strength)}`}>
-                            <Signal className="h-3 w-3 inline mr-1" />
+                        <div className="w-20 text-right">
+                          <p 
+                            className="text-xs font-medium"
+                            style={{ color: getSignalStrengthColor(network.signal_strength) }}
+                          >
                             {network.signal_strength} dBm
                           </p>
                         </div>
 
                         {/* Frequency */}
-                        <div>
-                          <p className="text-sm text-foreground">
-                            {network.frequency ? `${network.frequency} MHz` : 'Unknown'}
-                          </p>
+                        <div className="w-16 text-right">
                           <p className="text-xs text-muted-foreground">
-                            {network.frequency > 5000 ? '5GHz' : network.frequency > 2000 ? '2.4GHz' : 'Unknown'}
+                            {network.frequency > 5000 ? '5G' : network.frequency > 2000 ? '2.4G' : '?'}
                           </p>
                         </div>
 
-                        {/* Location/Last Seen */}
-                        <div>
-                          {network.latitude && network.longitude ? (
-                            <p className="text-xs text-muted-foreground">
-                              <MapPin className="h-3 w-3 inline mr-1" />
-                              {network.latitude.toFixed(4)}, {network.longitude.toFixed(4)}
-                            </p>
-                          ) : (
-                            <p className="text-xs text-muted-foreground">
-                              <Calendar className="h-3 w-3 inline mr-1" />
-                              {network.last_seen || 'Unknown'}
-                            </p>
+                        {/* Sighting Count */}
+                        {network.network_count && network.network_count > 1 && (
+                          <div className="w-12 text-right">
+                            <span className="text-xs bg-muted/50 px-1.5 py-0.5 rounded">
+                              {network.network_count}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-80">
+                      <div className="space-y-2">
+                        <div className="font-medium text-sm border-b border-border/20 pb-1">
+                          {network.ssid || 'Hidden Network'}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">BSSID:</span>
+                            <br />
+                            <span className="font-mono">{formatBSSID(network.bssid)}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Security:</span>
+                            <br />
+                            <span>{network.security || 'Open'}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Signal:</span>
+                            <br />
+                            <span style={{ color: getSignalStrengthColor(network.signal_strength) }}>
+                              {network.signal_strength} dBm
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Frequency:</span>
+                            <br />
+                            <span>{network.frequency ? `${network.frequency} MHz` : 'Unknown'}</span>
+                          </div>
+                          {network.latitude && network.longitude && (
+                            <div className="col-span-2">
+                              <span className="text-muted-foreground">Location:</span>
+                              <br />
+                              <span className="font-mono">
+                                {network.latitude.toFixed(6)}, {network.longitude.toFixed(6)}
+                              </span>
+                            </div>
+                          )}
+                          {network.network_count && network.network_count > 1 && (
+                            <div>
+                              <span className="text-muted-foreground">Sightings:</span>
+                              <br />
+                              <span>{network.network_count}</span>
+                            </div>
                           )}
                         </div>
                       </div>
-
-                      {/* Network Count */}
-                      {network.network_count && network.network_count > 1 && (
-                        <Badge variant="outline" className="text-xs">
-                          {network.network_count} sightings
-                        </Badge>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </TooltipProvider>
 
       {filteredAndSortedNetworks.length === 0 && (
         <Card className="border-yellow-500/20 bg-card/80 backdrop-blur-sm">

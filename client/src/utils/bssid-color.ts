@@ -7,10 +7,38 @@ export interface BSSIDColor {
 }
 
 /**
+ * Converts signal strength to Mapbox-style color (matches visualization)
+ * Strong signals are green, weak signals are red
+ */
+export function signalStrengthToColor(signalStrength: number): BSSIDColor {
+  let hex: string;
+  
+  if (signalStrength >= -40) {
+    hex = '#00ff00'; // Strong signal - green
+  } else if (signalStrength >= -60) {
+    hex = '#ffff00'; // Medium signal - yellow
+  } else if (signalStrength >= -80) {
+    hex = '#ff8800'; // Weak signal - orange
+  } else {
+    hex = '#ff0000'; // Very weak signal - red
+  }
+  
+  // Convert hex to HSL for consistency
+  const hsl = hexToHsl(hex);
+  return { hex, hsl };
+}
+
+/**
  * Converts BSSID to a deterministic color based on MAC address patterns
  * Similar BSSIDs (same OUI, sequential addresses) get similar colors
+ * Falls back to signal strength color if no specific pattern needed
  */
-export function bssidToColor(bssid: string): BSSIDColor {
+export function bssidToColor(bssid: string, signalStrength?: number): BSSIDColor {
+  // Use signal strength color if available (matches Mapbox)
+  if (typeof signalStrength === 'number') {
+    return signalStrengthToColor(signalStrength);
+  }
+  
   if (!bssid || typeof bssid !== 'string') {
     return { hex: '#6b7280', hsl: { h: 0, s: 0, l: 42 } };
   }
@@ -130,6 +158,34 @@ export function getBSSIDOctets(bssid: string): string[] {
 export function formatBSSID(bssid: string): string {
   const octets = getBSSIDOctets(bssid);
   return octets.length === 6 ? octets.join(':') : bssid;
+}
+
+// Helper function to convert hex to HSL
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h: number, s: number;
+  const l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0; // achromatic
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+      default: h = 0;
+    }
+    h /= 6;
+  }
+
+  return { h: h * 360, s: s * 100, l: l * 100 };
 }
 
 // Helper function to convert HSL to hex
