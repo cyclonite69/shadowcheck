@@ -220,7 +220,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
                   <div className="col-span-1 flex justify-center items-center">
                     <Switch
                       checked={isVisible}
-                      onCheckedChange={() => toggleNetworkVisibility(network.bssid)}
+                      onCheckedChange={(checked) => onNetworkToggle(network.bssid, checked)}
                       data-testid={`toggle-${network.bssid}`}
                     />
                   </div>

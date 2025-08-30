@@ -35,37 +35,64 @@ export function UnifiedGISInterface() {
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || map.current || !config?.mapboxToken) return;
+    if (!mapContainer.current || map.current || !config?.mapboxToken) {
+      return;
+    }
 
     mapboxgl.accessToken = config.mapboxToken;
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: [-83.697, 43.023],
-      zoom: 12,
-      attributionControl: false
-    });
+    try {
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/dark-v11',
+        center: [-83.697, 43.023],
+        zoom: 12,
+        attributionControl: false
+      });
 
-    map.current.on('load', () => {
-      setMapLoaded(true);
-    });
+      map.current.on('load', () => {
+        setMapLoaded(true);
+      });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.current.on('style.load', () => {
+        if (!mapLoaded) {
+          setMapLoaded(true);
+        }
+      });
+
+      map.current.on('error', (e) => {
+        console.error('Map error:', e);
+      });
+
+      // Fallback for map loading
+      setTimeout(() => {
+        if (map.current && !mapLoaded) {
+          setMapLoaded(true);
+        }
+      }, 5000);
+
+      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    } catch (error) {
+      console.error('Error initializing map:', error);
+    }
 
     return () => {
       if (map.current) {
         map.current.remove();
         map.current = null;
+        setMapLoaded(false);
       }
     };
   }, [config?.mapboxToken]);
 
   // Update map layers when data or visibility changes
   useEffect(() => {
-    if (!map.current || !mapLoaded || !visualizationData?.data || !networks?.data) return;
+    if (!map.current || !mapLoaded || !visualizationData?.data || !networks?.data) {
+      return;
+    }
 
-    // Remove existing layers
+    try {
+      // Remove existing layers
     ['g63-networks-visible', 'g63-networks-hidden', 'g63-networks-clusters', 'g63-cluster-count'].forEach(layerId => {
       if (map.current!.getLayer(layerId)) {
         map.current!.removeLayer(layerId);
@@ -185,6 +212,9 @@ export function UnifiedGISInterface() {
       map.current.setPaintProperty('g63-networks-visible', 'circle-color', colorExpression as any);
     }
 
+    } catch (error) {
+      console.error('Error updating map layers:', error);
+    }
   }, [mapLoaded, visualizationData, visibleNetworks, networks]);
 
   // Initialize all networks as visible
@@ -296,6 +326,7 @@ export function UnifiedGISInterface() {
                 ref={mapContainer} 
                 className="w-full h-96 rounded-lg overflow-hidden border border-border/30"
                 data-testid="gis-map"
+                style={{ minHeight: '384px' }}
               />
               {!mapLoaded && (
                 <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
