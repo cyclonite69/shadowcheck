@@ -24,7 +24,7 @@ export function Sidebar() {
               ShadowCheck
             </h1>
             <p className="text-xs text-muted-foreground font-mono tracking-wider">
-              SIGINT FORENSICS API
+              SIGINT FORENSICS
             </p>
           </div>
         </div>

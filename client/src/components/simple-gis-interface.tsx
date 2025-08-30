@@ -189,7 +189,7 @@ export function SimpleGISInterface() {
         <CardHeader>
           <CardTitle className="text-cyan-400 flex items-center gap-2">
             <Map className="h-5 w-5" />
-            Network Map ({(visualizationData as any)?.data?.features?.length || 0} networks)
+            Network Map ({(visualizationData as any)?.data?.features?.length || 0} sightings)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -218,11 +218,11 @@ export function SimpleGISInterface() {
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>
               <p className="text-lg font-bold text-green-400">{(networks as any)?.data?.length || 0}</p>
-              <p className="text-xs text-muted-foreground">Total Networks</p>
+              <p className="text-xs text-muted-foreground">Distinct Networks</p>
             </div>
             <div>
               <p className="text-lg font-bold text-blue-400">{(visualizationData as any)?.data?.features?.length || 0}</p>
-              <p className="text-xs text-muted-foreground">On Map</p>
+              <p className="text-xs text-muted-foreground">Total Sightings</p>
             </div>
           </div>
         </CardContent>

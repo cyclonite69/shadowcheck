@@ -33,9 +33,9 @@ export default function Dashboard() {
   });
 
   const overview = g63Analytics?.data?.overview || {};
-  const secureNetworks = securityAnalysis?.data?.filter((s: any) => 
-    s.security.includes('WPA') || s.security.includes('WEP')
-  ).reduce((acc: number, curr: any) => acc + curr.count, 0) || 0;
+  const secureNetworks = (securityAnalysis?.data || []).filter((s: any) => 
+    s.security && (s.security.includes('WPA') || s.security.includes('WEP'))
+  ).reduce((acc: number, curr: any) => acc + (Number(curr.count) || 0), 0);
   const strongSignals = signalAnalysis?.data?.find((s: any) => 
     s.signal_range.includes('Good') || s.signal_range.includes('Excellent')
   )?.count || 0;
@@ -60,7 +60,7 @@ export default function Dashboard() {
                   <p className="text-2xl font-bold text-cyan-400" data-testid="metric-networks">
                     {Number(overview.total_networks || 0).toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Network Observations</p>
+                  <p className="text-xs text-muted-foreground">Total Sightings</p>
                 </div>
               </div>
             </CardContent>
@@ -76,7 +76,7 @@ export default function Dashboard() {
                   <p className="text-2xl font-bold text-purple-400" data-testid="metric-locations">
                     {Number(overview.unique_bssids || 0).toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Unique Devices</p>
+                  <p className="text-xs text-muted-foreground">Distinct Networks</p>
                 </div>
               </div>
             </CardContent>
@@ -108,7 +108,7 @@ export default function Dashboard() {
                   <p className="text-2xl font-bold text-yellow-400" data-testid="metric-strong">
                     {Number(overview.unique_ssids || 0).toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Network Names</p>
+                  <p className="text-xs text-muted-foreground">Unique SSIDs</p>
                 </div>
               </div>
             </CardContent>
@@ -128,23 +128,27 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {securityAnalysis?.data?.map((item: any, index: number) => (
-                <div
-                  key={index}
-                  className="text-center p-4 rounded-lg border border-border/30 bg-background/40"
-                  data-testid={`security-${item.security.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
-                >
-                  <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${
-                    item.security.includes('WPA') ? 'bg-green-400' :
-                    item.security.includes('WEP') ? 'bg-yellow-400' :
-                    item.security === 'Open' ? 'bg-red-400' : 'bg-gray-400'
-                  }`}></div>
-                  <p className="text-lg font-bold text-foreground">
-                    {Number(item.count).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{item.security}</p>
-                </div>
-              )) || (
+              {(securityAnalysis?.data || []).map((item: any, index: number) => {
+                const count = Number(item.count) || 0;
+                return (
+                  <div
+                    key={index}
+                    className="text-center p-4 rounded-lg border border-border/30 bg-background/40"
+                    data-testid={`security-${item.security?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'unknown'}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${
+                      item.security?.includes('WPA') ? 'bg-green-400' :
+                      item.security?.includes('WEP') ? 'bg-yellow-400' :
+                      item.security === 'Open' ? 'bg-red-400' : 'bg-gray-400'
+                    }`}></div>
+                    <p className="text-lg font-bold text-foreground">
+                      {count.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{item.security || 'Unknown'}</p>
+                  </div>
+                );
+              })}
+              {(!securityAnalysis?.data || securityAnalysis.data.length === 0) && (
                 <div className="col-span-full text-center py-4">
                   <Skeleton className="h-16 w-full" />
                 </div>
