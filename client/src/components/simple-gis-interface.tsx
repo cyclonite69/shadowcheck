@@ -26,48 +26,70 @@ export function SimpleGISInterface() {
     refetchInterval: 30000,
   });
 
-  // Initialize map
+  // Initialize map with proper timing
   useEffect(() => {
     const token = (config as any)?.data?.mapboxToken;
-    if (!mapContainer.current || map.current || !token) {
-      console.warn('Mapbox token not available:', { token: !!token, container: !!mapContainer.current });
+    
+    if (!token) {
+      console.log('Waiting for Mapbox token...');
+      return;
+    }
+    
+    if (map.current) {
+      console.log('Map already exists');
       return;
     }
 
-    mapboxgl.accessToken = token;
-    console.log('Setting up Mapbox with token');
+    // Use setTimeout to ensure DOM is ready
+    const initMap = () => {
+      if (!mapContainer.current) {
+        console.log('Container not ready, retrying...');
+        setTimeout(initMap, 100);
+        return;
+      }
 
-    try {
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/dark-v11',
-        center: [-83.697, 43.023],
-        zoom: 12,
-        attributionControl: false,
-        preserveDrawingBuffer: true,
-        failIfMajorPerformanceCaveat: false,
-        interactive: true,
-        trackResize: true
-      });
-      console.log('Map instance created successfully with token');
-      
-      // Enhanced event listeners
-      map.current.on('load', () => {
-        console.log('Map loaded successfully');
-        setMapLoaded(true);
+      console.log('Initializing Mapbox...', { 
+        hasToken: !!token, 
+        hasContainer: !!mapContainer.current,
+        containerDims: mapContainer.current ? `${mapContainer.current.offsetWidth}x${mapContainer.current.offsetHeight}` : 'N/A'
       });
       
-      map.current.on('error', (e) => {
-        console.error('Mapbox error:', e);
-      });
-      
-    } catch (error) {
-      console.error('Error creating map:', error);
-      return;
-    }
+      mapboxgl.accessToken = token;
 
+      try {
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: 'mapbox://styles/mapbox/dark-v11',
+          center: [-83.697, 43.023],
+          zoom: 12,
+          attributionControl: false,
+          preserveDrawingBuffer: true,
+          failIfMajorPerformanceCaveat: false,
+          interactive: true,
+          trackResize: true
+        });
+        console.log('Map instance created successfully');
+        
+        // Enhanced event listeners
+        map.current.on('load', () => {
+          console.log('Map loaded successfully');
+          setMapLoaded(true);
+        });
+        
+        map.current.on('error', (e) => {
+          console.error('Mapbox error:', e);
+        });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        
+      } catch (error) {
+        console.error('Error creating map:', error);
+        return;
+      }
+    };
+
+    // Start initialization after a small delay
+    setTimeout(initMap, 50);
 
     return () => {
       if (map.current) {
