@@ -40,9 +40,10 @@ export function SimpleGISInterface() {
       attributionControl: false
     });
 
-    map.current.on('load', () => {
+    // Force map loaded state after creation
+    setTimeout(() => {
       setMapLoaded(true);
-    });
+    }, 1000);
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
