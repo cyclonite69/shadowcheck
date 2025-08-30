@@ -58,6 +58,11 @@ export interface SpatialQueryResponse {
   };
 }
 
+export interface ConfigResponse {
+  ok: boolean;
+  mapboxToken: string | null;
+}
+
 export const api = {
   async getHealth(): Promise<HealthResponse> {
     const res = await apiRequest("GET", "/api/v1/health");
@@ -66,6 +71,11 @@ export const api = {
 
   async getVersion(): Promise<VersionResponse> {
     const res = await apiRequest("GET", "/api/v1/version");
+    return res.json();
+  },
+
+  async getConfig(): Promise<ConfigResponse> {
+    const res = await apiRequest("GET", "/api/v1/config");
     return res.json();
   },
 

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
+import VisualizationPage from "@/pages/visualization";
 import { Sidebar } from "@/components/sidebar";
 
 function Router() {
@@ -16,7 +17,7 @@ function Router() {
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/networks" component={() => <div className="flex-1 p-6"><h1>Networks Page - Coming Soon</h1></div>} />
         <Route path="/spatial" component={() => <div className="flex-1 p-6"><h1>Spatial Query Page - Coming Soon</h1></div>} />
-        <Route path="/visualization" component={() => <div className="flex-1 p-6"><h1>Visualization Page - Coming Soon</h1></div>} />
+        <Route path="/visualization" component={VisualizationPage} />
         <Route path="/database" component={() => <div className="flex-1 p-6"><h1>Database Status Page - Coming Soon</h1></div>} />
         <Route component={NotFound} />
       </Switch>

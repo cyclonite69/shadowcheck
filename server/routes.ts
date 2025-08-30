@@ -34,6 +34,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Config endpoint - provides frontend configuration
+  app.get("/api/v1/config", async (req, res) => {
+    res.json({
+      ok: true,
+      mapboxToken: process.env.MAPBOX_ACCESS_TOKEN || null
+    });
+  });
+
   // System status endpoint
   app.get("/api/v1/status", async (req, res) => {
     try {
@@ -186,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             type: "Feature",
             geometry: {
               type: "Point",
-              coordinates: [parseFloat(network.longitude), parseFloat(network.latitude)]
+              coordinates: [parseFloat(network.longitude || "0"), parseFloat(network.latitude || "0")]
             },
             properties: {
               id: network.id,

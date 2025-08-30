@@ -42,22 +42,22 @@ export class DatabaseStorage implements IStorage {
 
     try {
       // Check for active connections and PostGIS
-      const [connectionResult] = await dbInstance.execute(sql`
+      const connectionResult = await dbInstance.execute(sql`
         SELECT COUNT(*) as active_connections 
         FROM pg_stat_activity 
         WHERE state = 'active'
       `);
       
-      const [postgisResult] = await dbInstance.execute(sql`
+      const postgisResult = await dbInstance.execute(sql`
         SELECT EXISTS(
           SELECT 1 FROM pg_extension WHERE extname = 'postgis'
         ) as postgis_enabled
       `);
 
       return {
-        activeConnections: parseInt(connectionResult.active_connections) || 0,
+        activeConnections: parseInt(connectionResult[0]?.active_connections) || 0,
         maxConnections: 5,
-        postgisEnabled: postgisResult.postgis_enabled || false
+        postgisEnabled: postgisResult[0]?.postgis_enabled || false
       };
     } catch (error) {
       console.error("Error getting connection info:", error);
