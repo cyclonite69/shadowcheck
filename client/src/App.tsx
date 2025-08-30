@@ -21,7 +21,6 @@ function Router() {
         <Route path="/spatial" component={() => <div className="flex-1 p-6"><h1>Spatial Query Page - Coming Soon</h1></div>} />
         <Route path="/visualization" component={VisualizationPage} />
         <Route path="/g63-forensics" component={G63ForensicsPage} />
-        <Route path="/database" component={() => <div className="flex-1 p-6"><h1>Database Status Page - Coming Soon</h1></div>} />
         <Route path="/admin" component={() => <div className="flex-1 p-6"><AdminPanel /></div>} />
         <Route component={NotFound} />
       </Switch>

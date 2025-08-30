@@ -14,18 +14,31 @@ export default function Dashboard() {
     refetchInterval: 30000,
   });
 
-  const { data: g63Locations, isLoading: locationsLoading } = useQuery({
-    queryKey: ['/api/v1/g63/locations'], 
-    queryFn: () => api.getG63Locations(10),
+  const { data: g63Analytics, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['/api/v1/g63/analytics'],
+    queryFn: () => api.getG63Analytics(),
     refetchInterval: 30000,
   });
 
-  // Calculate analytics from G63 data
-  const uniqueSSIDs = new Set(g63Networks?.data?.map(n => n.ssid)).size || 0;
-  const secureNetworks = g63Networks?.data?.filter(n => 
-    n.capabilities.includes('WPA') || n.capabilities.includes('WEP')
-  ).length || 0;
-  const strongSignals = g63Networks?.data?.filter(n => n.bestlevel > -60).length || 0;
+  const { data: securityAnalysis } = useQuery({
+    queryKey: ['/api/v1/g63/security-analysis'],
+    queryFn: () => api.getG63SecurityAnalysis(),
+    refetchInterval: 30000,
+  });
+
+  const { data: signalAnalysis } = useQuery({
+    queryKey: ['/api/v1/g63/signal-strength'],
+    queryFn: () => api.getG63SignalStrengthDistribution(),
+    refetchInterval: 30000,
+  });
+
+  const overview = g63Analytics?.data?.overview || {};
+  const secureNetworks = securityAnalysis?.data?.filter((s: any) => 
+    s.security.includes('WPA') || s.security.includes('WEP')
+  ).reduce((acc: number, curr: any) => acc + curr.count, 0) || 0;
+  const strongSignals = signalAnalysis?.data?.find((s: any) => 
+    s.signal_range.includes('Good') || s.signal_range.includes('Excellent')
+  )?.count || 0;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -45,7 +58,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-cyan-400" data-testid="metric-networks">
-                    {g63Networks?.count || 0}
+                    {Number(overview.total_networks || 0).toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground">Network Observations</p>
                 </div>
@@ -61,9 +74,9 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-purple-400" data-testid="metric-locations">
-                    {g63Locations?.count || 0}
+                    {Number(overview.unique_bssids || 0).toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Location Points</p>
+                  <p className="text-xs text-muted-foreground">Unique Devices</p>
                 </div>
               </div>
             </CardContent>
@@ -93,9 +106,9 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-yellow-400" data-testid="metric-strong">
-                    {strongSignals}
+                    {Number(overview.unique_ssids || 0).toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Strong Signals</p>
+                  <p className="text-xs text-muted-foreground">Network Names</p>
                 </div>
               </div>
             </CardContent>
@@ -112,7 +125,7 @@ export default function Dashboard() {
                   G63 Forensics Data
                 </CardTitle>
                 <CardDescription>
-                  Browse {g63Networks?.count || 0} network observations and {g63Locations?.count || 0} location points from real SIGINT operations
+                  Browse {Number(overview.total_networks || 0).toLocaleString()} network observations from real SIGINT operations
                 </CardDescription>
               </CardHeader>
             </Card>

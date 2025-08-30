@@ -1,5 +1,5 @@
 import { users, networks, cells, g63Networks, g63Locations, type User, type InsertUser, type Network, type InsertNetwork, type G63Network, type G63Location } from "@shared/schema";
-import { eq, sql, and, lt, gte } from "drizzle-orm";
+import { eq, sql, and, lt, lte, gte } from "drizzle-orm";
 
 let db: any = null;
 
@@ -60,16 +60,23 @@ export class DatabaseStorage implements IStorage {
         WHERE state = 'active'
       `);
       
-      const postgisResult = await dbInstance.execute(sql`
-        SELECT EXISTS(
-          SELECT 1 FROM pg_extension WHERE extname = 'postgis'
-        ) as postgis_enabled
-      `);
+      let postgisEnabled = false;
+      try {
+        const postgisResult = await dbInstance.execute(sql`
+          SELECT EXISTS(
+            SELECT 1 FROM pg_extension WHERE extname = 'postgis'
+          ) as postgis_enabled
+        `);
+        postgisEnabled = postgisResult[0]?.postgis_enabled || false;
+      } catch (error) {
+        // PostGIS extension might not be available
+        postgisEnabled = false;
+      }
 
       return {
         activeConnections: parseInt(connectionResult[0]?.active_connections) || 0,
         maxConnections: 5,
-        postgisEnabled: postgisResult[0]?.postgis_enabled || false
+        postgisEnabled: postgisEnabled
       };
     } catch (error) {
       console.error("Error getting connection info:", error);

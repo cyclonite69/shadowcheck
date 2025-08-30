@@ -1,15 +1,7 @@
 import { Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
 
 export function Sidebar() {
   const [location] = useLocation();
-  
-  const { data: systemStatus } = useQuery({
-    queryKey: ["/api/v1/status"],
-    queryFn: () => api.getSystemStatus(),
-    refetchInterval: 5000,
-  });
 
   const navItems = [
     { href: "/", icon: "fas fa-tachometer-alt", label: "Dashboard" },
@@ -17,15 +9,7 @@ export function Sidebar() {
     { href: "/spatial", icon: "fas fa-map-marked-alt", label: "Spatial Query" },
     { href: "/visualization", icon: "fas fa-chart-line", label: "Visualization" },
     { href: "/g63-forensics", icon: "fas fa-user-secret", label: "G63 Forensics" },
-    { href: "/database", icon: "fas fa-database", label: "Database Status" },
     { href: "/admin", icon: "fas fa-shield-alt", label: "Admin Panel" },
-  ];
-
-  const endpoints = [
-    { path: "GET /api/v1/health", active: true },
-    { path: "GET /api/v1/version", active: true },
-    { path: "GET /api/v1/networks", active: systemStatus?.database.connected || false },
-    { path: "GET /api/v1/within", active: systemStatus?.database.connected || false },
   ];
 
   return (
