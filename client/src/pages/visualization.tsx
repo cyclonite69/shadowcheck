@@ -1,4 +1,4 @@
-import { SvgNetworkMap } from "@/components/svg-network-map";
+import { SimpleGISInterface } from "@/components/simple-gis-interface";
 import { SpatialQueryInterface } from "@/components/spatial-query-interface";
 import { NetworkObservations } from "@/components/network-observations";
 import { EnhancedHeader } from "@/components/enhanced-header";
@@ -22,7 +22,7 @@ export default function VisualizationPage() {
           </TabsList>
 
           <TabsContent value="gis" className="space-y-6">
-            <SvgNetworkMap />
+            <SimpleGISInterface />
           </TabsContent>
 
           <TabsContent value="spatial" className="space-y-6">

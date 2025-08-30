@@ -28,9 +28,14 @@ export function SimpleGISInterface() {
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || map.current || !(config as any)?.data?.mapboxToken) return;
+    const token = (config as any)?.data?.mapboxToken;
+    if (!mapContainer.current || map.current || !token) {
+      console.warn('Mapbox token not available:', { token: !!token, container: !!mapContainer.current });
+      return;
+    }
 
-    mapboxgl.accessToken = (config as any).data.mapboxToken;
+    mapboxgl.accessToken = token;
+    console.log('Setting up Mapbox with token');
 
     try {
       map.current = new mapboxgl.Map({
@@ -40,44 +45,27 @@ export function SimpleGISInterface() {
         zoom: 12,
         attributionControl: false,
         preserveDrawingBuffer: true,
-        failIfMajorPerformanceCaveat: false
+        failIfMajorPerformanceCaveat: false,
+        interactive: true,
+        trackResize: true
       });
-      console.log('Map instance created successfully');
+      console.log('Map instance created successfully with token');
+      
+      // Enhanced event listeners
+      map.current.on('load', () => {
+        console.log('Map loaded successfully');
+        setMapLoaded(true);
+      });
+      
+      map.current.on('error', (e) => {
+        console.error('Mapbox error:', e);
+      });
+      
     } catch (error) {
       console.error('Error creating map:', error);
-      // Fallback to immediate load
-      setTimeout(() => setMapLoaded(true), 500);
       return;
     }
 
-    // Alternative loading detection - check if map is interactive
-    const checkMapReady = () => {
-      if (map.current && map.current.isStyleLoaded && map.current.isStyleLoaded()) {
-        setMapLoaded(true);
-        return true;
-      }
-      return false;
-    };
-
-    // Try multiple loading detection methods
-    map.current.on('load', () => setMapLoaded(true));
-    map.current.on('idle', () => setMapLoaded(true));
-    map.current.on('styledata', () => {
-      if (checkMapReady()) return;
-    });
-    
-    // Polling fallback - check every 500ms if map is ready
-    const loadCheck = setInterval(() => {
-      if (checkMapReady()) {
-        clearInterval(loadCheck);
-      }
-    }, 500);
-
-    // Absolute fallback after 5 seconds
-    setTimeout(() => {
-      setMapLoaded(true);
-      clearInterval(loadCheck);
-    }, 5000);
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
