@@ -7,49 +7,44 @@ export interface BSSIDColor {
 }
 
 /**
- * Converts BSSID to a deterministic color based on MAC address patterns
- * Similar BSSIDs (same OUI, sequential addresses) get similar colors
- * This is for forensic analysis where we want to visually group related devices
+ * Converts BSSID to a deterministic color using fixed hue palette
+ * Similar BSSIDs (same OUI) get similar colors for forensic analysis
  */
 export function bssidToColor(bssid: string): BSSIDColor {
-  if (!bssid || typeof bssid !== 'string') {
-    return { hex: '#6b7280', hsl: { h: 0, s: 0, l: 42 } };
+  // Fixed hue palette (primary/secondary wheel)
+  const BASE_HUES = [0, 60, 120, 180, 240, 270, 300, 330];
+
+  // Simple, stable string hash → non-negative int
+  function stringToHash(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      hash |= 0; // force 32-bit
+    }
+    return Math.abs(hash);
   }
 
-  // Clean and normalize BSSID
-  const cleanBssid = bssid.toLowerCase().replace(/[^a-f0-9]/g, '');
-  
-  if (cleanBssid.length !== 12) {
-    return { hex: '#6b7280', hsl: { h: 0, s: 0, l: 42 } };
+  // Normalize a BSSID/MAC to uppercase hex (no separators)
+  function normalizeMac(mac: string): string {
+    return (mac || "").toUpperCase().replace(/[^0-9A-F]/g, "");
   }
 
-  // Split into OUI (first 6 chars) and device identifier (last 6 chars)
-  const oui = cleanBssid.substring(0, 6);
-  const deviceId = cleanBssid.substring(6, 12);
-
-  // Generate base hue from OUI for manufacturer grouping
-  let ouiHash = 0;
-  for (let i = 0; i < oui.length; i++) {
-    ouiHash = ((ouiHash << 5) - ouiHash + oui.charCodeAt(i)) & 0xffffffff;
+  const cleaned = normalizeMac(bssid);
+  if (cleaned.length < 6) {
+    return { hex: '#999999', hsl: { h: 0, s: 0, l: 60 } }; // too short → gray
   }
-  const baseHue = Math.abs(ouiHash) % 360;
 
-  // Generate hue variation from device ID for individual device distinction
-  let deviceHash = 0;
-  for (let i = 0; i < deviceId.length; i++) {
-    deviceHash = ((deviceHash << 3) - deviceHash + deviceId.charCodeAt(i)) & 0xffffffff;
-  }
-  
-  // Create hue variation within ±30 degrees of base hue for similar devices
-  const hueVariation = (Math.abs(deviceHash) % 60) - 30;
-  const finalHue = (baseHue + hueVariation + 360) % 360;
+  const oui = cleaned.slice(0, 6);                   // vendor/OUI
+  const devicePart = cleaned.slice(6);               // device portion (may be "")
 
-  // Generate saturation and lightness optimized for tactical olive theme
-  const saturation = 45 + (Math.abs(deviceHash) % 30); // 45-75% for tactical colors
-  const lightness = 60 + (Math.abs(ouiHash) % 25); // 60-85% for good contrast on dark olive
+  const hue = BASE_HUES[stringToHash(oui) % BASE_HUES.length];
 
-  const hsl = { h: finalHue, s: saturation, l: lightness };
-  const hex = hslToHex(finalHue, saturation, lightness);
+  // Keep saturation and lightness consistent for good visibility
+  const saturation = 70;
+  const lightness = 65;
+
+  const hsl = { h: hue, s: saturation, l: lightness };
+  const hex = hslToHex(hue, saturation, lightness);
 
   return { hex, hsl };
 }

@@ -20,9 +20,16 @@ export function Sidebar() {
             <i className="fas fa-satellite-dish text-primary-foreground text-lg"></i>
           </div>
           <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-              ShadowCheck
-            </h1>
+            <div className="flex items-center gap-2">
+              <img 
+                src="@assets/file_00000000b84061f781450d9b33ae92f2_1756647850505.png" 
+                alt="ShadowCheck" 
+                className="w-6 h-6 opacity-80"
+              />
+              <h1 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                ShadowCheck
+              </h1>
+            </div>
             <p className="text-xs text-muted-foreground font-mono tracking-wider">
               SIGINT FORENSICS
             </p>
