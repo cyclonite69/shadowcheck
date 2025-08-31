@@ -44,9 +44,9 @@ export function bssidToColor(bssid: string): BSSIDColor {
   const hueVariation = (Math.abs(deviceHash) % 60) - 30;
   const finalHue = (baseHue + hueVariation + 360) % 360;
 
-  // Generate saturation and lightness for good visibility in dark theme
-  const saturation = 65 + (Math.abs(deviceHash) % 25); // 65-90% for vibrant colors
-  const lightness = 55 + (Math.abs(ouiHash) % 20); // 55-75% for good contrast
+  // Generate saturation and lightness optimized for tactical olive theme
+  const saturation = 45 + (Math.abs(deviceHash) % 30); // 45-75% for tactical colors
+  const lightness = 60 + (Math.abs(ouiHash) % 25); // 60-85% for good contrast on dark olive
 
   const hsl = { h: finalHue, s: saturation, l: lightness };
   const hex = hslToHex(finalHue, saturation, lightness);
