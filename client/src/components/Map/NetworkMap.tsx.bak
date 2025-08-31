@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Map, Satellite, RotateCcw } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
+import { wireTooltipNetwork } from '@/components/Map/wireTooltipNetwork';
 
-export function SimpleGISInterface() {
+export default function NetworkMap() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -148,6 +149,11 @@ export function SimpleGISInterface() {
         'circle-opacity': 0.8
       }
     });
+
+    // auto-wired tooltip
+    if (map.current) { 
+      wireTooltipNetwork(map.current, "networks"); 
+    }
 
     // Add popup on click
     map.current.on('click', 'networks', (e) => {
