@@ -1,3 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+FILE="client/src/components/Map/wireTooltipNetwork.tsx"
+
+# 1) Ensure the file exists
+[ -f "$FILE" ] || { echo "✗ $FILE not found"; exit 1; }
+
+# 2) Replace the file in-place with a lock-aware version
+cat > "$FILE" <<'TSX'
 import ReactDOM from "react-dom";
 import OriginalTooltip from "@/components/ref-tooltip/OriginalTooltip";
 import "@/components/ref-tooltip/ref-tooltip.css";
@@ -84,3 +93,6 @@ export function wireTooltipNetwork(map:any, pointLayerId="networks"){
 
   return ()=>{ tooltipLocked=false; hideTooltip(); clearRange(); };
 }
+TSX
+
+echo "✔ Patched $FILE with click-lock + below-point range layers"
