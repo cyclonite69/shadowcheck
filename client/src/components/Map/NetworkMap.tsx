@@ -155,23 +155,6 @@ export default function NetworkMap() {
       wireTooltipNetwork(map.current, "networks"); 
     }
 
-    // Add popup on click
-    map.current.on('click', 'networks', (e) => {
-      const properties = e.features?.[0]?.properties;
-      if (properties) {
-        new mapboxgl.Popup()
-          .setLngLat(e.lngLat)
-          .setHTML(`
-            <div style="padding: 12px;">
-              <h4>${properties.ssid || 'Hidden Network'}</h4>
-              <p><strong>BSSID:</strong> ${properties.bssid}</p>
-              <p><strong>Signal:</strong> ${properties.signal_strength} dBm</p>
-            </div>
-          `)
-          .addTo(map.current!);
-      }
-    });
-
   }, [mapLoaded, visualizationData]);
 
   if (isLoading) {
