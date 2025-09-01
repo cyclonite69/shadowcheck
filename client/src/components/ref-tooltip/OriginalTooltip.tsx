@@ -21,7 +21,7 @@ function toDMS(coord?: number, isLat?: boolean) {
   const min = Math.floor(minFloat);
   const sec = ((minFloat - min) * 60).toFixed(2);
   const hemi = isLat ? (coord >= 0 ? "N" : "S") : (coord >= 0 ? "E" : "W");
-  return \`\${deg}°\${min}′\${sec}″ \${hemi}\`;
+  return `${deg}°${min}′${sec}″ ${hemi}`;
 }
 function ghz(f?: number | string) {
   if (f == null || f === "") return "—";
@@ -29,7 +29,7 @@ function ghz(f?: number | string) {
   if (!isFinite(num)) return String(f);
   // If value looks like MHz (e.g., 2437), convert. If already GHz (e.g., 2.437), keep.
   const val = num > 100 ? (num / 1000) : num;
-  return \`\${val.toFixed(3)} GHz\`;
+  return `${val.toFixed(3)} GHz`;
 }
 function formatDisplayTime(iso?: string) {
   if (!iso) return "";
