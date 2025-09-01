@@ -1,14 +1,18 @@
 import React from "react";
 import "./ref-tooltip.css";
 
-/** Helpers (match your viewer logic) */
 function signalClass(signal?: number) {
-  if (typeof signal !== "number") return "signal-weak";
+  if (typeof signal !== "number" || !isFinite(signal)) return "signal-weak";
   if (signal >= -50) return "signal-strong";
   if (signal >= -70) return "signal-medium";
   return "signal-weak";
 }
-function toFeet(m?: number) { if (typeof m !== "number") return "—"; const ft = m*3.28084; return ft.toFixed(2); }
+function toFeet(m?: number | string) {
+  const n = typeof m === "string" ? Number(m) : m;
+  if (typeof n !== "number" || !isFinite(n)) return "—";
+  const ft = n * 3.28084;
+  return ft.toFixed(2);
+}
 function toDMS(coord?: number, isLat?: boolean) {
   if (typeof coord !== "number" || !isFinite(coord)) return "—";
   const abs = Math.abs(coord);
@@ -16,17 +20,25 @@ function toDMS(coord?: number, isLat?: boolean) {
   const minFloat = (abs - deg) * 60;
   const min = Math.floor(minFloat);
   const sec = ((minFloat - min) * 60).toFixed(2);
-  const hemi = isLat ? (coord >= 0 ? "N":"S") : (coord >= 0 ? "E":"W");
-  return `${deg}°${min}′${sec}″ ${hemi}`;
+  const hemi = isLat ? (coord >= 0 ? "N" : "S") : (coord >= 0 ? "E" : "W");
+  return \`\${deg}°\${min}′\${sec}″ \${hemi}\`;
 }
-function formatDisplayTime(isoString?: string) {
-  if (!isoString) return "";
-  const d = new Date(isoString);
-  if (isNaN(d.getTime())) return String(isoString);
-  return d.toLocaleString();
+function ghz(f?: number | string) {
+  if (f == null || f === "") return "—";
+  const num = Number(f);
+  if (!isFinite(num)) return String(f);
+  // If value looks like MHz (e.g., 2437), convert. If already GHz (e.g., 2.437), keep.
+  const val = num > 100 ? (num / 1000) : num;
+  return \`\${val.toFixed(3)} GHz\`;
+}
+function formatDisplayTime(iso?: string) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return String(iso);
+  // 24-hr, keep date + time like your screenshot
+  return d.toLocaleString(undefined, { hour12: false });
 }
 function WifiIcon({ color = "#22d3ee" }: { color?: string }) {
-  // SVG path derived from your app's wifiIcon()
   return (
     <svg className="protocol-icon" viewBox="0 0 24 24" fill={color} aria-hidden="true">
       <path d="M12 18.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>
@@ -37,25 +49,50 @@ function WifiIcon({ color = "#22d3ee" }: { color?: string }) {
   );
 }
 
-/** The tooltip uses the SAME structure & classnames your viewer built */
 export default function OriginalTooltip(props: any) {
   const p = props || {};
   const ssid = p.ssid || "(hidden)";
-  const mac = p.mac || p.bssid || "—";
-  const freq = p.freq ?? p.frequency ?? p.freq_mhz ?? "—";
-  const enc  = (p.encryptionValue || p.security || "Unknown")?.toString().toUpperCase();
-  const sig  = typeof p.signal === "number" ? p.signal : undefined;
-  const lat  = typeof p.lat === "number" ? p.lat : undefined;
-  const lon  = typeof p.lon === "number" ? p.lon : undefined;
-  const altFeet = toFeet(typeof p.alt === "number" ? p.alt : undefined);
-  const seen = formatDisplayTime(p.time || p.lastupd || p.observed_at || p.last_seen);
-  const colour = (p.colour || p.color) as string | undefined;
+  const mac = p.bssid || p.mac || "—";
+
+  // frequency: prefer p.frequency, else p.freq/_mhz/_ghz; display in GHz
+  const freqRaw = p.frequency ?? p.freq ?? p.freq_mhz ?? p.mhz ?? p.freq_ghz;
+  const freqDisp = ghz(freqRaw);
+
+  // signal: normalize & show dBm
+  const sig = ((): number | undefined => {
+    const v = p.signal ?? p.rssi ?? p.dbm ?? p.db ?? p.level ?? p.sig;
+    const n = Number(v);
+    return isFinite(n) ? n : undefined;
+  })();
+
+  const enc = (p.security ?? p.encryption ?? p.encryptionValue ?? "Unknown").toString().toUpperCase();
+
+  // coords
+  const lat = typeof p.lat === "number" ? p.lat : undefined;
+  const lon = typeof p.lon === "number" ? p.lon : undefined;
+
+  // altitude: prefer meters (p.alt), else feet fields (converted to meters -> feet display)
+  let altMeters: number | undefined;
+  {
+    const m = Number(p.alt ?? p.altitude ?? p.altitude_m ?? p.ele ?? p.elevation);
+    if (isFinite(m)) altMeters = m;
+    else {
+      const ft = Number(p.alt_ft ?? p.altitude_ft ?? p.ele_ft ?? p.elevation_ft ?? p.msl);
+      if (isFinite(ft)) altMeters = ft / 3.28084;
+    }
+  }
+  const altFeetDisp = altMeters != null ? toFeet(altMeters) : "—";
+
+  // Seen (bottom)
+  const seen = formatDisplayTime(p.seen || p.observed_at || p.last_seen || p.lastupd || p.time);
+
+  const color = (p.colour || p.color) as string | undefined;
 
   return (
     <div className="tooltip">
       <div className="ssid">
         <span>{ssid}</span>
-        <WifiIcon color={colour || "#22d3ee"} />
+        <WifiIcon color={color || "#22d3ee"} />
       </div>
 
       <div className="tech-data">
@@ -65,12 +102,12 @@ export default function OriginalTooltip(props: any) {
 
       <div className="tech-data">
         <span className="label">Frequency:</span>
-        <span className="value">{freq}</span>
+        <span className="value">{freqDisp}</span>
       </div>
 
       <div className="tech-data">
         <span className="label">Signal:</span>
-        <span className={`value ${signalClass(sig)}`}>{typeof sig === "number" ? `${sig} dBm` : "—"}</span>
+        <span className={`value ${signalClass(sig)}`}>{sig != null ? `${sig} dBm` : "—"}</span>
       </div>
 
       <div className="tech-data">
@@ -89,7 +126,7 @@ export default function OriginalTooltip(props: any) {
         </div>
         <div className="tech-data">
           <span className="label">Altitude:</span>
-          <span className="value">{altFeet} ft MSL</span>
+          <span className="value">{altFeetDisp} ft MSL</span>
         </div>
       </div>
 
