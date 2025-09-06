@@ -1,71 +1,59 @@
-import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import express from "express";
+import helmet from "helmet";
+import cors from "cors";
+
+import healthRouter from "./routes/health";
+import networksRouter from "./routes/networks";
+import visualizeRouter from "./routes/visualize";
+import visualizeV2Router from "./routes/visualize_v2";
+import visualizeLatestRouter from "./routes/visualize_latest";
+import withinRouter from "./routes/within";
+import analyticsRouter from "./routes/analytics";
+import { pool } from "./db";
 
 const app = express();
+app.use(helmet());
+app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+app.use("/api/v1/health", healthRouter);
+app.use("/api/v1/networks", networksRouter);
+app.use("/api/v1/visualize", visualizeRouter);
+app.use("/api/v1/visualize_v2", visualizeV2Router);
+app.use("/api/v1/visualize_latest", visualizeLatestRouter);
+app.use("/api/v1/within", withinRouter);
+app.use("/api/v1/analytics", analyticsRouter);
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
+const port = process.env.PORT ? Number(process.env.PORT) : 5000;
 
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
-  next();
+const server = app.listen(port, "0.0.0.0", () => {
+  console.log(`ShadowCheck API listening on http://localhost:${port}`);
 });
 
-(async () => {
-  const server = await registerRoutes(app);
-
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
-
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
+// Handle server errors, especially EADDRINUSE
+server.on('error', (err: any) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${port} is already in use. Please stop any other processes using this port and try again.`);
+    process.exit(1);
   } else {
-    serveStatic(app);
+    console.error('Server error:', err);
+    process.exit(1);
   }
+});
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
-})();
+// graceful shutdown
+const shutdown = async (signal: string) => {
+  try {
+    console.log(`\nReceived ${signal}, shutting down...`);
+    server.close(() => console.log("HTTP server closed"));
+    await pool.end();
+    console.log("DB pool closed");
+  } catch (e) {
+    console.error("Shutdown error:", e);
+  } finally {
+    process.exit(0);
+  }
+};
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
