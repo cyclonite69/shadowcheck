@@ -1,3 +1,4 @@
+# Build artifacts
 node_modules
 dist
 .DS_Store
@@ -11,9 +12,11 @@ vite.config.ts.*
 .env.production
 .env.development
 
-# Database
+# Database / Secrets
 *.db
 *.sqlite
+.pgpass
+.pg_service.conf
 
 # Logs
 logs
@@ -26,8 +29,15 @@ pids
 *.seed
 *.pid.lock
 
+# Backups
+README.md.bak
+README.broken.*
+
 # Editor directories and files
 .vscode/
 .idea/
 *.swp
-*.swo
+
+# Replit (optional)
+.replit
+replit.md
