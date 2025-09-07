@@ -74,10 +74,10 @@ export function NetworkObservations() {
               {(error as any)?.message || "Failed to load network observations"}
             </p>
           </div>
-        ) : networks && networks.data.length > 0 ? (
+        ) : networks && networks.data && networks.data.length > 0 ? (
           <div className="space-y-4" data-testid="networks-list">
             {networks.data.map((network) => (
-              <div key={network.id} className="border border-border rounded-md p-4 hover:bg-muted/50 transition-colors">
+              <div key={network.bssid} className="border border-border rounded-md p-4 hover:bg-muted/50 transition-colors">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <h5 className="font-medium">
@@ -92,9 +92,9 @@ export function NetworkObservations() {
                   </span>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
-                  <div>Channel: {network.channel || "N/A"}</div>
+                  <div>Frequency: {network.frequency ? `${network.frequency} MHz` : "N/A"}</div>
                   <div>Signal: {network.signal_strength ? `${network.signal_strength} dBm` : "N/A"}</div>
-                  <div>Encryption: {network.encryption || "Unknown"}</div>
+                  <div>Security: {network.encryption || "Unknown"}</div>
                   <div>
                     Location: {network.latitude && network.longitude 
                       ? `${parseFloat(network.latitude).toFixed(4)}, ${parseFloat(network.longitude).toFixed(4)}`

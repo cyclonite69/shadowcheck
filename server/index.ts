@@ -156,12 +156,16 @@ app.get("/api/v1/g63/networks", async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
-        n.bssid,
+        n.bssid as id,
         n.current_ssid as ssid,
-        n.current_capabilities as capabilities,
+        n.bssid,
         COALESCE(n.current_frequency, 0) as frequency,
-        COALESCE(nls.best_signal_strength, -100) as bestlevel,
-        EXTRACT(epoch FROM n.last_seen_at) * 1000 as lasttime
+        COALESCE(nls.best_signal_strength, -100) as signal_strength,
+        n.current_capabilities as encryption,
+        COALESCE(nls.last_latitude::text, '') as latitude,
+        COALESCE(nls.last_longitude::text, '') as longitude,
+        n.last_seen_at as observed_at,
+        n.created_at
       FROM app.networks n
       LEFT JOIN app.networks_latest_state nls ON nls.id = n.id
       ORDER BY n.last_seen_at DESC NULLS LAST
@@ -169,9 +173,10 @@ app.get("/api/v1/g63/networks", async (req, res) => {
     `, [limit]);
     
     res.json({
-      success: true,
+      ok: true,
       data: result.rows,
-      count: result.rows.length
+      count: result.rows.length,
+      limit: limit
     });
   } catch (err) {
     console.error("[/api/v1/g63/networks] error:", err);
