@@ -123,6 +123,105 @@ app.get("/api/v1/networks", async (req, res) => {
   }
 });
 
+// Add missing API endpoints
+app.get("/api/v1/health", (_req, res) => res.json({ ok: true, service: "shadowcheck-api", version: "1.0.0" }));
+
+app.get("/api/v1/status", async (_req, res) => {
+  try {
+    const result = await pool.query("SELECT 1 as test");
+    const postgisResult = await pool.query("SELECT PostGIS_Version() as version");
+    res.json({
+      ok: true,
+      database: {
+        connected: true,
+        postgisEnabled: !!postgisResult.rows[0]?.version
+      },
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      ok: false,
+      database: { connected: false, postgisEnabled: false },
+      memory: { used: 0, total: 0 },
+      error: String(err)
+    });
+  }
+});
+
+app.get("/api/v1/g63/networks", async (req, res) => {
+  const limit = toInt(req.query.limit, 100);
+  try {
+    const result = await pool.query(`
+      SELECT 
+        n.bssid,
+        n.current_ssid as ssid,
+        n.current_capabilities as capabilities,
+        COALESCE(n.current_frequency, 0) as frequency,
+        COALESCE(nls.best_signal_strength, -100) as bestlevel,
+        EXTRACT(epoch FROM n.last_seen_at) * 1000 as lasttime
+      FROM app.networks n
+      LEFT JOIN app.networks_latest_state nls ON nls.id = n.id
+      ORDER BY n.last_seen_at DESC NULLS LAST
+      LIMIT $1
+    `, [limit]);
+    
+    res.json({
+      success: true,
+      data: result.rows,
+      count: result.rows.length
+    });
+  } catch (err) {
+    console.error("[/api/v1/g63/networks] error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch networks",
+      detail: String(err)
+    });
+  }
+});
+
+app.get("/api/v1/g63/analytics", async (_req, res) => {
+  try {
+    const networksCount = await pool.query("SELECT COUNT(*) as count FROM app.networks");
+    res.json({
+      success: true,
+      data: {
+        overview: {
+          total_networks: parseInt(networksCount.rows[0]?.count || "0"),
+          last_updated: new Date().toISOString()
+        }
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+app.get("/api/v1/g63/security-analysis", async (_req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: []
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+app.get("/api/v1/g63/signal-strength", async (_req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: []
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
 const port = Number(process.env.PORT || 5000);
 
 // Setup Vite development server for frontend and start server
