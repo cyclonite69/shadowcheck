@@ -3,7 +3,16 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Map, Satellite, RotateCcw } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Map, Satellite, RotateCcw, Filter } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import mapboxgl from 'mapbox-gl';
 import { wireTooltipNetwork } from '@/components/Map/wireTooltipNetwork';
 
@@ -11,6 +20,12 @@ export default function NetworkMap() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [radioFilters, setRadioFilters] = useState({
+    wifi: true,
+    ble: true,
+    bluetooth: true,
+    cellular: true
+  });
 
   const { data: config, isLoading: configLoading } = useQuery({
     queryKey: ['/api/v1/config'],
@@ -116,11 +131,17 @@ export default function NetworkMap() {
     };
   }, [(config as any)?.data?.mapboxToken]);
 
-  // Add data to map
+  // Add data to map with filtering
   useEffect(() => {
     if (!map.current || !mapLoaded || !(visualizationData as any)?.data?.features) return;
 
-    const features = (visualizationData as any).data.features;
+    const allFeatures = (visualizationData as any).data.features;
+    
+    // Filter features based on radio type selection
+    const filteredFeatures = allFeatures.filter((feature: any) => {
+      const radioType = feature.properties.radio_type;
+      return radioFilters[radioType as keyof typeof radioFilters];
+    });
 
     // Remove existing source and layer
     if (map.current.getLayer('networks')) {
@@ -130,10 +151,13 @@ export default function NetworkMap() {
       map.current.removeSource('networks');
     }
 
-    // Add source
+    // Add source with filtered data
     map.current.addSource('networks', {
       type: 'geojson',
-      data: (visualizationData as any).data
+      data: {
+        type: 'FeatureCollection',
+        features: filteredFeatures
+      }
     });
 
     // Add layer with radio type coloring and signal strength sizing
@@ -184,7 +208,7 @@ export default function NetworkMap() {
       wireTooltipNetwork(map.current, "networks"); 
     }
 
-  }, [mapLoaded, visualizationData]);
+  }, [mapLoaded, visualizationData, radioFilters]);
 
   if (isLoading) {
     return <Skeleton className="h-96" />;
@@ -205,9 +229,75 @@ export default function NetworkMap() {
       {/* Map */}
       <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-cyan-400 flex items-center gap-2">
-            <Map className="h-5 w-5" />
-            Network Map ({(visualizationData as any)?.data?.features?.length || 0} sightings)
+          <CardTitle className="text-cyan-400 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Map className="h-5 w-5" />
+              Network Map ({(visualizationData as any)?.data?.features?.filter((f: any) => 
+                radioFilters[f.properties.radio_type as keyof typeof radioFilters]
+              ).length || 0} sightings)
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Radio Type Filter */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Filter className="h-4 w-4" />
+                    Radio Types
+                    <Badge variant="secondary" className="ml-1">
+                      {Object.values(radioFilters).filter(Boolean).length}/4
+                    </Badge>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>Filter by Radio Type</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={radioFilters.wifi}
+                    onCheckedChange={(checked) => 
+                      setRadioFilters(prev => ({ ...prev, wifi: checked }))
+                    }
+                  >
+                    <span className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-600"></div>
+                      WiFi
+                    </span>
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={radioFilters.ble}
+                    onCheckedChange={(checked) => 
+                      setRadioFilters(prev => ({ ...prev, ble: checked }))
+                    }
+                  >
+                    <span className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+                      BLE
+                    </span>
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={radioFilters.bluetooth}
+                    onCheckedChange={(checked) => 
+                      setRadioFilters(prev => ({ ...prev, bluetooth: checked }))
+                    }
+                  >
+                    <span className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                      Bluetooth
+                    </span>
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={radioFilters.cellular}
+                    onCheckedChange={(checked) => 
+                      setRadioFilters(prev => ({ ...prev, cellular: checked }))
+                    }
+                  >
+                    <span className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                      Cellular
+                    </span>
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>

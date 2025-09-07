@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Filter } from "lucide-react";
+import { ChevronDown, ChevronRight, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,6 +20,9 @@ import {
 import { formatForensicsTime, formatRelativeTime } from "@/lib/dateUtils";
 import { parseWiFiSecurity, parseNonWiFiSecurity, getSecurityLevelColor, getSecurityLevelIcon } from "@/lib/securityUtils";
 
+type SortField = 'ssid' | 'bssid' | 'frequency' | 'signal_strength' | 'observed_at';
+type SortDirection = 'asc' | 'desc';
+
 export function NetworkObservations() {
   const [isExpanded, setIsExpanded] = useState(true);
   const [activeFilters, setActiveFilters] = useState({
@@ -28,6 +31,8 @@ export function NetworkObservations() {
     bluetooth: true,
     ble: true
   });
+  const [sortField, setSortField] = useState<SortField>('observed_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const { data: systemStatus } = useQuery({
     queryKey: ["/api/v1/status"],
@@ -44,12 +49,65 @@ export function NetworkObservations() {
 
   const isConnected = systemStatus?.database.connected;
 
-  // Filter networks based on radio type
-  const filteredNetworks = networks?.data?.filter(network => {
-    // For now, assume all current networks are WiFi until we have proper radio type detection
-    const radioType = getRadioType(network);
-    return activeFilters[radioType];
-  }) || [];
+  // Filter and sort networks
+  const filteredAndSortedNetworks = (networks?.data || [])
+    .filter(network => {
+      const radioType = getRadioType(network);
+      return activeFilters[radioType];
+    })
+    .sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+      
+      switch (sortField) {
+        case 'ssid':
+          aValue = (a.ssid || '').toLowerCase();
+          bValue = (b.ssid || '').toLowerCase();
+          break;
+        case 'bssid':
+          aValue = a.bssid || '';
+          bValue = b.bssid || '';
+          break;
+        case 'frequency':
+          aValue = a.frequency || 0;
+          bValue = b.frequency || 0;
+          break;
+        case 'signal_strength':
+          aValue = a.signal_strength || -100;
+          bValue = b.signal_strength || -100;
+          break;
+        case 'observed_at':
+          aValue = new Date(a.observed_at || 0).getTime();
+          bValue = new Date(b.observed_at || 0).getTime();
+          break;
+        default:
+          return 0;
+      }
+      
+      if (sortDirection === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+  
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+  
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4 text-muted-foreground" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4 text-primary" />
+      : <ArrowDown className="h-4 w-4 text-primary" />;
+  };
 
   function getRadioType(network: any): 'wifi' | 'cell' | 'bluetooth' | 'ble' {
     // Enhanced classification based on real data patterns
@@ -230,7 +288,50 @@ export function NetworkObservations() {
           </div>
         ) : networks && networks.data && networks.data.length > 0 ? (
           <div className="space-y-4" data-testid="networks-list">
-            {filteredNetworks.map((network) => {
+            {/* Sortable Column Headers */}
+            <div className="grid grid-cols-5 gap-2 px-4 py-2 bg-muted/30 rounded-lg border">
+              <Button
+                variant="ghost" 
+                size="sm" 
+                className="justify-start text-xs font-medium hover:bg-muted"
+                onClick={() => handleSort('ssid')}
+              >
+                Network {getSortIcon('ssid')}
+              </Button>
+              <Button
+                variant="ghost" 
+                size="sm" 
+                className="justify-start text-xs font-medium hover:bg-muted"
+                onClick={() => handleSort('bssid')}
+              >
+                BSSID {getSortIcon('bssid')}
+              </Button>
+              <Button
+                variant="ghost" 
+                size="sm" 
+                className="justify-start text-xs font-medium hover:bg-muted"
+                onClick={() => handleSort('frequency')}
+              >
+                Frequency {getSortIcon('frequency')}
+              </Button>
+              <Button
+                variant="ghost" 
+                size="sm" 
+                className="justify-start text-xs font-medium hover:bg-muted"
+                onClick={() => handleSort('signal_strength')}
+              >
+                Signal {getSortIcon('signal_strength')}
+              </Button>
+              <Button
+                variant="ghost" 
+                size="sm" 
+                className="justify-start text-xs font-medium hover:bg-muted"
+                onClick={() => handleSort('observed_at')}
+              >
+                Last Seen {getSortIcon('observed_at')}
+              </Button>
+            </div>
+            {filteredAndSortedNetworks.map((network) => {
               const radioType = getRadioType(network);
               return (
                 <div key={network.bssid} className="border border-border rounded-md p-4 hover:bg-muted/50 transition-colors">
@@ -294,7 +395,7 @@ export function NetworkObservations() {
               )}
             )}
             <div className="text-center text-sm text-muted-foreground">
-              Showing {filteredNetworks.length} of {networks.data.length} total observations
+              Showing {filteredAndSortedNetworks.length} of {networks.data.length} total observations
               {activeFilterCount < totalFilterCount && (
                 <span className="ml-2 text-primary">
                   (filtered by radio type)
