@@ -69,10 +69,10 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-slate-500/10 rounded-lg">
-                  <i className="fas fa-wifi text-blue-600 text-lg"></i>
+                  <i className="fas fa-wifi text-slate-700 text-lg"></i>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-blue-600" data-testid="metric-wifi-observations">
+                  <p className="text-lg font-bold text-slate-700" data-testid="metric-wifi-observations">
                     {wifiStats.observations.toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground mb-1">WiFi Observations</p>
@@ -88,10 +88,10 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-slate-500/10 rounded-lg">
-                  <i className="fas fa-signal text-green-600 text-lg"></i>
+                  <i className="fas fa-signal text-slate-700 text-lg"></i>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-green-600" data-testid="metric-cellular-observations">
+                  <p className="text-lg font-bold text-slate-700" data-testid="metric-cellular-observations">
                     {cellularStats.observations.toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground mb-1">Cellular Observations</p>
@@ -107,10 +107,10 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-slate-500/10 rounded-lg">
-                  <i className="fab fa-bluetooth text-purple-600 text-lg"></i>
+                  <i className="fab fa-bluetooth text-slate-700 text-lg"></i>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-purple-600" data-testid="metric-bluetooth-observations">
+                  <p className="text-lg font-bold text-slate-700" data-testid="metric-bluetooth-observations">
                     {bluetoothStats.observations.toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground mb-1">Bluetooth Observations</p>
@@ -126,10 +126,10 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-slate-500/10 rounded-lg">
-                  <i className="fab fa-bluetooth-b text-indigo-600 text-lg"></i>
+                  <i className="fab fa-bluetooth-b text-slate-700 text-lg"></i>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-indigo-600" data-testid="metric-ble-observations">
+                  <p className="text-lg font-bold text-slate-700" data-testid="metric-ble-observations">
                     {bleStats.observations.toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground mb-1">BLE Observations</p>
@@ -148,10 +148,10 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-slate-500/10 rounded-lg">
-                  <MapPin className="h-6 w-6 text-slate-600" />
+                  <MapPin className="h-6 w-6 text-slate-700" />
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-slate-600" data-testid="metric-total-observations">
+                  <p className="text-3xl font-bold text-slate-700" data-testid="metric-total-observations">
                     {Number(overview.total_observations || 0).toLocaleString()}
                   </p>
                   <p className="text-sm text-muted-foreground">Total Network Observations</p>
@@ -165,10 +165,10 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-slate-500/10 rounded-lg">
-                  <Wifi className="h-6 w-6 text-amber-600" />
+                  <Wifi className="h-6 w-6 text-slate-700" />
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-amber-600" data-testid="metric-distinct-networks">
+                  <p className="text-3xl font-bold text-slate-700" data-testid="metric-distinct-networks">
                     {Number(overview.distinct_networks || 0).toLocaleString()}
                   </p>
                   <p className="text-sm text-muted-foreground">Distinct Networks</p>
@@ -182,7 +182,7 @@ export default function Dashboard() {
         {/* Security Analysis */}
         <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm mb-8">
           <CardHeader>
-            <CardTitle className="text-orange-600 flex items-center gap-2">
+            <CardTitle className="text-slate-700 flex items-center gap-2">
               <Shield className="h-5 w-5" />
               Network Security Breakdown
             </CardTitle>
@@ -202,9 +202,9 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-3 h-3 rounded-full ${
-                        item.security?.includes('WPA') ? 'bg-green-400' :
-                        item.security?.includes('WEP') ? 'bg-yellow-400' :
-                        item.security === '[ESS]' ? 'bg-red-400' : 'bg-gray-400'
+                        item.security?.includes('WPA') ? 'bg-slate-500' :
+                        item.security?.includes('WEP') ? 'bg-slate-500' :
+                        item.security === '[ESS]' ? 'bg-slate-500' : 'bg-slate-500'
                       }`}></div>
                       <div>
                         <p className="text-sm font-medium text-foreground">
@@ -241,7 +241,7 @@ export default function Dashboard() {
           <Link href="/visualization" className="block">
             <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm hover:border-purple-400/40 transition-colors cursor-pointer">
               <CardHeader>
-                <CardTitle className="text-purple-600 flex items-center gap-2">
+                <CardTitle className="text-slate-700 flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
                   Interactive Visualization
                 </CardTitle>
@@ -255,7 +255,7 @@ export default function Dashboard() {
           <Link href="/admin" className="block">
             <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm hover:border-orange-400/40 transition-colors cursor-pointer">
               <CardHeader>
-                <CardTitle className="text-orange-600 flex items-center gap-2">
+                <CardTitle className="text-slate-700 flex items-center gap-2">
                   <Shield className="h-5 w-5" />
                   System Administration
                 </CardTitle>
@@ -270,7 +270,7 @@ export default function Dashboard() {
         {/* Recent Network Activity */}
         <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-slate-600 flex items-center gap-2">
+            <CardTitle className="text-slate-700 flex items-center gap-2">
               <Activity className="h-5 w-5" />
               Recent SIGINT Activity
             </CardTitle>
@@ -296,7 +296,7 @@ export default function Dashboard() {
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
                       <div>
-                        <p className="font-mono text-sm text-slate-600" data-testid={`activity-ssid-${network.bssid}`}>
+                        <p className="font-mono text-sm text-slate-700" data-testid={`activity-ssid-${network.bssid}`}>
                           {network.ssid || 'Hidden Network'}
                         </p>
                         <p className="text-xs text-muted-foreground">
