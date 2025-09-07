@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Map, Satellite, RotateCcw, Filter } from 'lucide-react';
+import { Map, Satellite, RotateCcw, Filter, MapPin } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -219,9 +219,9 @@ export default function NetworkMap() {
       {/* Header */}
       <Card className="border-blue-500/20 bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-blue-400 flex items-center gap-2">
+          <CardTitle className="text-blue-600 flex items-center gap-2">
             <Satellite className="h-5 w-5" />
-            Simple Network Visualization
+            Simple Observation Visualization
           </CardTitle>
         </CardHeader>
       </Card>
@@ -229,10 +229,10 @@ export default function NetworkMap() {
       {/* Map */}
       <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-cyan-400 flex items-center justify-between">
+          <CardTitle className="text-slate-600 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Map className="h-5 w-5" />
-              Network Map ({(visualizationData as any)?.data?.features?.filter((f: any) => 
+              Observation Map ({(visualizationData as any)?.data?.features?.filter((f: any) => 
                 radioFilters[f.properties.radio_type as keyof typeof radioFilters]
               ).length || 0} sightings)
             </div>
@@ -325,11 +325,11 @@ export default function NetworkMap() {
         <CardContent className="p-4">
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>
-              <p className="text-lg font-bold text-green-400">{Number((analytics as any)?.data?.overview?.unique_ssids) || 0}</p>
-              <p className="text-xs text-muted-foreground">Distinct Networks</p>
+              <p className="text-lg font-bold text-green-600">{Number((analytics as any)?.data?.overview?.unique_ssids) || 0}</p>
+              <p className="text-xs text-muted-foreground">Distinct Observations</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-blue-400">{(visualizationData as any)?.data?.features?.length || 0}</p>
+              <p className="text-lg font-bold text-blue-600">{(visualizationData as any)?.data?.features?.length || 0}</p>
               <p className="text-xs text-muted-foreground">Total Sightings</p>
             </div>
           </div>
