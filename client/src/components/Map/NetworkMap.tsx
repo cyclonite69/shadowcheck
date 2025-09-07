@@ -136,16 +136,45 @@ export default function NetworkMap() {
       data: (visualizationData as any).data
     });
 
-    // Add layer
+    // Add layer with radio type coloring and signal strength sizing
     map.current.addLayer({
       id: 'networks',
       type: 'circle',
       source: 'networks',
       paint: {
-        'circle-radius': 6,
-        'circle-color': '#00ffff',
-        'circle-stroke-width': 1,
-        'circle-stroke-color': '#ffffff',
+        'circle-radius': [
+          'interpolate',
+          ['linear'],
+          ['get', 'signal_strength'],
+          -100, 4,  // Weak signal
+          -80, 6,   // Medium signal
+          -60, 8,   // Strong signal
+          -40, 10   // Very strong signal
+        ],
+        'circle-color': [
+          'case',
+          ['==', ['get', 'radio_type'], 'wifi'], '#00ff88',     // Green for WiFi
+          ['==', ['get', 'radio_type'], 'ble'], '#8844ff',      // Purple for BLE
+          ['==', ['get', 'radio_type'], 'bluetooth'], '#0088ff', // Blue for Bluetooth
+          ['==', ['get', 'radio_type'], 'cellular'], '#ff4444', // Red for Cellular
+          '#888888'  // Gray for unknown
+        ],
+        'circle-stroke-width': [
+          'case',
+          ['==', ['get', 'security_level'], 'high'], 2,    // Thick border for high security
+          ['==', ['get', 'security_level'], 'medium'], 1.5, // Medium border
+          ['==', ['get', 'security_level'], 'low'], 1,     // Thin border for low security
+          ['==', ['get', 'security_level'], 'none'], 3,    // Very thick border for open networks
+          1  // Default
+        ],
+        'circle-stroke-color': [
+          'case',
+          ['==', ['get', 'security_level'], 'high'], '#00ff00',   // Green for high security
+          ['==', ['get', 'security_level'], 'medium'], '#ffff00', // Yellow for medium
+          ['==', ['get', 'security_level'], 'low'], '#ff8800',    // Orange for low
+          ['==', ['get', 'security_level'], 'none'], '#ff0000',   // Red for open
+          '#ffffff'  // White for unknown
+        ],
         'circle-opacity': 0.8
       }
     });

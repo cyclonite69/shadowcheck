@@ -1,4 +1,6 @@
 import React from "react";
+import { formatForensicsTime } from "@/lib/dateUtils";
+import { parseWiFiSecurity, parseNonWiFiSecurity, getSecurityLevelColor, getSecurityLevelIcon } from "@/lib/securityUtils";
 import "./ref-tooltip.css";
 
 function signalClass(signal?: number) {
@@ -31,12 +33,10 @@ function ghz(f?: number | string) {
   const val = num > 100 ? (num / 1000) : num;
   return `${val.toFixed(3)} GHz`;
 }
-function formatDisplayTime(iso?: string) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return String(iso);
-  // 24-hr, keep date + time like your screenshot
-  return d.toLocaleString(undefined, { hour12: false });
+// Enhanced signal strength with precise dBm values
+function formatSignalStrength(sig?: number): string {
+  if (typeof sig !== "number" || !isFinite(sig)) return "—";
+  return `${sig} dBm`;
 }
 function WifiIcon({ color = "#22d3ee" }: { color?: string }) {
   return (
@@ -65,7 +65,12 @@ export default function OriginalTooltip(props: any) {
     return isFinite(n) ? n : undefined;
   })();
 
-  const enc = (p.security ?? p.encryption ?? p.encryptionValue ?? "Unknown").toString().toUpperCase();
+  // Enhanced security parsing with radio type detection
+  const radioType = p.radio_type || 'wifi';
+  const encRaw = p.security ?? p.encryption ?? p.encryptionValue;
+  const secInfo = radioType === 'wifi' 
+    ? parseWiFiSecurity(encRaw)
+    : parseNonWiFiSecurity(encRaw, radioType);
 
   // coords
   const lat = typeof p.lat === "number" ? p.lat : undefined;
@@ -83,8 +88,8 @@ export default function OriginalTooltip(props: any) {
   }
   const altFeetDisp = altMeters != null ? toFeet(altMeters) : "—";
 
-  // Seen (bottom)
-  const seen = formatDisplayTime(p.seen || p.observed_at || p.last_seen || p.lastupd || p.time);
+  // Enhanced timestamp with UTC precision
+  const seen = formatForensicsTime(p.seen || p.observed_at || p.last_seen || p.lastupd || p.time);
 
   const color = (p.colour || p.color) as string | undefined;
 
@@ -107,12 +112,15 @@ export default function OriginalTooltip(props: any) {
 
       <div className="tech-data">
         <span className="label">Signal:</span>
-        <span className={`value ${signalClass(sig)}`}>{sig != null ? `${sig} dBm` : "—"}</span>
+        <span className={`value ${signalClass(sig)}`}>{formatSignalStrength(sig)}</span>
       </div>
 
       <div className="tech-data">
-        <span className="label">Encryption:</span>
-        <span className="value">{enc}</span>
+        <span className="label">Security:</span>
+        <span className={`value ${getSecurityLevelColor(secInfo.level).replace('text-', '')}`}>
+          <i className={`${getSecurityLevelIcon(secInfo.level)} mr-1`}></i>
+          {secInfo.short}
+        </span>
       </div>
 
       <div className="location-block">
