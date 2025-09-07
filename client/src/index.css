@@ -11,32 +11,32 @@
   --card-foreground: hsl(0, 0%, 98%);
   --popover: hsl(220, 14%, 6%);
   --popover-foreground: hsl(0, 0%, 98%);
-  --primary: hsl(210, 100%, 50%);
+  --primary: hsl(210, 40%, 45%);
   --primary-foreground: hsl(0, 0%, 98%);
   --secondary: hsl(220, 14%, 12%);
   --secondary-foreground: hsl(0, 0%, 98%);
   --muted: hsl(220, 14%, 8%);
   --muted-foreground: hsl(220, 9%, 46%);
-  --accent: hsl(262, 83%, 58%);
+  --accent: hsl(220, 20%, 35%);
   --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 72%, 51%);
+  --destructive: hsl(0, 45%, 45%);
   --destructive-foreground: hsl(0, 0%, 98%);
   --border: hsl(220, 14%, 12%);
   --input: hsl(220, 14%, 12%);
-  --ring: hsl(210, 100%, 50%);
-  --chart-1: hsl(210, 100%, 50%);
-  --chart-2: hsl(262, 83%, 58%);
-  --chart-3: hsl(43, 96%, 56%);
-  --chart-4: hsl(151, 83%, 46%);
-  --chart-5: hsl(336, 75%, 51%);
+  --ring: hsl(210, 40%, 45%);
+  --chart-1: hsl(210, 30%, 50%);
+  --chart-2: hsl(220, 25%, 45%);
+  --chart-3: hsl(45, 40%, 50%);
+  --chart-4: hsl(150, 30%, 45%);
+  --chart-5: hsl(340, 35%, 45%);
   --sidebar: hsl(220, 14%, 5%);
   --sidebar-foreground: hsl(0, 0%, 98%);
-  --sidebar-primary: hsl(210, 100%, 50%);
+  --sidebar-primary: hsl(210, 40%, 45%);
   --sidebar-primary-foreground: hsl(0, 0%, 98%);
   --sidebar-accent: hsl(220, 14%, 10%);
-  --sidebar-accent-foreground: hsl(210, 100%, 50%);
+  --sidebar-accent-foreground: hsl(210, 40%, 45%);
   --sidebar-border: hsl(220, 14%, 12%);
-  --sidebar-ring: hsl(210, 100%, 50%);
+  --sidebar-ring: hsl(210, 40%, 45%);
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --radius: 8px;
@@ -59,19 +59,19 @@
   --card-foreground: hsl(0, 0%, 98%);
   --popover: hsl(220, 14%, 6%);
   --popover-foreground: hsl(0, 0%, 98%);
-  --primary: hsl(210, 100%, 50%);
+  --primary: hsl(210, 40%, 45%);
   --primary-foreground: hsl(0, 0%, 98%);
   --secondary: hsl(220, 14%, 12%);
   --secondary-foreground: hsl(0, 0%, 98%);
   --muted: hsl(220, 14%, 8%);
   --muted-foreground: hsl(220, 9%, 46%);
-  --accent: hsl(262, 83%, 58%);
+  --accent: hsl(220, 20%, 35%);
   --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 72%, 51%);
+  --destructive: hsl(0, 45%, 45%);
   --destructive-foreground: hsl(0, 0%, 98%);
   --border: hsl(220, 14%, 12%);
   --input: hsl(220, 14%, 12%);
-  --ring: hsl(210, 100%, 50%);
+  --ring: hsl(210, 40%, 45%);
 }
 
 @layer base {
@@ -94,6 +94,6 @@
 }
 
 .grid-pattern {
-  background-image: radial-gradient(circle at 1px 1px, rgba(13, 110, 253, 0.08) 1px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, rgba(100, 116, 139, 0.04) 1px, transparent 0);
   background-size: 20px 20px;
 }
