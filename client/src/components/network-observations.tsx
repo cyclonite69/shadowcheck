@@ -17,6 +17,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { formatForensicsTime, formatRelativeTime } from "@/lib/dateUtils";
+import { parseWiFiSecurity, parseNonWiFiSecurity, getSecurityLevelColor, getSecurityLevelIcon } from "@/lib/securityUtils";
 
 export function NetworkObservations() {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -245,18 +247,47 @@ export function NetworkObservations() {
                         {network.bssid}
                       </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {network.observed_at ? new Date(network.observed_at).toLocaleString() : "Unknown"}
-                    </span>
+                    <div className="text-right">
+                      <div className="text-xs text-muted-foreground">
+                        {formatForensicsTime(network.observed_at)}
+                      </div>
+                      <div className="text-xs text-muted-foreground/60">
+                        {formatRelativeTime(network.observed_at)}
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
-                    <div>Frequency: {network.frequency ? `${network.frequency} MHz` : "N/A"}</div>
-                    <div>Signal: {network.signal_strength ? `${network.signal_strength} dBm` : "N/A"}</div>
-                    <div>Security: {network.encryption || "Unknown"}</div>
-                    <div>
-                      Location: {network.latitude && network.longitude 
-                        ? `${parseFloat(network.latitude).toFixed(4)}, ${parseFloat(network.longitude).toFixed(4)}`
-                        : "N/A"}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                    <div className="text-muted-foreground">
+                      Frequency: <span className="text-foreground">{network.frequency ? `${network.frequency} MHz` : "N/A"}</span>
+                    </div>
+                    <div className="text-muted-foreground">
+                      Signal: <span className="text-foreground font-mono">
+                        {network.signal_strength !== undefined && network.signal_strength !== null 
+                          ? `${network.signal_strength} dBm` 
+                          : "N/A"}
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground">
+                      Security: {(() => {
+                        const secInfo = radioType === 'wifi' 
+                          ? parseWiFiSecurity(network.encryption)
+                          : parseNonWiFiSecurity(network.encryption, radioType);
+                        return (
+                          <span className="flex items-center gap-1">
+                            <i className={`${getSecurityLevelIcon(secInfo.level)} ${getSecurityLevelColor(secInfo.level)}`}></i>
+                            <span className={`${getSecurityLevelColor(secInfo.level)} font-medium`}>
+                              {secInfo.short}
+                            </span>
+                          </span>
+                        );
+                      })()}
+                    </div>
+                    <div className="text-muted-foreground">
+                      Location: <span className="text-foreground font-mono">
+                        {network.latitude && network.longitude 
+                          ? `${parseFloat(network.latitude).toFixed(6)}, ${parseFloat(network.longitude).toFixed(6)}`
+                          : "N/A"}
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -174,12 +174,32 @@ app.get("/api/v1/g63/networks", async (req, res) => {
         n.current_ssid as ssid,
         n.bssid,
         COALESCE(n.current_frequency, 0) as frequency,
-        COALESCE(nls.best_signal_strength, -100) as signal_strength,
+        -- Ensure dBm values pass through with precision
+        CASE 
+          WHEN nls.best_signal_strength IS NOT NULL THEN nls.best_signal_strength
+          ELSE -100
+        END as signal_strength,
         n.current_capabilities as encryption,
-        COALESCE(nls.last_latitude::text, '') as latitude,
-        COALESCE(nls.last_longitude::text, '') as longitude,
-        n.last_seen_at as observed_at,
-        n.created_at
+        COALESCE(nls.last_latitude::numeric(10,8), null) as latitude,
+        COALESCE(nls.last_longitude::numeric(11,8), null) as longitude,
+        -- UTC timestamp with full precision
+        n.last_seen_at AT TIME ZONE 'UTC' as observed_at,
+        n.created_at AT TIME ZONE 'UTC' as created_at,
+        -- Radio type classification for security parsing
+        CASE 
+          WHEN n.bssid ~ '^[0-9]+_[0-9]+_[0-9]+\$' OR n.current_capabilities LIKE 'LTE;%' THEN 'cellular'
+          WHEN (n.current_capabilities = 'Misc') OR
+               (n.current_capabilities = 'Uncategorized') OR
+               (n.current_capabilities LIKE '%Uncategorized;%') OR
+               (n.current_capabilities LIKE '%Laptop;%') OR
+               (n.current_capabilities LIKE '%Smartphone;%') OR
+               (n.current_capabilities LIKE '%Headphones;%') OR
+               (n.current_capabilities LIKE '%Display/Speaker;%') OR
+               (n.current_capabilities LIKE '%Handsfree;%') OR
+               (n.current_capabilities ~ '.*;[0-9]+\$') OR
+               (n.current_frequency = 0 OR n.current_frequency BETWEEN 1 AND 500) THEN 'ble'
+          ELSE 'wifi'
+        END as radio_type
       FROM app.networks n
       LEFT JOIN app.networks_latest_state nls ON nls.id = n.id
       ORDER BY n.last_seen_at DESC NULLS LAST
@@ -346,6 +366,104 @@ app.get("/api/v1/g63/signal-strength", async (_req, res) => {
     });
   } catch (err) {
     res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+// GeoJSON visualization endpoint for map rendering with enhanced data
+app.get("/api/v1/g63/visualize", async (req, res) => {
+  const limit = Math.min(toInt(req.query.limit, 500), 2000);
+  try {
+    const result = await pool.query(`
+      SELECT 
+        n.bssid as id,
+        n.current_ssid as ssid,
+        n.bssid,
+        COALESCE(n.current_frequency, 0) as frequency,
+        CASE 
+          WHEN nls.best_signal_strength IS NOT NULL THEN nls.best_signal_strength
+          ELSE -100
+        END as signal_strength,
+        n.current_capabilities as encryption,
+        nls.last_latitude as latitude,
+        nls.last_longitude as longitude,
+        -- UTC timestamp with full precision for map tooltips
+        n.last_seen_at AT TIME ZONE 'UTC' as observed_at,
+        -- Radio type and security parsing for map styling
+        CASE 
+          WHEN n.bssid ~ '^[0-9]+_[0-9]+_[0-9]+\$' OR n.current_capabilities LIKE 'LTE;%' THEN 'cellular'
+          WHEN (n.current_capabilities = 'Misc') OR
+               (n.current_capabilities = 'Uncategorized') OR
+               (n.current_capabilities LIKE '%Uncategorized;%') OR
+               (n.current_capabilities LIKE '%Laptop;%') OR
+               (n.current_capabilities LIKE '%Smartphone;%') OR
+               (n.current_capabilities LIKE '%Headphones;%') OR
+               (n.current_capabilities LIKE '%Display/Speaker;%') OR
+               (n.current_capabilities LIKE '%Handsfree;%') OR
+               (n.current_capabilities ~ '.*;[0-9]+\$') OR
+               (n.current_frequency = 0 OR n.current_frequency BETWEEN 1 AND 500) THEN 'ble'
+          ELSE 'wifi'
+        END as radio_type,
+        -- Security level classification for map coloring
+        CASE 
+          WHEN n.current_capabilities ILIKE '%SAE%' OR n.current_capabilities ILIKE '%WPA3%' THEN 'high'
+          WHEN n.current_capabilities ILIKE '%WPA2%' OR n.current_capabilities ILIKE '%RSN%' THEN 'high'
+          WHEN n.current_capabilities ILIKE '%WPA-%' THEN 'medium'
+          WHEN n.current_capabilities ILIKE '%WEP%' THEN 'low'
+          WHEN n.current_capabilities ILIKE '%[ESS]%' AND 
+               NOT (n.current_capabilities ILIKE '%WPA%' OR n.current_capabilities ILIKE '%RSN%') THEN 'none'
+          ELSE 'unknown'
+        END as security_level
+      FROM app.networks n
+      LEFT JOIN app.networks_latest_state nls ON nls.id = n.id
+      WHERE nls.last_latitude IS NOT NULL AND nls.last_longitude IS NOT NULL
+      ORDER BY n.last_seen_at DESC NULLS LAST
+      LIMIT $1
+    `, [limit]);
+    
+    // Format as GeoJSON for Mapbox with enhanced properties
+    const geojson = {
+      type: "FeatureCollection",
+      features: result.rows.map(row => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [parseFloat(row.longitude), parseFloat(row.latitude)]
+        },
+        properties: {
+          id: row.id,
+          ssid: row.ssid || "Hidden Network",
+          bssid: row.bssid,
+          frequency: row.frequency,
+          signal_strength: row.signal_strength,
+          encryption: row.encryption,
+          observed_at: row.observed_at,
+          radio_type: row.radio_type,
+          security_level: row.security_level,
+          // Additional properties for tooltip compatibility
+          uid: row.bssid,
+          signal: row.signal_strength,
+          dbm: row.signal_strength,
+          rssi: row.signal_strength,
+          freq: row.frequency,
+          freq_mhz: row.frequency,
+          encryptionValue: row.encryption,
+          // Security info for tooltip parsing
+          security: row.encryption
+        }
+      }))
+    };
+    
+    res.json({
+      ok: true,
+      data: geojson
+    });
+  } catch (err) {
+    console.error("[/api/v1/g63/visualize] error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get visualization data",
+      detail: String(err)
+    });
   }
 });
 
