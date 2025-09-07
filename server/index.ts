@@ -232,21 +232,52 @@ app.get("/api/v1/g63/analytics", async (_req, res) => {
 // New endpoint for radio type statistics
 app.get("/api/v1/radio-stats", async (_req, res) => {
   try {
-    // Classify based on BSSID format and frequency patterns from real data
-    // Cellular: BSSID format like "310260_42748_5895425" (MCC_MNC_CID) and encryption like "LTE;..."
-    // WiFi: MAC address format like "7e:12:2f:53:e2:37" with frequencies 2400-6000 MHz
-    // Bluetooth/BLE: Would typically be MAC format with specific frequency ranges
+    // Enhanced classification based on real-world patterns:
+    // - Cellular: BSSID format "310260_42748_5895425" (MCC_MNC_CID) or LTE encryption
+    // - WiFi: Standard WiFi frequencies (2400-2500, 5000-6000 MHz) with WiFi-like SSIDs
+    // - Bluetooth: Classic BT devices, often with device names, frequency 2402-2480 MHz
+    // - BLE: Low energy devices, often "Misc" encryption, lower power, specific naming patterns
     
     const radioStats = await pool.query(`
       WITH radio_classification AS (
         SELECT 
           n.bssid,
+          n.current_ssid as ssid,
           n.current_frequency as frequency,
           n.current_capabilities as encryption,
           CASE 
+            -- Cellular towers: MCC_MNC_CID format or LTE encryption
             WHEN n.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$' OR n.current_capabilities LIKE 'LTE;%' THEN 'cellular'
-            WHEN n.current_frequency BETWEEN 2400 AND 6000 AND n.bssid ~ '^[0-9a-fA-F:]+$' THEN 'wifi'
-            ELSE 'wifi'  -- Default to wifi for MAC address format
+            
+            -- Bluetooth Classic: Device names suggesting BT, specific frequency ranges, or BT-like patterns
+            WHEN (n.current_ssid ILIKE '%bluetooth%' OR n.current_ssid ILIKE '%bt%' OR 
+                  n.current_ssid ILIKE '%headphone%' OR n.current_ssid ILIKE '%speaker%' OR
+                  n.current_ssid ILIKE '%mouse%' OR n.current_ssid ILIKE '%keyboard%' OR
+                  n.current_capabilities LIKE '%BT%' OR n.current_capabilities LIKE '%Bluetooth%') THEN 'bluetooth'
+            
+            -- BLE devices: "Misc" encryption, BLE names, or very low/zero frequencies
+            WHEN (n.current_capabilities = 'Misc') OR
+                 (n.current_capabilities LIKE 'Laptop;%') OR
+                 (n.current_ssid ILIKE '%ble%' OR n.current_ssid ILIKE '%fitbit%' OR 
+                  n.current_ssid ILIKE '%tile%' OR n.current_ssid ILIKE '%beacon%' OR
+                  n.current_ssid ILIKE '%echo%' OR n.current_ssid ILIKE '%dot%' OR
+                  n.current_ssid ILIKE '%dell%' OR n.current_ssid ILIKE '%laptop%' OR
+                  n.current_ssid ILIKE '%jlab%' OR n.current_ssid ILIKE '%airpods%') OR
+                 (n.current_frequency = 0 OR n.current_frequency BETWEEN 1 AND 500) THEN 'ble'
+            
+            -- WiFi: Standard WiFi frequencies and patterns
+            WHEN (n.current_frequency BETWEEN 2400 AND 2500 OR n.current_frequency BETWEEN 5000 AND 6000) AND
+                 (n.current_capabilities LIKE '%WPA%' OR n.current_capabilities LIKE '%WEP%' OR 
+                  n.current_capabilities LIKE '%ESS%') THEN 'wifi'
+            
+            -- Default WiFi for MAC addresses with typical WiFi indicators
+            WHEN n.bssid ~ '^[0-9a-fA-F:]+$' AND n.current_capabilities NOT LIKE 'Misc' THEN 'wifi'
+            
+            -- Anything else with very low/zero frequency likely BLE
+            WHEN n.current_frequency <= 500 THEN 'ble'
+            
+            -- Default to wifi for unclassified MAC addresses
+            ELSE 'wifi'
           END as radio_type
         FROM app.networks n
       ),

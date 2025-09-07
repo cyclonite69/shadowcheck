@@ -50,11 +50,35 @@ export function NetworkObservations() {
   }) || [];
 
   function getRadioType(network: any): 'wifi' | 'cell' | 'bluetooth' | 'ble' {
-    // This is a placeholder - you'll need to implement actual radio type detection
-    // based on your data structure
-    if (network.frequency && network.frequency > 2000) return 'wifi';
-    if (network.frequency && network.frequency < 1000) return 'cell';
-    return 'wifi'; // Default to wifi for now
+    // Enhanced classification based on real data patterns
+    const { bssid, ssid, frequency, encryption } = network;
+    
+    // Cellular towers: MCC_MNC_CID format or LTE encryption
+    if (/^\d+_\d+_\d+$/.test(bssid) || encryption?.includes('LTE;')) {
+      return 'cell';
+    }
+    
+    // Bluetooth Classic: Device names suggesting BT
+    if (ssid && (
+      /bluetooth|bt|headphone|speaker|mouse|keyboard/i.test(ssid) ||
+      encryption?.includes('BT')
+    )) {
+      return 'bluetooth';
+    }
+    
+    // BLE devices: "Misc" encryption, device names, or very low frequencies
+    if (
+      (encryption === 'Misc' && frequency < 2500) ||
+      (encryption?.includes('Laptop;')) ||
+      (ssid && /echo|dot|alexa|dell|hp|macbook|fitbit|tile|beacon|ble/i.test(ssid)) ||
+      frequency === 0 || 
+      (frequency > 0 && frequency <= 500)
+    ) {
+      return 'ble';
+    }
+    
+    // Default to WiFi for standard frequencies and encryption
+    return 'wifi';
   }
 
   function getRadioIcon(radioType: string): string {
