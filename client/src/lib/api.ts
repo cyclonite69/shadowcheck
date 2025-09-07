@@ -186,5 +186,10 @@ export const api = {
   async getG63SecurityAnalysis(): Promise<any> {
     const res = await apiRequest("GET", "/api/v1/g63/security-analysis");
     return res.json();
+  },
+
+  async getRadioStats(): Promise<any> {
+    const res = await apiRequest("GET", "/api/v1/radio-stats");
+    return res.json();
   }
 };

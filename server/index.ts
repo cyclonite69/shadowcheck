@@ -190,18 +190,97 @@ app.get("/api/v1/g63/networks", async (req, res) => {
 
 app.get("/api/v1/g63/analytics", async (_req, res) => {
   try {
-    const networksCount = await pool.query("SELECT COUNT(*) as count FROM app.networks");
+    // Get total observations (location records)
+    const totalObservations = await pool.query(`
+      SELECT COUNT(*) as count 
+      FROM app.latest_location_per_bssid 
+      WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+    `);
+    
+    // Get distinct networks
+    const distinctNetworks = await pool.query("SELECT COUNT(DISTINCT bssid) as count FROM app.networks");
+    
     res.json({
       success: true,
       data: {
         overview: {
-          total_networks: parseInt(networksCount.rows[0]?.count || "0"),
+          total_observations: parseInt(totalObservations.rows[0]?.count || "0"),
+          distinct_networks: parseInt(distinctNetworks.rows[0]?.count || "0"),
           last_updated: new Date().toISOString()
         }
       }
     });
   } catch (err) {
     res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+// New endpoint for radio type statistics
+app.get("/api/v1/radio-stats", async (_req, res) => {
+  try {
+    // For now, classify based on frequency since we don't have explicit radio type field
+    // WiFi: 2400-2500 MHz (2.4 GHz) and 5000-6000 MHz (5 GHz)
+    // Cellular: 700-2200 MHz (various bands)
+    // Bluetooth: 2400-2485 MHz (overlaps with WiFi, need other indicators)
+    // For this demo, we'll classify based on frequency and assume all current data is WiFi
+    
+    const radioStats = await pool.query(`
+      WITH radio_classification AS (
+        SELECT 
+          n.bssid,
+          n.current_frequency as frequency,
+          CASE 
+            WHEN n.current_frequency BETWEEN 2400 AND 2500 OR n.current_frequency BETWEEN 5000 AND 6000 THEN 'wifi'
+            WHEN n.current_frequency BETWEEN 700 AND 2200 THEN 'cellular'
+            WHEN n.current_frequency BETWEEN 2400 AND 2485 AND LENGTH(n.current_ssid) = 0 THEN 'bluetooth'
+            ELSE 'wifi'  -- Default to wifi for now
+          END as radio_type
+        FROM app.networks n
+      ),
+      location_counts AS (
+        SELECT 
+          rc.radio_type,
+          COUNT(DISTINCT ll.bssid) as total_observations,
+          COUNT(DISTINCT rc.bssid) as distinct_networks
+        FROM radio_classification rc
+        LEFT JOIN app.latest_location_per_bssid ll ON ll.bssid = rc.bssid
+        WHERE ll.latitude IS NOT NULL AND ll.longitude IS NOT NULL
+        GROUP BY rc.radio_type
+      )
+      SELECT 
+        radio_type,
+        COALESCE(total_observations, 0) as total_observations,
+        COALESCE(distinct_networks, 0) as distinct_networks
+      FROM location_counts
+      
+      UNION ALL
+      
+      -- Add zero counts for radio types not found
+      SELECT 'cellular' as radio_type, 0 as total_observations, 0 as distinct_networks
+      WHERE NOT EXISTS (SELECT 1 FROM location_counts WHERE radio_type = 'cellular')
+      
+      UNION ALL
+      
+      SELECT 'bluetooth' as radio_type, 0 as total_observations, 0 as distinct_networks  
+      WHERE NOT EXISTS (SELECT 1 FROM location_counts WHERE radio_type = 'bluetooth')
+      
+      UNION ALL
+      
+      SELECT 'ble' as radio_type, 0 as total_observations, 0 as distinct_networks
+      WHERE NOT EXISTS (SELECT 1 FROM location_counts WHERE radio_type = 'ble')
+    `);
+    
+    res.json({
+      ok: true,
+      data: radioStats.rows
+    });
+  } catch (err) {
+    console.error("[/api/v1/radio-stats] error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Failed to fetch radio statistics",
+      detail: String(err)
+    });
   }
 });
 

@@ -20,6 +20,12 @@ export default function Dashboard() {
     refetchInterval: 30000,
   });
 
+  const { data: radioStats, isLoading: radioStatsLoading } = useQuery({
+    queryKey: ['/api/v1/radio-stats'],
+    queryFn: () => api.getRadioStats(),
+    refetchInterval: 30000,
+  });
+
   const { data: securityAnalysis } = useQuery({
     queryKey: ['/api/v1/g63/security-analysis'],
     queryFn: () => api.getG63SecurityAnalysis(),
@@ -33,12 +39,21 @@ export default function Dashboard() {
   });
 
   const overview = g63Analytics?.data?.overview || {};
-  const secureNetworks = (securityAnalysis?.data || []).filter((s: any) => 
-    s.security && (s.security.includes('WPA') || s.security.includes('WEP'))
-  ).reduce((acc: number, curr: any) => acc + (Number(curr.network_count) || 0), 0);
-  const strongSignals = signalAnalysis?.data?.find((s: any) => 
-    s.signal_range.includes('Good') || s.signal_range.includes('Excellent')
-  )?.count || 0;
+  const radioData = radioStats?.data || [];
+  
+  // Helper function to get radio stats by type
+  const getRadioStats = (type: string) => {
+    const stats = radioData.find((r: any) => r.radio_type === type);
+    return {
+      observations: stats?.total_observations || 0,
+      networks: stats?.distinct_networks || 0
+    };
+  };
+  
+  const wifiStats = getRadioStats('wifi');
+  const cellularStats = getRadioStats('cellular');
+  const bluetoothStats = getRadioStats('bluetooth');
+  const bleStats = getRadioStats('ble');
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -48,35 +63,22 @@ export default function Dashboard() {
       />
       
       <main className="flex-1 overflow-y-auto p-6 grid-pattern">
-        {/* Forensics Analytics */}
+        {/* Radio Type Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm">
+          <Card className="border-blue-500/20 bg-card/80 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-cyan-500/20 rounded-lg">
-                  <Wifi className="h-5 w-5 text-cyan-400" />
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <i className="fas fa-wifi text-blue-400 text-lg"></i>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-cyan-400" data-testid="metric-networks">
-                    {Number(overview.total_networks || 0).toLocaleString()}
+                  <p className="text-lg font-bold text-blue-400" data-testid="metric-wifi-observations">
+                    {wifiStats.observations.toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Total Sightings</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-purple-500/20 bg-card/80 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-500/20 rounded-lg">
-                  <MapPin className="h-5 w-5 text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-purple-400" data-testid="metric-locations">
-                    {Number(overview.unique_ssids || 0).toLocaleString()}
+                  <p className="text-xs text-muted-foreground mb-1">WiFi Observations</p>
+                  <p className="text-sm text-blue-300">
+                    {wifiStats.networks.toLocaleString()} distinct networks
                   </p>
-                  <p className="text-xs text-muted-foreground">Distinct Networks</p>
                 </div>
               </div>
             </CardContent>
@@ -86,13 +88,74 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-500/20 rounded-lg">
-                  <Shield className="h-5 w-5 text-green-400" />
+                  <i className="fas fa-signal text-green-400 text-lg"></i>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-green-400" data-testid="metric-secure">
-                    {secureNetworks}
+                  <p className="text-lg font-bold text-green-400" data-testid="metric-cellular-observations">
+                    {cellularStats.observations.toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Encrypted Networks</p>
+                  <p className="text-xs text-muted-foreground mb-1">Cellular Observations</p>
+                  <p className="text-sm text-green-300">
+                    {cellularStats.networks.toLocaleString()} distinct towers
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-purple-500/20 bg-card/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                  <i className="fab fa-bluetooth text-purple-400 text-lg"></i>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-purple-400" data-testid="metric-bluetooth-observations">
+                    {bluetoothStats.observations.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-1">Bluetooth Observations</p>
+                  <p className="text-sm text-purple-300">
+                    {bluetoothStats.networks.toLocaleString()} distinct devices
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-indigo-500/20 bg-card/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-500/20 rounded-lg">
+                  <i className="fab fa-bluetooth-b text-indigo-400 text-lg"></i>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-indigo-400" data-testid="metric-ble-observations">
+                    {bleStats.observations.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-1">BLE Observations</p>
+                  <p className="text-sm text-indigo-300">
+                    {bleStats.networks.toLocaleString()} distinct devices
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Total Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-cyan-500/20 rounded-lg">
+                  <MapPin className="h-6 w-6 text-cyan-400" />
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-cyan-400" data-testid="metric-total-observations">
+                    {Number(overview.total_observations || 0).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Total Network Observations</p>
+                  <p className="text-xs text-cyan-300">Location records in database</p>
                 </div>
               </div>
             </CardContent>
@@ -102,13 +165,14 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-yellow-500/20 rounded-lg">
-                  <Zap className="h-5 w-5 text-yellow-400" />
+                  <Wifi className="h-6 w-6 text-yellow-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-yellow-400" data-testid="metric-strong">
-                    {Number(overview.unique_ssids || 0).toLocaleString()}
+                  <p className="text-3xl font-bold text-yellow-400" data-testid="metric-distinct-networks">
+                    {Number(overview.distinct_networks || 0).toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Unique SSIDs</p>
+                  <p className="text-sm text-muted-foreground">Distinct Networks</p>
+                  <p className="text-xs text-yellow-300">Unique radio sources detected</p>
                 </div>
               </div>
             </CardContent>
