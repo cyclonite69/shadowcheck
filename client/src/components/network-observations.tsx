@@ -66,11 +66,18 @@ export function NetworkObservations() {
       return 'bluetooth';
     }
     
-    // BLE devices: "Misc" encryption, device names, or very low frequencies
+    // BLE devices: Enhanced detection with capability patterns
     if (
-      (encryption === 'Misc' && frequency < 2500) ||
+      (encryption === 'Misc') ||
+      (encryption === 'Uncategorized') ||
+      (encryption?.includes('Uncategorized;')) ||
       (encryption?.includes('Laptop;')) ||
-      (ssid && /echo|dot|alexa|dell|hp|macbook|fitbit|tile|beacon|ble/i.test(ssid)) ||
+      (encryption?.includes('Smartphone;')) ||
+      (encryption?.includes('Headphones;')) ||
+      (encryption?.includes('Display/Speaker;')) ||
+      (encryption?.includes('Handsfree;')) ||
+      (encryption && /.*;[0-9]+$/.test(encryption)) ||  // Pattern like "Type;10"
+      (ssid && /echo|dot|alexa|dell|hp|macbook|fitbit|tile|beacon|ble|jlab|airpods|microsoft/i.test(ssid)) ||
       frequency === 0 || 
       (frequency > 0 && frequency <= 500)
     ) {

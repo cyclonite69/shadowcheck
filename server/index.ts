@@ -255,14 +255,22 @@ app.get("/api/v1/radio-stats", async (_req, res) => {
                   n.current_ssid ILIKE '%mouse%' OR n.current_ssid ILIKE '%keyboard%' OR
                   n.current_capabilities LIKE '%BT%' OR n.current_capabilities LIKE '%Bluetooth%') THEN 'bluetooth'
             
-            -- BLE devices: "Misc" encryption, BLE names, or very low/zero frequencies
+            -- BLE devices: Enhanced detection with capability patterns and UUIDs
             WHEN (n.current_capabilities = 'Misc') OR
-                 (n.current_capabilities LIKE 'Laptop;%') OR
+                 (n.current_capabilities = 'Uncategorized') OR
+                 (n.current_capabilities LIKE '%Uncategorized;%') OR
+                 (n.current_capabilities LIKE '%Laptop;%') OR
+                 (n.current_capabilities LIKE '%Smartphone;%') OR
+                 (n.current_capabilities LIKE '%Headphones;%') OR
+                 (n.current_capabilities LIKE '%Display/Speaker;%') OR
+                 (n.current_capabilities LIKE '%Handsfree;%') OR
+                 (n.current_capabilities ~ '.*;[0-9]+$') OR  -- Pattern like "Type;10"
                  (n.current_ssid ILIKE '%ble%' OR n.current_ssid ILIKE '%fitbit%' OR 
                   n.current_ssid ILIKE '%tile%' OR n.current_ssid ILIKE '%beacon%' OR
                   n.current_ssid ILIKE '%echo%' OR n.current_ssid ILIKE '%dot%' OR
                   n.current_ssid ILIKE '%dell%' OR n.current_ssid ILIKE '%laptop%' OR
-                  n.current_ssid ILIKE '%jlab%' OR n.current_ssid ILIKE '%airpods%') OR
+                  n.current_ssid ILIKE '%jlab%' OR n.current_ssid ILIKE '%airpods%' OR
+                  n.current_ssid ILIKE '%microsoft%') OR
                  (n.current_frequency = 0 OR n.current_frequency BETWEEN 1 AND 500) THEN 'ble'
             
             -- WiFi: Standard WiFi frequencies and patterns
