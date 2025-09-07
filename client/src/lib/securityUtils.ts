@@ -236,11 +236,11 @@ function extractFlags(caps: string): string[] {
  */
 export function getSecurityLevelColor(level: SecurityInfo['level']): string {
   switch (level) {
-    case 'high': return 'text-green-400';
-    case 'medium': return 'text-yellow-400';
-    case 'low': return 'text-orange-400';
-    case 'none': return 'text-red-400';
-    default: return 'text-gray-400';
+    case 'high': return 'text-green-600';     // Conservative green
+    case 'medium': return 'text-amber-600';   // Conservative amber/yellow
+    case 'low': return 'text-orange-600';     // Conservative orange
+    case 'none': return 'text-red-600';       // Conservative red
+    default: return 'text-gray-500';          // Conservative gray
   }
 }
 

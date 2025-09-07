@@ -178,10 +178,10 @@ export default function NetworksPage() {
   };
 
   const getSignalStrengthColor = (signal: number) => {
-    if (signal >= -40) return '#00ff00'; // Strong signal - green
-    if (signal >= -60) return '#ffff00'; // Medium signal - yellow  
-    if (signal >= -80) return '#ff8800'; // Weak signal - orange
-    return '#ff0000'; // Very weak signal - red
+    if (signal >= -40) return '#16a34a'; // Strong signal - conservative green
+    if (signal >= -60) return '#ca8a04'; // Medium signal - conservative amber
+    if (signal >= -80) return '#ea580c'; // Weak signal - conservative orange
+    return '#dc2626'; // Very weak signal - conservative red
   };
 
   if (isLoading) {
@@ -200,7 +200,7 @@ export default function NetworksPage() {
       {/* Header */}
       <Card className="border-blue-500/20 bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-blue-400 flex items-center gap-2">
+          <CardTitle className="text-blue-600 flex items-center gap-2">
             <Network className="h-5 w-5" />
             Observed Networks
             <Badge variant="outline" className="ml-auto">
