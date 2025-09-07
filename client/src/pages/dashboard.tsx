@@ -65,10 +65,10 @@ export default function Dashboard() {
       <main className="flex-1 overflow-y-auto p-6 grid-pattern">
         {/* Radio Type Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="border-blue-500/20 bg-card/80 backdrop-blur-sm">
+          <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/20 rounded-lg">
+                <div className="p-2 bg-slate-500/10 rounded-lg">
                   <i className="fas fa-wifi text-blue-600 text-lg"></i>
                 </div>
                 <div>
@@ -76,7 +76,7 @@ export default function Dashboard() {
                     {wifiStats.observations.toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground mb-1">WiFi Observations</p>
-                  <p className="text-sm text-blue-300">
+                  <p className="text-sm text-slate-500">
                     {wifiStats.networks.toLocaleString()} distinct networks
                   </p>
                 </div>
@@ -84,10 +84,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-green-500/20 bg-card/80 backdrop-blur-sm">
+          <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-500/20 rounded-lg">
+                <div className="p-2 bg-slate-500/10 rounded-lg">
                   <i className="fas fa-signal text-green-600 text-lg"></i>
                 </div>
                 <div>
@@ -95,7 +95,7 @@ export default function Dashboard() {
                     {cellularStats.observations.toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground mb-1">Cellular Observations</p>
-                  <p className="text-sm text-green-300">
+                  <p className="text-sm text-slate-500">
                     {cellularStats.networks.toLocaleString()} distinct towers
                   </p>
                 </div>
@@ -103,10 +103,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-purple-500/20 bg-card/80 backdrop-blur-sm">
+          <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-500/20 rounded-lg">
+                <div className="p-2 bg-slate-500/10 rounded-lg">
                   <i className="fab fa-bluetooth text-purple-600 text-lg"></i>
                 </div>
                 <div>
@@ -114,7 +114,7 @@ export default function Dashboard() {
                     {bluetoothStats.observations.toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground mb-1">Bluetooth Observations</p>
-                  <p className="text-sm text-purple-300">
+                  <p className="text-sm text-slate-500">
                     {bluetoothStats.networks.toLocaleString()} distinct devices
                   </p>
                 </div>
@@ -122,10 +122,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-indigo-500/20 bg-card/80 backdrop-blur-sm">
+          <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/20 rounded-lg">
+                <div className="p-2 bg-slate-500/10 rounded-lg">
                   <i className="fab fa-bluetooth-b text-indigo-600 text-lg"></i>
                 </div>
                 <div>
@@ -133,7 +133,7 @@ export default function Dashboard() {
                     {bleStats.observations.toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground mb-1">BLE Observations</p>
-                  <p className="text-sm text-indigo-300">
+                  <p className="text-sm text-slate-500">
                     {bleStats.networks.toLocaleString()} distinct devices
                   </p>
                 </div>
@@ -144,10 +144,10 @@ export default function Dashboard() {
 
         {/* Total Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm">
+          <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-cyan-500/20 rounded-lg">
+                <div className="p-2 bg-slate-500/10 rounded-lg">
                   <MapPin className="h-6 w-6 text-slate-600" />
                 </div>
                 <div>
@@ -155,16 +155,16 @@ export default function Dashboard() {
                     {Number(overview.total_observations || 0).toLocaleString()}
                   </p>
                   <p className="text-sm text-muted-foreground">Total Network Observations</p>
-                  <p className="text-xs text-cyan-300">Location records in database</p>
+                  <p className="text-xs text-slate-500">Location records in database</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-yellow-500/20 bg-card/80 backdrop-blur-sm">
+          <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-yellow-500/20 rounded-lg">
+                <div className="p-2 bg-slate-500/10 rounded-lg">
                   <Wifi className="h-6 w-6 text-amber-600" />
                 </div>
                 <div>
@@ -172,7 +172,7 @@ export default function Dashboard() {
                     {Number(overview.distinct_networks || 0).toLocaleString()}
                   </p>
                   <p className="text-sm text-muted-foreground">Distinct Networks</p>
-                  <p className="text-xs text-yellow-300">Unique radio sources detected</p>
+                  <p className="text-xs text-slate-500">Unique radio sources detected</p>
                 </div>
               </div>
             </CardContent>
@@ -180,7 +180,7 @@ export default function Dashboard() {
         </div>
 
         {/* Security Analysis */}
-        <Card className="border-orange-500/20 bg-card/80 backdrop-blur-sm mb-8">
+        <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm mb-8">
           <CardHeader>
             <CardTitle className="text-orange-600 flex items-center gap-2">
               <Shield className="h-5 w-5" />
@@ -239,7 +239,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
 
           <Link href="/visualization" className="block">
-            <Card className="border-purple-500/20 bg-card/80 backdrop-blur-sm hover:border-purple-400/40 transition-colors cursor-pointer">
+            <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm hover:border-purple-400/40 transition-colors cursor-pointer">
               <CardHeader>
                 <CardTitle className="text-purple-600 flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
@@ -253,7 +253,7 @@ export default function Dashboard() {
           </Link>
 
           <Link href="/admin" className="block">
-            <Card className="border-orange-500/20 bg-card/80 backdrop-blur-sm hover:border-orange-400/40 transition-colors cursor-pointer">
+            <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm hover:border-orange-400/40 transition-colors cursor-pointer">
               <CardHeader>
                 <CardTitle className="text-orange-600 flex items-center gap-2">
                   <Shield className="h-5 w-5" />
@@ -268,7 +268,7 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Network Activity */}
-        <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm">
+        <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-slate-600 flex items-center gap-2">
               <Activity className="h-5 w-5" />
@@ -290,7 +290,7 @@ export default function Dashboard() {
                 {g63Networks.data.slice(0, 5).map((network) => (
                   <div
                     key={network.bssid}
-                    className="flex items-center justify-between p-3 rounded border border-cyan-500/20 bg-background/40"
+                    className="flex items-center justify-between p-3 rounded border border-slate-500/20 bg-background/40"
                     data-testid={`activity-${network.bssid}`}
                   >
                     <div className="flex items-center gap-3">

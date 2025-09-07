@@ -283,14 +283,14 @@ export default function NetworksPage() {
       <TooltipProvider>
         <Card className="border-green-500/20 bg-card/80 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-green-400 flex items-center gap-2">
+            <CardTitle className="text-slate-600 flex items-center gap-2">
               <Wifi className="h-5 w-5" />
               Network Directory
               <Badge variant="outline" className="ml-auto">
                 {filteredAndSortedNetworks.length} networks
               </Badge>
               {selectedNetworks.size > 0 && (
-                <Badge variant="default" className="bg-blue-500/20 text-blue-400">
+                <Badge variant="default" className="bg-blue-500/20 text-slate-600">
                   {selectedNetworks.size} selected
                 </Badge>
               )}

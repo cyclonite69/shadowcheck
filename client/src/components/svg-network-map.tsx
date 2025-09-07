@@ -30,9 +30,9 @@ export function SvgNetworkMap() {
       <div className="space-y-6">
         <Card className="border-yellow-500/20 bg-card/80 backdrop-blur-sm">
           <CardContent className="p-8 text-center">
-            <Satellite className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+            <Satellite className="h-12 w-12 text-slate-500 mx-auto mb-4" />
             <p className="text-white">No network data available for mapping</p>
-            <p className="text-gray-400 text-sm">Data is being fetched...</p>
+            <p className="text-slate-500 text-sm">Data is being fetched...</p>
           </CardContent>
         </Card>
       </div>
@@ -49,9 +49,9 @@ export function SvgNetworkMap() {
       <div className="space-y-6">
         <Card className="border-red-500/20 bg-card/80 backdrop-blur-sm">
           <CardContent className="p-8 text-center">
-            <Map className="h-12 w-12 text-red-400 mx-auto mb-4" />
+            <Map className="h-12 w-12 text-slate-500 mx-auto mb-4" />
             <p className="text-white">Invalid coordinate data</p>
-            <p className="text-gray-400 text-sm">Unable to render map from current data</p>
+            <p className="text-slate-500 text-sm">Unable to render map from current data</p>
           </CardContent>
         </Card>
       </div>
@@ -77,7 +77,7 @@ export function SvgNetworkMap() {
       {/* Header */}
       <Card className="border-blue-500/20 bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-blue-400 flex items-center gap-2">
+          <CardTitle className="text-slate-600 flex items-center gap-2">
             <Satellite className="h-5 w-5" />
             Network Map Visualization
           </CardTitle>
@@ -87,11 +87,11 @@ export function SvgNetworkMap() {
       {/* Interactive SVG Map */}
       <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-cyan-400 flex items-center gap-2">
+          <CardTitle className="text-slate-600 flex items-center gap-2">
             <Map className="h-5 w-5" />
             Network GIS Map ({features.length} networks) 
             {coords.length > 0 && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-slate-500">
                 [{coords.length} valid coordinates]
               </span>
             )}
@@ -185,9 +185,9 @@ export function SvgNetworkMap() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     {selectedNetwork.encryption === 'Open' ? (
-                      <WifiOff className="h-4 w-4 text-red-400" />
+                      <WifiOff className="h-4 w-4 text-slate-500" />
                     ) : (
-                      <Wifi className="h-4 w-4 text-green-400" />
+                      <Wifi className="h-4 w-4 text-slate-500" />
                     )}
                     <span className="text-sm font-semibold text-white">
                       {selectedNetwork.ssid || 'Hidden Network'}
@@ -195,7 +195,7 @@ export function SvgNetworkMap() {
                   </div>
                   <button 
                     onClick={() => setSelectedNetwork(null)}
-                    className="text-gray-400 hover:text-white"
+                    className="text-slate-500 hover:text-white"
                     data-testid="close-popup"
                   >
                     ×
@@ -203,22 +203,22 @@ export function SvgNetworkMap() {
                 </div>
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">BSSID:</span>
-                    <span className="text-cyan-400 font-mono">{selectedNetwork.bssid}</span>
+                    <span className="text-slate-500">BSSID:</span>
+                    <span className="text-slate-600 font-mono">{selectedNetwork.bssid}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Signal:</span>
+                    <span className="text-slate-500">Signal:</span>
                     <span className="text-white">{selectedNetwork.signal_strength} dBm</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Security:</span>
-                    <span className={selectedNetwork.encryption === 'Open' ? 'text-red-400' : 'text-green-400'}>
+                    <span className="text-slate-500">Security:</span>
+                    <span className={selectedNetwork.encryption === 'Open' ? 'text-slate-500' : 'text-slate-500'}>
                       {selectedNetwork.encryption || 'Unknown'}
                     </span>
                   </div>
                   {selectedNetwork.frequency && (
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Frequency:</span>
+                      <span className="text-slate-500">Frequency:</span>
                       <span className="text-white">{selectedNetwork.frequency} MHz</span>
                     </div>
                   )}
@@ -233,18 +233,18 @@ export function SvgNetworkMap() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="border-green-500/20 bg-card/80 backdrop-blur-sm">
           <CardContent className="p-4">
-            <h3 className="text-green-400 font-semibold mb-3">Network Statistics</h3>
+            <h3 className="text-slate-500 font-semibold mb-3">Network Statistics</h3>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-lg font-bold text-green-400">{(networks as any)?.data?.length || 0}</p>
+                <p className="text-lg font-bold text-slate-500">{(networks as any)?.data?.length || 0}</p>
                 <p className="text-xs text-muted-foreground">Total Networks</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-blue-400">{features.length}</p>
+                <p className="text-lg font-bold text-slate-600">{features.length}</p>
                 <p className="text-xs text-muted-foreground">On Map</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-red-400">
+                <p className="text-lg font-bold text-slate-500">
                   {features.filter((f: any) => f.properties?.encryption === 'Open').length}
                 </p>
                 <p className="text-xs text-muted-foreground">Open Networks</p>
@@ -255,22 +255,22 @@ export function SvgNetworkMap() {
 
         <Card className="border-yellow-500/20 bg-card/80 backdrop-blur-sm">
           <CardContent className="p-4">
-            <h3 className="text-yellow-400 font-semibold mb-3">Map Debug Info</h3>
+            <h3 className="text-slate-500 font-semibold mb-3">Map Debug Info</h3>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
-                <span className="text-gray-400">Valid coordinates:</span>
+                <span className="text-slate-500">Valid coordinates:</span>
                 <span className="text-white">{coords.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Lat range:</span>
-                <span className="text-cyan-400">{coords.length > 0 ? `${minLat.toFixed(4)} → ${maxLat.toFixed(4)}` : 'N/A'}</span>
+                <span className="text-slate-500">Lat range:</span>
+                <span className="text-slate-600">{coords.length > 0 ? `${minLat.toFixed(4)} → ${maxLat.toFixed(4)}` : 'N/A'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Lng range:</span>
-                <span className="text-cyan-400">{coords.length > 0 ? `${minLng.toFixed(4)} → ${maxLng.toFixed(4)}` : 'N/A'}</span>
+                <span className="text-slate-500">Lng range:</span>
+                <span className="text-slate-600">{coords.length > 0 ? `${minLng.toFixed(4)} → ${maxLng.toFixed(4)}` : 'N/A'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Selected:</span>
+                <span className="text-slate-500">Selected:</span>
                 <span className="text-white">{selectedNetwork ? selectedNetwork.ssid || 'Hidden' : 'None'}</span>
               </div>
             </div>
