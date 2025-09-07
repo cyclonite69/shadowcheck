@@ -1,10 +1,14 @@
 import express from "express";
 import cors from "cors";
+import { createServer } from "http";
 import pg from "pg";
+import { setupVite, log } from "./vite.js";
 
 const { Pool } = pg;
 
 const app = express();
+const server = createServer(app);
+
 app.use(cors());
 app.use(express.json());
 
@@ -121,6 +125,14 @@ app.get("/api/v1/networks", async (req, res) => {
 });
 
 const port = Number(process.env.PORT || 5000);
-app.listen(port, () => {
-  console.log(`[api] listening on :${port}`);
-});
+
+// Setup Vite development server for frontend and start server
+(async () => {
+  if (process.env.NODE_ENV !== "production") {
+    await setupVite(app, server);
+  }
+
+  server.listen(port, "0.0.0.0", () => {
+    log(`serving on port ${port}`);
+  });
+})();
