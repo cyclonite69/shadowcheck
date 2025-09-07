@@ -224,21 +224,21 @@ app.get("/api/v1/g63/networks", async (req, res) => {
 
 app.get("/api/v1/g63/analytics", async (_req, res) => {
   try {
-    // Get total observations (location records)
-    const totalObservations = await pool.query(`
-      SELECT COUNT(*) as count 
-      FROM app.latest_location_per_bssid 
-      WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+    // Get total sightings from locations table (actual observation records)
+    const totalSightings = await pool.query(`
+      SELECT COUNT(*) as count FROM app.locations
     `);
     
-    // Get distinct networks
-    const distinctNetworks = await pool.query("SELECT COUNT(DISTINCT bssid) as count FROM app.networks");
+    // Get distinct networks from networks table
+    const distinctNetworks = await pool.query(`
+      SELECT COUNT(*) as count FROM app.networks
+    `);
     
     res.json({
       success: true,
       data: {
         overview: {
-          total_observations: parseInt(totalObservations.rows[0]?.count || "0"),
+          total_observations: parseInt(totalSightings.rows[0]?.count || "0"),
           distinct_networks: parseInt(distinctNetworks.rows[0]?.count || "0"),
           last_updated: new Date().toISOString()
         }

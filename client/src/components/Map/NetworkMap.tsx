@@ -153,11 +153,11 @@ export default function NetworkMap() {
         ],
         'circle-color': [
           'case',
-          ['==', ['get', 'radio_type'], 'wifi'], '#00ff88',     // Green for WiFi
-          ['==', ['get', 'radio_type'], 'ble'], '#8844ff',      // Purple for BLE
-          ['==', ['get', 'radio_type'], 'bluetooth'], '#0088ff', // Blue for Bluetooth
-          ['==', ['get', 'radio_type'], 'cellular'], '#ff4444', // Red for Cellular
-          '#888888'  // Gray for unknown
+          ['==', ['get', 'radio_type'], 'wifi'], '#22c55e',     // Muted green for WiFi
+          ['==', ['get', 'radio_type'], 'ble'], '#8b5cf6',      // Muted purple for BLE
+          ['==', ['get', 'radio_type'], 'bluetooth'], '#3b82f6', // Muted blue for Bluetooth
+          ['==', ['get', 'radio_type'], 'cellular'], '#dc2626', // Muted red for Cellular
+          '#6b7280'  // Muted gray for unknown
         ],
         'circle-stroke-width': [
           'case',
@@ -169,11 +169,11 @@ export default function NetworkMap() {
         ],
         'circle-stroke-color': [
           'case',
-          ['==', ['get', 'security_level'], 'high'], '#00ff00',   // Green for high security
-          ['==', ['get', 'security_level'], 'medium'], '#ffff00', // Yellow for medium
-          ['==', ['get', 'security_level'], 'low'], '#ff8800',    // Orange for low
-          ['==', ['get', 'security_level'], 'none'], '#ff0000',   // Red for open
-          '#ffffff'  // White for unknown
+          ['==', ['get', 'security_level'], 'high'], '#16a34a',   // Muted green for high security
+          ['==', ['get', 'security_level'], 'medium'], '#ca8a04', // Muted yellow for medium
+          ['==', ['get', 'security_level'], 'low'], '#ea580c',    // Muted orange for low
+          ['==', ['get', 'security_level'], 'none'], '#dc2626',   // Muted red for open
+          '#9ca3af'  // Muted gray for unknown
         ],
         'circle-opacity': 0.8
       }
