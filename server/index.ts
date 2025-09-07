@@ -24,7 +24,6 @@ const hasBBox = (q: Record<string, any>) =>
 
 // health
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
-app.get("/", (_req, res) => res.json({ ok: true }));
 
 /**
  * GET /api/v1/networks
@@ -130,6 +129,10 @@ const port = Number(process.env.PORT || 5000);
 (async () => {
   if (process.env.NODE_ENV !== "production") {
     await setupVite(app, server);
+  } else {
+    // For production, serve the built frontend
+    const { serveStatic } = await import("./vite.js");
+    serveStatic(app);
   }
 
   server.listen(port, "0.0.0.0", () => {
