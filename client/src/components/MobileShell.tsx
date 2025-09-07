@@ -13,8 +13,7 @@ export function MobileShell({ children }: MobileShellProps) {
   const navItems = [
     { href: "/", icon: "fas fa-tachometer-alt", label: "Dashboard" },
     { href: "/networks", icon: "fas fa-wifi", label: "Observed Networks", highlight: true },
-    { href: "/spatial", icon: "fas fa-map-marked-alt", label: "Spatial Query" },
-    { href: "/visualization", icon: "fas fa-chart-line", label: "Visualization" },
+    { href: "/visualization", icon: "fas fa-chart-line", label: "Network Visualization" },
     { href: "/admin", icon: "fas fa-shield-alt", label: "Admin Panel" },
   ];
 

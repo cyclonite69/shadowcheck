@@ -30,7 +30,6 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/networks" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><NetworksPage /></div>} />
-      <Route path="/spatial" component={() => <div className="flex-1 px-3 md:px-6 py-4"><h1>Spatial Query Page - Coming Soon</h1></div>} />
       <Route path="/visualization" component={VisualizationPage} />
       <Route path="/admin" component={() => <div className="flex-1 px-3 md:px-6 py-4"><AdminPanel /></div>} />
       <Route component={NotFound} />
