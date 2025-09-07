@@ -1,0 +1,20 @@
+// Find this section in server/index.ts and replace the SQL query
+
+// FIND THIS (around line where the raw query is built):
+const sql = `
+  SELECT 
+    n.bssid,
+    n.ssid,
+    n.frequency,
+    n.capabilities,
+    n.lasttime,
+    n.lastlat,
+    n.lastlon,
+    n.service
+  FROM app.network n
+  ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+  ORDER BY n.lasttime DESC NULLS LAST
+  LIMIT $${params.length - 1} OFFSET $${params.length};
+`;
+
+// REPLACE WITH THE FIXED VERSION FROM THE ARTIFACT ABOVE

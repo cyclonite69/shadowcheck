@@ -1,0 +1,5 @@
+-- For index.ts: The raw query should change from:
+-- FROM app.network n
+-- TO:
+-- FROM app.networks n
+-- And adjust column names: ssid -> current_ssid, etc.

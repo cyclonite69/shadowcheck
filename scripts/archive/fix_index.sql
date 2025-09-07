@@ -1,0 +1,9 @@
+-- The query in index.ts should change from:
+-- FROM app.network n
+-- TO: 
+-- FROM app.networks n
+-- AND column names:
+-- n.ssid -> n.current_ssid
+-- n.lasttime -> EXTRACT(epoch FROM n.last_seen_at) * 1000
+-- n.lastlat -> (get from networks_latest_state)
+-- n.lastlon -> (get from networks_latest_state)

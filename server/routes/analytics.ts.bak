@@ -16,7 +16,7 @@ router.get("/", async (req, res) => {
     const countsSql = `
       SELECT
         (SELECT COUNT(*) FROM app.locations) AS location_rows,
-        (SELECT COUNT(*) FROM app.networks)  AS network_rows
+        (SELECT COUNT(*) FROM app.network)  AS network_rows
     `;
     const counts = await query(countsSql);
 

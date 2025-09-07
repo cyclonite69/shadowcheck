@@ -25,7 +25,7 @@ app.get("/", (_req, res) => res.json({ ok: true }));
 /**
  * GET /api/v1/networks
  * - ?distinct_latest=1  -> use app.latest_location_per_bssid (latest per BSSID)
- * - otherwise           -> use app.networks (raw)
+ * - otherwise           -> use app.network (raw)
  * Optional bbox: minLat,maxLat,minLon,maxLon
  * Optional paging: limit, offset
  */
@@ -74,7 +74,7 @@ app.get("/api/v1/networks", async (req, res) => {
       return res.json({ mode: "distinct_latest", count: rows.length, rows });
     }
 
-    // raw path (updated for new normalized schema)
+    // raw path (matches legacy /networks behavior off app.network)
     const params: any[] = [];
     const where: string[] = [];
 
@@ -86,8 +86,8 @@ app.get("/api/v1/networks", async (req, res) => {
         Number(req.query.maxLon)
       );
       where.push(
-        `nls.last_latitude BETWEEN $${params.length - 3} AND $${params.length - 2}
-         AND nls.last_longitude BETWEEN $${params.length - 1} AND $${params.length}`
+        `n.lastlat BETWEEN $${params.length - 3} AND $${params.length - 2}
+         AND n.lastlon BETWEEN $${params.length - 1} AND $${params.length}`
       );
     }
 
@@ -97,17 +97,16 @@ app.get("/api/v1/networks", async (req, res) => {
       SELECT
         n.bssid,
         n.current_ssid,
-        'W' as type,                                               -- Default to WiFi type
+        n.type,
         n.current_frequency,
-        n.current_capabilities,
-        EXTRACT(epoch FROM n.last_seen_at) * 1000 as lasttime,    -- Convert to milliseconds
-        nls.last_latitude as lastlat,                              -- From networks_latest_state
-        nls.last_longitude as lastlon,                             -- From networks_latest_state
-        '' as service                                              -- Empty placeholder
+        n.capabilities,
+        n.lasttime,
+        n.lastlat,
+        n.lastlon,
+        n.service
       FROM app.networks n
-      JOIN app.networks_latest_state nls ON nls.id = n.id         -- Join for location data
       ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
-      ORDER BY n.last_seen_at DESC NULLS LAST                     -- Use new timestamp column
+      ORDER BY n.lasttime DESC NULLS LAST
       LIMIT $${params.length - 1} OFFSET $${params.length};
     `;
     const { rows } = await pool.query(sql, params);
