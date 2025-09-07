@@ -1,5 +1,4 @@
 import { apiRequest } from "./queryClient";
-import { sql } from 'drizzle-orm';
 
 export interface HealthResponse {
   ok: boolean;
