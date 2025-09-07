@@ -169,30 +169,32 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
       <CardContent>
         <div className="space-y-2">
           {/* Table Header */}
-          <div className="grid grid-cols-11 gap-2 p-3 bg-muted/30 rounded-lg border border-border/30 text-xs font-medium">
-            <div className="col-span-1 text-center">Visible</div>
-            <div className="col-span-2">
-              <SortButton field="ssid">Network Name</SortButton>
-            </div>
-            <div className="col-span-2">
-              <SortButton field="bssid">BSSID</SortButton>
-            </div>
-            <div className="col-span-1 text-center">
-              <SortButton field="bestlevel">Signal</SortButton>
-            </div>
-            <div className="col-span-2">
-              <SortButton field="capabilities">Security</SortButton>
-            </div>
-            <div className="col-span-1 text-center">
-              <SortButton field="frequency">Frequency</SortButton>
-            </div>
-            <div className="col-span-2">
-              <SortButton field="lasttime">Last Seen</SortButton>
+          <div className="overflow-x-auto md:overflow-visible">
+            <div className="grid grid-cols-11 gap-2 p-3 bg-muted/30 rounded-lg border border-border/30 text-xs font-medium min-w-[800px] md:min-w-full">
+              <div className="col-span-1 text-center">Visible</div>
+              <div className="col-span-2">
+                <SortButton field="ssid">Network Name</SortButton>
+              </div>
+              <div className="col-span-2">
+                <SortButton field="bssid">BSSID</SortButton>
+              </div>
+              <div className="col-span-1 text-center">
+                <SortButton field="bestlevel">Signal</SortButton>
+              </div>
+              <div className="col-span-2">
+                <SortButton field="capabilities">Security</SortButton>
+              </div>
+              <div className="col-span-1 text-center">
+                <SortButton field="frequency">Frequency</SortButton>
+              </div>
+              <div className="col-span-2">
+                <SortButton field="lasttime">Last Seen</SortButton>
+              </div>
             </div>
           </div>
 
           {/* Table Rows */}
-          <div className="max-h-96 overflow-y-auto space-y-1 bg-background/20 border border-dashed border-yellow-500/50 min-h-[200px]">
+          <div className="h-[60vh] md:h-[80vh] overflow-y-auto overflow-x-auto md:overflow-x-visible space-y-1 bg-background/20 border border-dashed border-yellow-500/50 min-h-[200px]">
             {sortedAndFilteredNetworks.length === 0 ? (
               <div className="p-8 text-center text-red-400 bg-red-500/10 rounded">
                 No networks to display after filtering. Total available: {g63Networks?.data?.length || 0}
@@ -208,7 +210,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
               return (
                 <div
                   key={network.bssid}
-                  className={`grid grid-cols-11 gap-2 p-3 rounded-lg border transition-all duration-200 ${
+                  className={`grid grid-cols-11 gap-2 p-3 rounded-lg border transition-all duration-200 min-w-[800px] md:min-w-full ${
                     isVisible 
                       ? 'border-primary/30 bg-primary/5' 
                       : 'border-border/30 bg-background/60 opacity-70'
@@ -220,7 +222,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
                   <div className="col-span-1 flex justify-center items-center">
                     <Switch
                       checked={isVisible}
-                      onCheckedChange={(checked) => onNetworkToggle(network.bssid, checked)}
+                      onCheckedChange={(checked) => onNetworkToggle?.(network.bssid, checked)}
                       data-testid={`toggle-${network.bssid}`}
                     />
                   </div>

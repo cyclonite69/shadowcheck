@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { MetricsGrid } from "./metrics-grid";
@@ -6,8 +7,11 @@ import { DatabaseStatus } from "./database-status";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 export function AdminPanel() {
+  const [endpointsOpen, setEndpointsOpen] = useState(false);
+  
   const { data: systemStatus } = useQuery({
     queryKey: ["/api/v1/status"],
     queryFn: () => api.getSystemStatus(),
@@ -85,23 +89,29 @@ export function AdminPanel() {
 
           {/* API Endpoints Status */}
           <Card className="border-yellow-500/20 bg-card/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-yellow-400 flex items-center gap-2">
-                <i className="fas fa-plug"></i>
-                API Endpoint Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {endpoints.map((endpoint, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-md bg-background/60 border border-border/30">
-                    <span className="text-sm font-mono text-muted-foreground">{endpoint.path}</span>
-                    <Badge variant={endpoint.active ? "default" : "destructive"} className="text-xs">
-                      {endpoint.active ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+            <CardContent className="p-0">
+              <Accordion type="single" collapsible>
+                <AccordionItem value="api-endpoints">
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                    <div className="text-yellow-400 flex items-center gap-2">
+                      <i className="fas fa-plug"></i>
+                      <span>API Endpoint Status</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {endpoints.map((endpoint, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 rounded-md bg-background/60 border border-border/30">
+                          <span className="text-sm font-mono text-muted-foreground">{endpoint.path}</span>
+                          <Badge variant={endpoint.active ? "default" : "destructive"} className="text-xs">
+                            {endpoint.active ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </CardContent>
           </Card>
         </TabsContent>
