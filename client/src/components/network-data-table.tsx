@@ -95,7 +95,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
     return (
       <Card className="border-blue-500/20 bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-blue-400 flex items-center gap-2">
+          <CardTitle className="text-blue-600 flex items-center gap-2">
             <Wifi className="h-5 w-5" />
             G63 Network Data Table
           </CardTitle>
@@ -129,7 +129,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
   return (
     <Card className="border-blue-500/20 bg-card/80 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-blue-400 flex items-center gap-2">
+        <CardTitle className="text-blue-600 flex items-center gap-2">
           <Wifi className="h-5 w-5" />
           G63 Network Data Table
         </CardTitle>
@@ -196,7 +196,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
           {/* Table Rows */}
           <div className="h-[60vh] md:h-[80vh] overflow-y-auto overflow-x-auto md:overflow-x-visible space-y-1 bg-background/20 border border-dashed border-yellow-500/50 min-h-[200px]">
             {sortedAndFilteredNetworks.length === 0 ? (
-              <div className="p-8 text-center text-red-400 bg-red-500/10 rounded">
+              <div className="p-8 text-center text-red-600 bg-red-500/10 rounded">
                 No networks to display after filtering. Total available: {g63Networks?.data?.length || 0}
               </div>
             ) : (

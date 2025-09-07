@@ -48,7 +48,7 @@ export function G63AnalyticsDashboard() {
       {/* Header */}
       <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-cyan-400 flex items-center gap-2">
+          <CardTitle className="text-slate-600 flex items-center gap-2">
             <Activity className="h-5 w-5" />
             G63 Forensics Analytics
           </CardTitle>
@@ -63,10 +63,10 @@ export function G63AnalyticsDashboard() {
         <Card className="border-green-500/20 bg-card/80 backdrop-blur-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Wifi className="h-4 w-4 text-green-400" />
+              <Wifi className="h-4 w-4 text-green-600" />
               <span className="text-sm font-medium text-muted-foreground">Total Networks</span>
             </div>
-            <p className="text-2xl font-bold text-green-400 mt-1" data-testid="metric-total-networks">
+            <p className="text-2xl font-bold text-green-600 mt-1" data-testid="metric-total-networks">
               {Number(overview.total_networks || 0).toLocaleString()}
             </p>
           </CardContent>
@@ -75,10 +75,10 @@ export function G63AnalyticsDashboard() {
         <Card className="border-blue-500/20 bg-card/80 backdrop-blur-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4 text-blue-400" />
+              <Eye className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-medium text-muted-foreground">Unique BSSIDs</span>
             </div>
-            <p className="text-2xl font-bold text-blue-400 mt-1" data-testid="metric-unique-bssids">
+            <p className="text-2xl font-bold text-blue-600 mt-1" data-testid="metric-unique-bssids">
               {Number(overview.unique_bssids || 0).toLocaleString()}
             </p>
           </CardContent>
@@ -87,10 +87,10 @@ export function G63AnalyticsDashboard() {
         <Card className="border-purple-500/20 bg-card/80 backdrop-blur-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-purple-400" />
+              <TrendingUp className="h-4 w-4 text-purple-600" />
               <span className="text-sm font-medium text-muted-foreground">Unique SSIDs</span>
             </div>
-            <p className="text-2xl font-bold text-purple-400 mt-1" data-testid="metric-unique-ssids">
+            <p className="text-2xl font-bold text-purple-600 mt-1" data-testid="metric-unique-ssids">
               {Number(overview.unique_ssids || 0).toLocaleString()}
             </p>
           </CardContent>
@@ -99,10 +99,10 @@ export function G63AnalyticsDashboard() {
         <Card className="border-orange-500/20 bg-card/80 backdrop-blur-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Signal className="h-4 w-4 text-orange-400" />
+              <Signal className="h-4 w-4 text-orange-600" />
               <span className="text-sm font-medium text-muted-foreground">Avg Signal</span>
             </div>
-            <p className="text-2xl font-bold text-orange-400 mt-1" data-testid="metric-avg-signal">
+            <p className="text-2xl font-bold text-orange-600 mt-1" data-testid="metric-avg-signal">
               {overview.avg_signal_strength ? `${Math.round(overview.avg_signal_strength)} dBm` : 'N/A'}
             </p>
           </CardContent>
@@ -113,7 +113,7 @@ export function G63AnalyticsDashboard() {
         {/* Signal Strength Distribution */}
         <Card className="border-yellow-500/20 bg-card/80 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-yellow-400 flex items-center gap-2">
+            <CardTitle className="text-amber-600 flex items-center gap-2">
               <Signal className="h-5 w-5" />
               Signal Strength Distribution
             </CardTitle>
@@ -153,7 +153,7 @@ export function G63AnalyticsDashboard() {
         {/* Security Analysis */}
         <Card className="border-red-500/20 bg-card/80 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-red-400 flex items-center gap-2">
+            <CardTitle className="text-red-600 flex items-center gap-2">
               <Shield className="h-5 w-5" />
               Security Analysis
             </CardTitle>
@@ -209,7 +209,7 @@ export function G63AnalyticsDashboard() {
       {analytics?.data?.securityBreakdown && analytics.data.securityBreakdown.length > 0 && (
         <Card className="border-indigo-500/20 bg-card/80 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-indigo-400 flex items-center gap-2">
+            <CardTitle className="text-indigo-600 flex items-center gap-2">
               <Shield className="h-5 w-5" />
               Detailed Security Protocol Breakdown
             </CardTitle>

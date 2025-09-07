@@ -85,7 +85,7 @@ export function MobileShell({ children }: MobileShellProps) {
                   location === item.href
                     ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary border border-primary/20 shadow-sm"
                     : item.highlight
-                    ? "hover:bg-gradient-to-r hover:from-cyan-500/10 hover:to-blue-500/10 text-cyan-400 hover:text-cyan-300 border border-cyan-500/20 hover:border-cyan-500/40"
+                    ? "hover:bg-gradient-to-r hover:from-slate-500/10 hover:to-blue-500/10 text-slate-600 hover:text-cyan-300 border border-slate-500/20 hover:border-slate-500/40"
                     : "hover:bg-muted/50 text-muted-foreground hover:text-foreground border border-transparent hover:border-border/50"
                 }`}
                 data-testid={`nav-link-${item.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
@@ -93,12 +93,12 @@ export function MobileShell({ children }: MobileShellProps) {
               >
                 <i className={`${item.icon} w-4 transition-colors ${
                   location === item.href ? "text-primary" : 
-                  item.highlight ? "text-cyan-400 group-hover:text-cyan-300" :
+                  item.highlight ? "text-slate-600 group-hover:text-cyan-300" :
                   "group-hover:text-primary"
                 }`}></i>
                 <span className="text-sm font-medium">{item.label}</span>
                 {item.highlight && location !== item.href && (
-                  <div className="ml-auto px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 text-xs font-medium rounded">
+                  <div className="ml-auto px-1.5 py-0.5 bg-slate-500/20 text-slate-600 text-xs font-medium rounded">
                     NEW
                   </div>
                 )}

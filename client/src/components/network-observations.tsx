@@ -202,7 +202,7 @@ export function NetworkObservations() {
                       setActiveFilters(prev => ({ ...prev, wifi: checked }))
                     }
                   >
-                    <i className="fas fa-wifi mr-2 text-blue-500"></i>
+                    <i className="fas fa-wifi mr-2 text-blue-600"></i>
                     WiFi Networks
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
@@ -211,7 +211,7 @@ export function NetworkObservations() {
                       setActiveFilters(prev => ({ ...prev, cell: checked }))
                     }
                   >
-                    <i className="fas fa-signal mr-2 text-green-500"></i>
+                    <i className="fas fa-signal mr-2 text-green-600"></i>
                     Cellular Towers
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
@@ -220,7 +220,7 @@ export function NetworkObservations() {
                       setActiveFilters(prev => ({ ...prev, bluetooth: checked }))
                     }
                   >
-                    <i className="fab fa-bluetooth mr-2 text-purple-500"></i>
+                    <i className="fab fa-bluetooth mr-2 text-purple-600"></i>
                     Bluetooth
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
@@ -229,7 +229,7 @@ export function NetworkObservations() {
                       setActiveFilters(prev => ({ ...prev, ble: checked }))
                     }
                   >
-                    <i className="fab fa-bluetooth-b mr-2 text-purple-400"></i>
+                    <i className="fab fa-bluetooth-b mr-2 text-purple-600"></i>
                     Bluetooth LE
                   </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
@@ -414,19 +414,19 @@ export function NetworkObservations() {
             </p>
             <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
-                <i className="fas fa-wifi text-blue-500"></i>
+                <i className="fas fa-wifi text-blue-600"></i>
                 <span>WiFi</span>
               </div>
               <div className="flex items-center gap-1">
-                <i className="fas fa-signal text-green-500"></i>
+                <i className="fas fa-signal text-green-600"></i>
                 <span>Cellular</span>
               </div>
               <div className="flex items-center gap-1">
-                <i className="fab fa-bluetooth text-purple-500"></i>
+                <i className="fab fa-bluetooth text-purple-600"></i>
                 <span>Bluetooth</span>
               </div>
               <div className="flex items-center gap-1">
-                <i className="fab fa-bluetooth-b text-purple-400"></i>
+                <i className="fab fa-bluetooth-b text-purple-600"></i>
                 <span>BLE</span>
               </div>
             </div>

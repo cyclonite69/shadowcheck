@@ -20,12 +20,47 @@ export default function NetworkMap() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
   const [radioFilters, setRadioFilters] = useState({
     wifi: true,
     ble: true,
     bluetooth: true,
     cellular: true
   });
+
+  // GPS functionality to center map on user location
+  const handleGpsCenter = () => {
+    if (!map.current) return;
+    
+    setGpsLoading(true);
+    
+    if (!navigator.geolocation) {
+      console.error('Geolocation is not supported by this browser');
+      setGpsLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        map.current?.flyTo({
+          center: [longitude, latitude],
+          zoom: 14,
+          duration: 2000
+        });
+        setGpsLoading(false);
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        setGpsLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      }
+    );
+  };
 
   const { data: config, isLoading: configLoading } = useQuery({
     queryKey: ['/api/v1/config'],
@@ -237,6 +272,22 @@ export default function NetworkMap() {
               ).length || 0} sightings)
             </div>
             <div className="flex items-center gap-2">
+              {/* GPS Button */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleGpsCenter}
+                disabled={gpsLoading || !mapLoaded}
+                className="gap-2"
+              >
+                {gpsLoading ? (
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                ) : (
+                  <MapPin className="h-4 w-4" />
+                )}
+                GPS
+              </Button>
+              
               {/* Radio Type Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

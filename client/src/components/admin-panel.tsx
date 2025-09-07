@@ -32,7 +32,7 @@ export function AdminPanel() {
     <div className="space-y-6">
       <Card className="border-orange-500/20 bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-orange-400 flex items-center gap-2">
+          <CardTitle className="text-orange-600 flex items-center gap-2">
             <i className="fas fa-shield-alt"></i>
             System Administration & Monitoring
           </CardTitle>
@@ -74,7 +74,7 @@ export function AdminPanel() {
             <Card className="border-purple-500/20 bg-card/80 backdrop-blur-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <i className="fas fa-memory text-purple-400"></i>
+                  <i className="fas fa-memory text-purple-600"></i>
                   <span className="font-medium">Memory Usage</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -93,7 +93,7 @@ export function AdminPanel() {
               <Accordion type="single" collapsible>
                 <AccordionItem value="api-endpoints">
                   <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                    <div className="text-yellow-400 flex items-center gap-2">
+                    <div className="text-amber-600 flex items-center gap-2">
                       <i className="fas fa-plug"></i>
                       <span>API Endpoint Status</span>
                     </div>
