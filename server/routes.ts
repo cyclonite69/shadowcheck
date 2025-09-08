@@ -38,7 +38,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/v1/config", async (req, res) => {
     res.json({
       ok: true,
-      mapboxToken: process.env.MAPBOX_ACCESS_TOKEN || null
+      mapboxToken: process.env.MAPBOX_TOKEN || null
     });
   });
 

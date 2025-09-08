@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Map, Satellite, RotateCcw, Filter, MapPin } from 'lucide-react';
+import { Map, Satellite, RotateCcw, Filter, MapPin, Activity } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -123,55 +123,33 @@ export default function NetworkMap() {
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/dark-v11',
           center: [-83.697, 43.023],
-          zoom: 12,
-          attributionControl: false,
-          preserveDrawingBuffer: true,
-          failIfMajorPerformanceCaveat: false,
-          interactive: true,
-          trackResize: true
+          zoom: 12
         });
-        console.log('Map instance created successfully');
-        
-        // Enhanced event listeners
+
         map.current.on('load', () => {
           console.log('Map loaded successfully');
           setMapLoaded(true);
         });
-        
+
         map.current.on('error', (e) => {
           console.error('Mapbox error:', e);
         });
 
-        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-        
       } catch (error) {
-        console.error('Error creating map:', error);
-        return;
+        console.error('Failed to initialize Mapbox:', error);
       }
     };
 
-    // Start initialization after a small delay
-    setTimeout(initMap, 50);
+    initMap();
+  }, [config, configLoading]);
 
-    return () => {
-      if (map.current) {
-        try {
-          map.current.remove();
-        } catch (e) {
-          console.warn('Error removing map:', e);
-        }
-        map.current = null;
-        setMapLoaded(false);
-      }
-    };
-  }, [(config as any)?.data?.mapboxToken]);
-
-  // Add data to map with filtering
+  // Update map data when visualization data or filters change
   useEffect(() => {
-    if (!map.current || !mapLoaded || !(visualizationData as any)?.data?.features) return;
+    if (!mapLoaded || !visualizationData || !map.current) return;
 
-    const allFeatures = (visualizationData as any).data.features;
-    
+    const allFeatures = (visualizationData as any)?.data?.features || [];
+    console.log('Updating map with features:', allFeatures.length);
+
     // Filter features based on radio type selection
     const filteredFeatures = allFeatures.filter((feature: any) => {
       const radioType = feature.properties.radio_type;
@@ -251,16 +229,6 @@ export default function NetworkMap() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Card className="border-blue-500/20 bg-card/80 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="text-blue-600 flex items-center gap-2">
-            <Satellite className="h-5 w-5" />
-            Simple Observation Visualization
-          </CardTitle>
-        </CardHeader>
-      </Card>
-
       {/* Map */}
       <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm">
         <CardHeader>
@@ -371,18 +339,57 @@ export default function NetworkMap() {
         </CardContent>
       </Card>
 
-      {/* Simple stats */}
-      <Card className="border-green-500/20 bg-card/80 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div>
-              <p className="text-lg font-bold text-green-600">{Number((analytics as any)?.data?.overview?.unique_ssids) || 0}</p>
-              <p className="text-xs text-muted-foreground">Distinct Observations</p>
-            </div>
-            <div>
-              <p className="text-lg font-bold text-blue-600">{(visualizationData as any)?.data?.features?.length || 0}</p>
-              <p className="text-xs text-muted-foreground">Total Sightings</p>
-            </div>
+      {/* Individual Observations List */}
+      <Card className="border-slate-500/20 bg-card/80 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-slate-700 flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Individual Observations ({(visualizationData as any)?.data?.features?.length || 0})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {((visualizationData as any)?.data?.features || []).map((feature: any, index: number) => {
+              const props = feature.properties;
+              const coords = feature.geometry?.coordinates;
+              return (
+                <div key={index} className="p-3 border border-border/30 rounded-lg bg-background/40 hover:bg-muted/50 transition-colors">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="font-medium text-foreground">{props.ssid || 'Hidden Network'}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{props.bssid}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Radio Type</p>
+                      <div className="flex items-center gap-1">
+                        <div className={`w-2 h-2 rounded-full ${
+                          props.radio_type === 'wifi' ? 'bg-green-600' :
+                          props.radio_type === 'ble' ? 'bg-purple-600' :
+                          props.radio_type === 'bluetooth' ? 'bg-blue-600' :
+                          props.radio_type === 'cellular' ? 'bg-red-600' : 'bg-slate-500'
+                        }`}></div>
+                        <span className="text-xs font-medium capitalize">{props.radio_type}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Signal: {props.signal_strength}dBm</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Location</p>
+                      <p className="text-xs font-mono text-foreground">
+                        {coords ? `${coords[1]?.toFixed(4)}, ${coords[0]?.toFixed(4)}` : 'N/A'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Security: {props.security_level || 'Unknown'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {((visualizationData as any)?.data?.features || []).length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No observation data available</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
