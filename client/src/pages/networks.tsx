@@ -31,11 +31,14 @@ interface NetworkEntry {
   ssid: string;
   capabilities: string;
   bestlevel: number;
+  level?: number; // RSSI field if available
   frequency: number;
   lastlat?: number;
   lastlon?: number;
   lasttime?: bigint;
   network_count?: number;
+  type?: string; // Radio type field
+  radio_type?: string; // Alternative radio type field
 }
 
 type SortField = 'bssid' | 'ssid' | 'signal_strength' | 'security' | 'frequency' | 'last_seen';
@@ -46,6 +49,7 @@ export default function NetworksPage() {
   const [sortField, setSortField] = useState<SortField>('bssid');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [securityFilter, setSecurityFilter] = useState<string>('all');
+  const [radioTypeFilter, setRadioTypeFilter] = useState<string>('all');
   const [selectedOctet, setSelectedOctet] = useState<number | null>(null);
   const [selectedNetworks, setSelectedNetworks] = useState<Set<string>>(new Set());
 
@@ -74,7 +78,15 @@ export default function NetworksPage() {
         (securityFilter === 'wpa' && network.capabilities?.includes('WPA')) ||
         (securityFilter === 'wep' && network.capabilities?.includes('WEP'));
 
-      return searchMatch && securityMatch;
+      // Radio type filter
+      const radioType = network.radio_type || network.type || 'wifi'; // Default to wifi
+      const radioMatch = radioTypeFilter === 'all' ||
+        (radioTypeFilter === 'wifi' && (radioType === 'W' || radioType === 'wifi' || radioType === 'WiFi')) ||
+        (radioTypeFilter === 'bluetooth' && (radioType === 'BT' || radioType === 'bluetooth' || radioType === 'Bluetooth')) ||
+        (radioTypeFilter === 'ble' && (radioType === 'BLE' || radioType === 'ble')) ||
+        (radioTypeFilter === 'cellular' && (radioType.includes('Cell') || radioType === 'cellular'));
+
+      return searchMatch && securityMatch && radioMatch;
     });
 
     // Sort networks
@@ -91,8 +103,9 @@ export default function NetworksPage() {
           bVal = b.ssid || '';
           break;
         case 'signal_strength':
-          aVal = bestlevelToDbm(a.bestlevel || 0);
-          bVal = bestlevelToDbm(b.bestlevel || 0);
+          // Use RSSI (level) if available, otherwise convert bestlevel
+          aVal = a.level || bestlevelToDbm(a.bestlevel || 0);
+          bVal = b.level || bestlevelToDbm(b.bestlevel || 0);
           break;
         case 'security':
           aVal = a.capabilities || '';
@@ -123,7 +136,7 @@ export default function NetworksPage() {
     });
 
     return filtered;
-  }, [networks, searchTerm, sortField, sortDirection, securityFilter]);
+  }, [networks, searchTerm, sortField, sortDirection, securityFilter, radioTypeFilter]);
 
   // Group by BSSID octet for forensic analysis
   const octetGroups = useMemo(() => {
@@ -206,6 +219,9 @@ export default function NetworksPage() {
             <Badge variant="outline" className="ml-auto">
               {filteredAndSortedNetworks.length} networks
             </Badge>
+            <Badge variant="outline" className="ml-2">
+              {networks.reduce((total, network) => total + (network.network_count || 1), 0)} total sightings
+            </Badge>
           </CardTitle>
         </CardHeader>
       </Card>
@@ -213,7 +229,7 @@ export default function NetworksPage() {
       {/* Filters and Search */}
       <Card className="border-cyan-500/20 bg-card/80 backdrop-blur-sm">
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -238,6 +254,21 @@ export default function NetworksPage() {
                 <SelectItem value="open">Open Networks</SelectItem>
                 <SelectItem value="wpa">WPA/WPA2</SelectItem>
                 <SelectItem value="wep">WEP</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Radio Type Filter */}
+            <Select value={radioTypeFilter} onValueChange={setRadioTypeFilter}>
+              <SelectTrigger data-testid="select-radio-filter">
+                <Signal className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Radio type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Radio Types</SelectItem>
+                <SelectItem value="wifi">WiFi</SelectItem>
+                <SelectItem value="bluetooth">Bluetooth</SelectItem>
+                <SelectItem value="ble">BLE</SelectItem>
+                <SelectItem value="cellular">Cellular</SelectItem>
               </SelectContent>
             </Select>
 
@@ -301,7 +332,7 @@ export default function NetworksPage() {
               {filteredAndSortedNetworks.map((network, index) => {
                 const color = bssidToColor(network.bssid);
                 const securityLevel = getSecurityLevel(network.capabilities);
-                const dbmSignal = bestlevelToDbm(network.bestlevel || 0);
+                const dbmSignal = network.level || bestlevelToDbm(network.bestlevel || 0);
                 const isSelected = selectedNetworks.has(network.bssid);
                 
                 return (
@@ -354,7 +385,7 @@ export default function NetworksPage() {
                         <div className="w-20 text-right">
                           <p 
                             className="text-xs font-medium"
-                            style={{ color: getSignalStrengthColor(network.bestlevel || 0) }}
+                            style={{ color: getSignalStrengthColor(dbmSignal) }}
                           >
                             {dbmSignal} dBm
                           </p>
@@ -396,8 +427,8 @@ export default function NetworksPage() {
                           <div>
                             <span className="text-muted-foreground">Signal:</span>
                             <br />
-                            <span style={{ color: getSignalStrengthColor(network.bestlevel || 0) }}>
-                              {bestlevelToDbm(network.bestlevel || 0)} dBm
+                            <span style={{ color: getSignalStrengthColor(dbmSignal) }}>
+                              {dbmSignal} dBm
                             </span>
                           </div>
                           <div>
