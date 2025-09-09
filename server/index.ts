@@ -114,17 +114,19 @@ app.get("/api/v1/networks", async (req, res) => {
       SELECT
         n.bssid,
         n.current_ssid,
-        'W' as type,                                               -- Default to WiFi type
+        'W' as type,
         n.current_frequency,
         n.current_capabilities,
-        EXTRACT(epoch FROM n.last_seen_at) * 1000 as lasttime,    -- Convert to milliseconds
-        nls.last_latitude as lastlat,                              -- From networks_latest_state
-        nls.last_longitude as lastlon,                             -- From networks_latest_state
-        '' as service                                              -- Empty placeholder
-      FROM app.networks n
-      JOIN app.networks_latest_state nls ON nls.id = n.id         -- Join for location data
+        EXTRACT(epoch FROM no.observed_at) * 1000 as lasttime,
+        l.latitude as lastlat,
+        l.longitude as lastlon,
+        '' as service,
+        COUNT(*) OVER() AS total_count
+      FROM app.network_observations no
+      JOIN app.networks n ON n.id = no.network_id
+      JOIN app.locations l ON l.id = no.location_id
       ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
-      ORDER BY n.last_seen_at DESC NULLS LAST                     -- Use new timestamp column
+      ORDER BY no.observed_at DESC NULLS LAST
       LIMIT $${params.length - 1} OFFSET $${params.length};
     `;
     const { rows } = await pool.query(sql, params);
