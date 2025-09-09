@@ -130,7 +130,17 @@ app.get("/api/v1/networks", async (req, res) => {
       LIMIT $${params.length - 1} OFFSET $${params.length};
     `;
     const { rows } = await pool.query(sql, params);
-    return res.json({ mode: "raw", count: rows.length, rows });
+    const total_count = rows.length ? Number(rows[0].total_count) : 0;
+
+    return res.json({ 
+      mode: "raw", 
+      count: rows.length,
+      total_count,
+      rows: rows.map(row => {
+        const { total_count, ...data } = row;
+        return data;
+      })
+    });
   } catch (err: any) {
     console.error("[/api/v1/networks] error:", err);
     return res
