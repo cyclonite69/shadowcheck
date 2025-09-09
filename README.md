@@ -1,6 +1,6 @@
 # ShadowCheck - SIGINT Forensics Platform
 
-A comprehensive Signal Intelligence (SIGINT) forensics platform designed for wireless network analysis and spatial intelligence operations.
+A comprehensive Signals Intelligence (SIGINT) forensics platform designed for wireless network analysis and spatial intelligence operations.
 
 ## Features
 
