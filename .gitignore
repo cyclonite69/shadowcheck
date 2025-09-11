@@ -38,9 +38,13 @@ README.broken.*
 .idea/
 *.swp
 
-# Replit (optional)
-.replit
-replit.md
+# Replit artifacts
+.replit*
+replit.*
+attached_assets/
+
+# Generated files
+generated-icon.png
 # Large scrape files
 shadowcheck_scrape*
 scrape_shadowcheck*
