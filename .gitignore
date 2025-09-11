@@ -54,3 +54,9 @@ scrape_shadowcheck*
 # Backup files
 *.bak
 *~
+
+# AI Tools
+.claude
+*.log
+
+dist/
