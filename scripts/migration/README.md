@@ -208,12 +208,12 @@ psql -c "ANALYZE app.observation_history; ANALYZE app.network_unified_raw;"
 ## Related Documentation
 
 - **[Main Project README](../../README.md)** - ShadowCheck platform overview and setup
-- **[Database Schema Reference](../../docs/SCHEMA.md)** - Complete table structures and relationships  
+- **[Database Schema Reference](../../docs/schema.md)** - Complete table structures and relationships  
 - **[API Documentation](../../README.md#api-endpoints)** - REST endpoints for accessing migrated data
 
 ## Schema Cross-Reference
 
-The migration scripts create the exact schema documented in `docs/SCHEMA.md`:
+The migration scripts create the exact schema documented in `docs/schema.md`:
 
 | Migration Table | Schema Documentation | Purpose |
 |----------------|---------------------|---------|

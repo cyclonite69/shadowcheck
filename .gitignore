@@ -41,3 +41,12 @@ README.broken.*
 # Replit (optional)
 .replit
 replit.md
+# Large scrape files
+shadowcheck_scrape*
+scrape_shadowcheck*
+*_scrape.json
+*_scrape.md
+
+# Backup files
+*.bak
+*~

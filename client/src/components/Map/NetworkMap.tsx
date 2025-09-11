@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Map, Satellite, RotateCcw, Filter, MapPin, Activity } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Map, Satellite, RotateCcw, Filter, MapPin, Activity, Layers, Zap } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,11 +17,15 @@ import {
 import mapboxgl from 'mapbox-gl';
 import { wireTooltipNetwork } from '@/components/Map/wireTooltipNetwork';
 
+type MapMode = 'standard' | 'vector-tiles';
+
 export default function NetworkMap() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [mapMode, setMapMode] = useState<MapMode>('standard');
+  const [tilesAvailable, setTilesAvailable] = useState(false);
   const [radioFilters, setRadioFilters] = useState({
     wifi: true,
     ble: true,
@@ -143,28 +148,42 @@ export default function NetworkMap() {
     initMap();
   }, [config, configLoading]);
 
-  // Update map data when visualization data or filters change
+  // Check if vector tiles are available
   useEffect(() => {
-    if (!mapLoaded || !visualizationData || !map.current) return;
+    const checkTilesAvailability = async () => {
+      try {
+        const response = await fetch('/tiles/networks.pmtiles', { method: 'HEAD' });
+        setTilesAvailable(response.ok);
+      } catch {
+        setTilesAvailable(false);
+      }
+    };
+    checkTilesAvailability();
+  }, []);
 
-    const allFeatures = (visualizationData as any)?.data?.features || [];
-    console.log('Updating map with features:', allFeatures.length);
-
-    // Filter features based on radio type selection
-    const filteredFeatures = allFeatures.filter((feature: any) => {
-      const radioType = feature.properties.radio_type;
-      return radioFilters[radioType as keyof typeof radioFilters];
+  // Clean up existing layers and sources
+  const cleanupMap = () => {
+    if (!map.current) return;
+    
+    // Remove existing layers
+    ['networks', 'networks-vector'].forEach(layerId => {
+      if (map.current!.getLayer(layerId)) {
+        map.current!.removeLayer(layerId);
+      }
     });
+    
+    // Remove existing sources
+    ['networks', 'networks-vector'].forEach(sourceId => {
+      if (map.current!.getSource(sourceId)) {
+        map.current!.removeSource(sourceId);
+      }
+    });
+  };
 
-    // Remove existing source and layer
-    if (map.current.getLayer('networks')) {
-      map.current.removeLayer('networks');
-    }
-    if (map.current.getSource('networks')) {
-      map.current.removeSource('networks');
-    }
+  // Standard GeoJSON mode
+  const setupStandardMode = (filteredFeatures: any[]) => {
+    if (!map.current) return;
 
-    // Add source with filtered data
     map.current.addSource('networks', {
       type: 'geojson',
       data: {
@@ -173,7 +192,6 @@ export default function NetworkMap() {
       }
     });
 
-    // Add layer with radio type coloring and signal strength sizing
     map.current.addLayer({
       id: 'networks',
       type: 'circle',
@@ -190,38 +208,108 @@ export default function NetworkMap() {
         ],
         'circle-color': [
           'case',
-          ['==', ['get', 'radio_type'], 'wifi'], '#22c55e',     // Muted green for WiFi
-          ['==', ['get', 'radio_type'], 'ble'], '#8b5cf6',      // Muted purple for BLE
-          ['==', ['get', 'radio_type'], 'bluetooth'], '#3b82f6', // Muted blue for Bluetooth
-          ['==', ['get', 'radio_type'], 'cellular'], '#dc2626', // Muted red for Cellular
-          '#6b7280'  // Muted gray for unknown
+          ['==', ['get', 'radio_type'], 'wifi'], '#22c55e',
+          ['==', ['get', 'radio_type'], 'ble'], '#8b5cf6',
+          ['==', ['get', 'radio_type'], 'bluetooth'], '#3b82f6',
+          ['==', ['get', 'radio_type'], 'cellular'], '#dc2626',
+          '#6b7280'
         ],
         'circle-stroke-width': [
           'case',
-          ['==', ['get', 'security_level'], 'high'], 2,    // Thick border for high security
-          ['==', ['get', 'security_level'], 'medium'], 1.5, // Medium border
-          ['==', ['get', 'security_level'], 'low'], 1,     // Thin border for low security
-          ['==', ['get', 'security_level'], 'none'], 3,    // Very thick border for open networks
-          1  // Default
+          ['==', ['get', 'security_level'], 'high'], 2,
+          ['==', ['get', 'security_level'], 'medium'], 1.5,
+          ['==', ['get', 'security_level'], 'low'], 1,
+          ['==', ['get', 'security_level'], 'none'], 3,
+          1
         ],
         'circle-stroke-color': [
           'case',
-          ['==', ['get', 'security_level'], 'high'], '#16a34a',   // Muted green for high security
-          ['==', ['get', 'security_level'], 'medium'], '#ca8a04', // Muted yellow for medium
-          ['==', ['get', 'security_level'], 'low'], '#ea580c',    // Muted orange for low
-          ['==', ['get', 'security_level'], 'none'], '#dc2626',   // Muted red for open
-          '#9ca3af'  // Muted gray for unknown
+          ['==', ['get', 'security_level'], 'high'], '#16a34a',
+          ['==', ['get', 'security_level'], 'medium'], '#ca8a04',
+          ['==', ['get', 'security_level'], 'low'], '#ea580c',
+          ['==', ['get', 'security_level'], 'none'], '#dc2626',
+          '#9ca3af'
         ],
         'circle-opacity': 0.8
       }
     });
 
-    // auto-wired tooltip
-    if (map.current) { 
-      wireTooltipNetwork(map.current, "networks"); 
-    }
+    // Wire tooltip for standard mode
+    wireTooltipNetwork(map.current, "networks");
+  };
 
-  }, [mapLoaded, visualizationData, radioFilters]);
+  // Vector tiles mode (PMTiles)
+  const setupVectorMode = () => {
+    if (!map.current) return;
+
+    // Add PMTiles source
+    map.current.addSource('networks-vector', {
+      type: 'vector',
+      url: '/api/v1/tiles/{z}/{x}/{y}.mvt', // Dynamic tile endpoint
+      maxzoom: 16,
+      minzoom: 8
+    });
+
+    // Radio type filter for vector tiles
+    const radioTypeFilter = Object.entries(radioFilters)
+      .filter(([_, enabled]) => enabled)
+      .map(([type]) => ['==', ['get', 'radio_type'], type]);
+
+    const radioFilter = radioTypeFilter.length > 0 
+      ? ['any', ...radioTypeFilter]
+      : ['literal', true];
+
+    map.current.addLayer({
+      id: 'networks-vector',
+      type: 'circle',
+      source: 'networks-vector',
+      'source-layer': 'networks',
+      filter: radioFilter,
+      paint: {
+        'circle-radius': [
+          'interpolate', ['linear'], ['zoom'],
+          8, ['case', ['<', ['get', 'signal_strength'], -80], 2, 4],
+          16, ['case', ['<', ['get', 'signal_strength'], -80], 6, 12]
+        ],
+        'circle-color': [
+          'case',
+          ['==', ['get', 'radio_type'], 'wifi'], '#22c55e',
+          ['==', ['get', 'radio_type'], 'ble'], '#8b5cf6',
+          ['==', ['get', 'radio_type'], 'bluetooth'], '#3b82f6',
+          ['==', ['get', 'radio_type'], 'cellular'], '#dc2626',
+          '#6b7280'
+        ],
+        'circle-stroke-width': 1,
+        'circle-stroke-color': '#ffffff',
+        'circle-opacity': 0.9
+      }
+    });
+
+    // Wire tooltip for vector mode
+    wireTooltipNetwork(map.current, "networks-vector");
+  };
+
+  // Update map data when mode, visualization data, or filters change
+  useEffect(() => {
+    if (!mapLoaded || !map.current) return;
+
+    cleanupMap();
+
+    if (mapMode === 'vector-tiles' && tilesAvailable) {
+      setupVectorMode();
+    } else {
+      // Fallback to standard mode
+      if (!visualizationData) return;
+      
+      const allFeatures = (visualizationData as any)?.data?.features || [];
+      const filteredFeatures = allFeatures.filter((feature: any) => {
+        const radioType = feature.properties.radio_type;
+        return radioFilters[radioType as keyof typeof radioFilters];
+      });
+      
+      setupStandardMode(filteredFeatures);
+    }
+  }, [mapLoaded, mapMode, visualizationData, radioFilters, tilesAvailable]);
 
   if (isLoading) {
     return <Skeleton className="h-96" />;
@@ -240,6 +328,34 @@ export default function NetworkMap() {
               ).length || 0} sightings)
             </div>
             <div className="flex items-center gap-2">
+              {/* Map Mode Toggle */}
+              <ToggleGroup 
+                type="single" 
+                value={mapMode} 
+                onValueChange={(value: MapMode) => value && setMapMode(value)}
+                className="border rounded-md"
+              >
+                <ToggleGroupItem value="standard" aria-label="Standard mode" size="sm">
+                  <Layers className="h-4 w-4 mr-1" />
+                  Standard
+                </ToggleGroupItem>
+                <ToggleGroupItem 
+                  value="vector-tiles" 
+                  aria-label="Vector tiles mode" 
+                  size="sm"
+                  disabled={!tilesAvailable}
+                  className="relative"
+                >
+                  <Zap className="h-4 w-4 mr-1" />
+                  Vector
+                  {!tilesAvailable && (
+                    <Badge variant="outline" className="absolute -top-1 -right-1 text-xs px-1">
+                      N/A
+                    </Badge>
+                  )}
+                </ToggleGroupItem>
+              </ToggleGroup>
+              
               {/* GPS Button */}
               <Button 
                 variant="outline" 

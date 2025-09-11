@@ -142,7 +142,7 @@ psql "sslmode=require" -U app_rw -c "SELECT table_name FROM information_schema.t
 ```
 
 ### Schema Documentation
-**Complete schema reference**: See [docs/SCHEMA.md](docs/SCHEMA.md) for detailed table structures, relationships, and sample queries.
+**Complete schema reference**: See [docs/schema.md](docs/schema.md) for detailed table structures, relationships, and sample queries.
 
 ### Migrations & Setup
 All tables, indices, and views are defined in `/server/sql/` (or Drizzle migrations). Apply with:
