@@ -65,7 +65,7 @@ export default function NetworksPage() {
 
   // Filter and sort networks
   const filteredAndSortedNetworks = useMemo(() => {
-    let filtered = networks.filter((network) => {
+    const filtered = networks.filter((network) => {
       // Search filter
       const searchMatch = !searchTerm || 
         network.bssid.toLowerCase().includes(searchTerm.toLowerCase()) ||

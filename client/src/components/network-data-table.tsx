@@ -39,7 +39,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
   const sortedAndFilteredNetworks = useMemo(() => {
     if (!g63Networks?.data) return [];
 
-    let filtered = g63Networks.data.filter(network => 
+    const filtered = g63Networks.data.filter(network => 
       network.ssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
       network.bssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
       network.capabilities.toLowerCase().includes(searchTerm.toLowerCase())
