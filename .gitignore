@@ -60,3 +60,4 @@ scrape_shadowcheck*
 *.log
 
 dist/
+node_modules/
