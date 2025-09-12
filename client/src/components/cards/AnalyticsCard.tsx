@@ -1,5 +1,16 @@
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts';
 import { TrendingUp, Shield, Wifi, Activity } from 'lucide-react';
 
 interface AnalyticsCardProps {
@@ -26,9 +37,13 @@ interface AnalyticsCardProps {
   };
 }
 
-const COLORS = ['#00D9E1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+const _COLORS = ['#00D9E1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
-const AnalyticsCard: React.FC<AnalyticsCardProps> = ({ analytics, signalStrength, securityAnalysis }) => {
+const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
+  analytics,
+  signalStrength,
+  securityAnalysis,
+}) => {
   if (!analytics) return null;
 
   const securityData = securityAnalysis
@@ -61,7 +76,9 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({ analytics, signalStrength
         <div className="text-center">
           <div className="flex items-center justify-center space-x-1 mb-1">
             <Shield size={16} className="text-green-400" />
-            <span className="text-2xl font-bold text-green-300">{analytics.encrypted_networks}</span>
+            <span className="text-2xl font-bold text-green-300">
+              {analytics.encrypted_networks}
+            </span>
           </div>
           <div className="text-xs text-gray-400">Encrypted</div>
         </div>

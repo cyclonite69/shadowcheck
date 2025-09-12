@@ -9,8 +9,8 @@ interface NetworkCardProps {
     signal_strength?: number;
     encryption?: string;
     observed_at: string;
-    latitude?: number;
-    longitude?: number;
+    latitude?: number | string;
+    longitude?: number | string;
   };
 }
 
@@ -20,6 +20,12 @@ const NetworkCard: React.FC<NetworkCardProps> = ({ network }) => {
     if (strength > -50) return 'bg-green-500';
     if (strength > -70) return 'bg-yellow-500';
     return 'bg-red-500';
+  };
+
+  const safeFormatCoordinate = (coord?: number | string): string => {
+    if (coord === null || coord === undefined) return '0.0000';
+    const num = typeof coord === 'string' ? parseFloat(coord) : coord;
+    return isNaN(num) ? '0.0000' : num.toFixed(4);
   };
 
   const getSignalWidth = (strength?: number) => {
@@ -44,15 +50,13 @@ const NetworkCard: React.FC<NetworkCardProps> = ({ network }) => {
             <div className="font-mono text-sm text-teal-300">
               {network.ssid || 'Hidden Network'}
             </div>
-            <div className="font-mono text-xs text-gray-400">
-              {network.bssid}
-            </div>
+            <div className="font-mono text-xs text-gray-400">{network.bssid}</div>
           </div>
         </div>
         <div className="flex items-center space-x-1">
           <Shield size={14} className={getSecurityColor(network.encryption)} />
           <span className="text-xs text-gray-400">
-            {network.encryption?.replace(/[\[\]]/g, '') || 'Open'}
+            {network.encryption?.replace(/[[\]]/g, '') || 'Open'}
           </span>
         </div>
       </div>
@@ -78,7 +82,7 @@ const NetworkCard: React.FC<NetworkCardProps> = ({ network }) => {
           <div className="flex items-center space-x-1">
             <MapPin size={12} />
             <span>
-              {network.latitude.toFixed(4)}, {network.longitude.toFixed(4)}
+              {safeFormatCoordinate(network.latitude)}, {safeFormatCoordinate(network.longitude)}
             </span>
           </div>
         )}

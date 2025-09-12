@@ -1,5 +1,5 @@
-import { apiRequest } from "./queryClient";
-import { sql } from 'drizzle-orm';
+import { apiRequest } from './queryClient';
+import { sql as _sql } from 'drizzle-orm';
 
 export interface HealthResponse {
   ok: boolean;
@@ -64,7 +64,7 @@ export interface ConfigResponse {
   mapboxToken: string | null;
 }
 
-export interface G63NetworksResponse {
+export interface NetworksResponse {
   ok: boolean;
   data: Array<{
     bssid: string;
@@ -85,7 +85,7 @@ export interface G63NetworksResponse {
   count: number;
 }
 
-export interface G63LocationsResponse {
+export interface LocationsResponse {
   ok: boolean;
   data: Array<{
     _id: string;
@@ -104,93 +104,65 @@ export interface G63LocationsResponse {
 
 export const api = {
   async getHealth(): Promise<HealthResponse> {
-    const res = await apiRequest("GET", "/api/v1/health");
+    const res = await apiRequest('GET', '/api/v1/health');
     return res.json();
   },
 
   async getVersion(): Promise<VersionResponse> {
-    const res = await apiRequest("GET", "/api/v1/version");
+    const res = await apiRequest('GET', '/api/v1/version');
     return res.json();
   },
 
   async getConfig(): Promise<ConfigResponse> {
-    const res = await apiRequest("GET", "/api/v1/config");
+    const res = await apiRequest('GET', '/api/v1/config');
     return res.json();
   },
 
   async getSystemStatus(): Promise<SystemStatusResponse> {
-    const res = await apiRequest("GET", "/api/v1/status");
+    const res = await apiRequest('GET', '/api/v1/status');
     return res.json();
   },
 
   async getNetworks(limit: number = 50): Promise<NetworksResponse> {
-    const res = await apiRequest("GET", `/api/v1/networks?limit=${limit}`);
+    const res = await apiRequest('GET', `/api/v1/networks?limit=${limit}`);
     return res.json();
   },
 
-  async spatialQuery(lat: number, lon: number, radius: number, limit: number = 50): Promise<SpatialQueryResponse> {
-    const res = await apiRequest("GET", `/api/v1/within?lat=${lat}&lon=${lon}&radius=${radius}&limit=${limit}`);
+  async spatialQuery(
+    lat: number,
+    lon: number,
+    radius: number,
+    limit: number = 50
+  ): Promise<SpatialQueryResponse> {
+    const res = await apiRequest(
+      'GET',
+      `/api/v1/within?lat=${lat}&lon=${lon}&radius=${radius}&limit=${limit}`
+    );
     return res.json();
   },
 
   async getVisualization(): Promise<any> {
-    const res = await apiRequest("GET", "/api/v1/visualize");
+    const res = await apiRequest('GET', '/api/v1/visualize');
     return res.json();
   },
 
-  // G63 Forensics API methods
-  async getG63Networks(limit?: number): Promise<G63NetworksResponse> {
-    const url = limit ? `/api/v1/g63/networks?limit=${limit}` : "/api/v1/g63/networks";
-    const res = await apiRequest("GET", url);
+  async getNetworkAnalytics(): Promise<any> {
+    const res = await apiRequest('GET', '/api/v1/analytics');
     return res.json();
   },
 
-  async getG63NetworksWithin(lat: number, lon: number, radius: number, limit?: number): Promise<G63NetworksResponse> {
-    const params = new URLSearchParams({
-      lat: lat.toString(),
-      lon: lon.toString(),
-      radius: radius.toString(),
-    });
-    if (limit) params.append('limit', limit.toString());
-    
-    const res = await apiRequest("GET", `/api/v1/g63/networks/within?${params}`);
+  async getSignalStrengthDistribution(): Promise<any> {
+    const res = await apiRequest('GET', '/api/v1/signal-strength');
     return res.json();
   },
 
-  async getG63Locations(limit?: number): Promise<G63LocationsResponse> {
-    const url = limit ? `/api/v1/g63/locations?limit=${limit}` : "/api/v1/g63/locations";
-    const res = await apiRequest("GET", url);
-    return res.json();
-  },
-
-  async getG63LocationsByBssid(bssid: string): Promise<G63LocationsResponse> {
-    const res = await apiRequest("GET", `/api/v1/g63/locations/${bssid}`);
-    return res.json();
-  },
-
-  async getG63Visualization(): Promise<any> {
-    const res = await apiRequest("GET", "/api/v1/g63/visualize");
-    return res.json();
-  },
-
-  // G63 Analytics API methods
-  async getG63Analytics(): Promise<any> {
-    const res = await apiRequest("GET", "/api/v1/g63/analytics");
-    return res.json();
-  },
-
-  async getG63SignalStrengthDistribution(): Promise<any> {
-    const res = await apiRequest("GET", "/api/v1/g63/signal-strength");
-    return res.json();
-  },
-
-  async getG63SecurityAnalysis(): Promise<any> {
-    const res = await apiRequest("GET", "/api/v1/g63/security-analysis");
+  async getSecurityAnalysis(): Promise<any> {
+    const res = await apiRequest('GET', '/api/v1/security-analysis');
     return res.json();
   },
 
   async getRadioStats(): Promise<any> {
-    const res = await apiRequest("GET", "/api/v1/radio-stats");
+    const res = await apiRequest('GET', '/api/v1/radio-stats');
     return res.json();
-  }
+  },
 };

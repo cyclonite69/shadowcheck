@@ -1,21 +1,14 @@
-import { users, networks, type User, type InsertUser, type Network, type InsertNetwork } from "@shared/schema";
-import { eq, sql, and, lt, lte, gte } from "drizzle-orm";
+import {
+  users,
+  networks,
+  type User,
+  type InsertUser,
+  type Network,
+  type InsertNetwork,
+} from '../shared/schema.js';
+import { eq, sql, and, lt, lte, gte } from 'drizzle-orm';
 
-let db: any = null;
-
-// Import db conditionally to handle cases where DATABASE_URL is not set
-async function getDb() {
-  if (!db && process.env.DATABASE_URL) {
-    try {
-      const { db: dbInstance } = await import("./db");
-      db = dbInstance;
-    } catch (error) {
-      console.error("Failed to initialize database:", error);
-      db = null;
-    }
-  }
-  return db;
-}
+import { query } from './db';
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -24,61 +17,69 @@ export interface IStorage {
   getNetworks(limit?: number): Promise<Network[]>;
   getNetworksWithin(lat: number, lon: number, radius: number, limit?: number): Promise<Network[]>;
   createNetwork(network: InsertNetwork): Promise<Network>;
-  
+
   // Location methods
   getLocations(limit?: number): Promise<any[]>;
   getLocationsByBssid(bssid: string): Promise<any[]>;
-  
+
   // Analytics methods
   getNetworkAnalytics(): Promise<any>;
   getSignalStrengthDistribution(): Promise<any>;
   getSecurityAnalysis(): Promise<any>;
   getNetworksBeforeTime(beforeTime: number, limit: number): Promise<any[]>;
-  
+
   isDatabaseConnected(): Promise<boolean>;
-  getConnectionInfo(): Promise<{ activeConnections: number; maxConnections: number; postgisEnabled: boolean }>;
+  getConnectionInfo(): Promise<{
+    activeConnections: number;
+    maxConnections: number;
+    postgisEnabled: boolean;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
   async isDatabaseConnected(): Promise<boolean> {
-    const dbInstance = await getDb();
-    return dbInstance !== null;
+    try {
+      await query('SELECT 1');
+      return true;
+    } catch (error) {
+      console.error('Database connection test failed:', error);
+      return false;
+    }
   }
 
-  async getConnectionInfo(): Promise<{ activeConnections: number; maxConnections: number; postgisEnabled: boolean }> {
-    const dbInstance = await getDb();
-    if (!dbInstance) {
-      return { activeConnections: 0, maxConnections: 5, postgisEnabled: false };
-    }
-
+  async getConnectionInfo(): Promise<{
+    activeConnections: number;
+    maxConnections: number;
+    postgisEnabled: boolean;
+  }> {
     try {
       // Check for active connections and PostGIS
-      const connectionResult = await dbInstance.execute(sql`
+      const connectionResult = await query(`
         SELECT COUNT(*) as active_connections 
         FROM pg_stat_activity 
         WHERE state = 'active'
       `);
-      
+
       let postgisEnabled = false;
       try {
-        const postgisResult = await dbInstance.execute(sql`
+        const postgisResult = await query(`
           SELECT EXISTS(
             SELECT 1 FROM pg_extension WHERE extname = 'postgis'
           ) as postgis_enabled
         `);
-        postgisEnabled = postgisResult[0]?.postgis_enabled || false;
+        postgisEnabled = postgisResult.rows[0]?.postgis_enabled || false;
       } catch (error) {
         // PostGIS extension might not be available
         postgisEnabled = false;
       }
 
       return {
-        activeConnections: parseInt(connectionResult[0]?.active_connections) || 0,
+        activeConnections: parseInt(connectionResult.rows[0]?.active_connections) || 0,
         maxConnections: 5,
-        postgisEnabled: postgisEnabled
+        postgisEnabled: postgisEnabled,
       };
     } catch (error) {
-      console.error("Error getting connection info:", error);
+      console.error('Error getting connection info:', error);
       return { activeConnections: 0, maxConnections: 5, postgisEnabled: false };
     }
   }
@@ -91,7 +92,7 @@ export class DatabaseStorage implements IStorage {
       const [user] = await dbInstance.select().from(users).where(eq(users.id, id));
       return user || undefined;
     } catch (error) {
-      console.error("Error getting user:", error);
+      console.error('Error getting user:', error);
       return undefined;
     }
   }
@@ -104,49 +105,48 @@ export class DatabaseStorage implements IStorage {
       const [user] = await dbInstance.select().from(users).where(eq(users.username, username));
       return user || undefined;
     } catch (error) {
-      console.error("Error getting user by username:", error);
+      console.error('Error getting user by username:', error);
       return undefined;
     }
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const dbInstance = await getDb();
-    if (!dbInstance) throw new Error("Database not connected");
+    if (!dbInstance) throw new Error('Database not connected');
 
-    const [user] = await dbInstance
-      .insert(users)
-      .values(insertUser)
-      .returning();
+    const [user] = await dbInstance.insert(users).values(insertUser).returning();
     return user;
   }
 
-  async getNetworks(limit: number = 50): Promise<any[]> {
-    const dbInstance = await getDb();
-    if (!dbInstance) return [];
-
+  async getNetworks(limit: number = 10000): Promise<any[]> {
     try {
-      const result = await dbInstance.execute(sql`
+      const result = await query(`
         SELECT * FROM app.api_networks_unified
         ORDER BY last_seen_at DESC
-        LIMIT ${limit}
-      `);
-      return result;
+        LIMIT $1
+      `, [limit]);
+      return result.rows;
     } catch (error) {
-      console.error("Error getting networks:", error);
+      console.error('Error getting networks:', error);
       return [];
     }
   }
 
-  async getNetworksWithin(lat: number, lon: number, radius: number, limit: number = 50): Promise<any[]> {
+  async getNetworksWithin(
+    lat: number,
+    lon: number,
+    radius: number,
+    limit: number = 50
+  ): Promise<any[]> {
     const dbInstance = await getDb();
     if (!dbInstance) return [];
 
     try {
       // Calculate bounding box for efficient filtering
-      const lat_min = lat - (radius / 111320);
-      const lat_max = lat + (radius / 111320);
-      const lon_min = lon - (radius / (111320 * Math.cos(lat * Math.PI / 180)));
-      const lon_max = lon + (radius / (111320 * Math.cos(lat * Math.PI / 180)));
+      const lat_min = lat - radius / 111320;
+      const lat_max = lat + radius / 111320;
+      const lon_min = lon - radius / (111320 * Math.cos((lat * Math.PI) / 180));
+      const lon_max = lon + radius / (111320 * Math.cos((lat * Math.PI) / 180));
 
       const result = await dbInstance.execute(sql`
         SELECT * FROM app.api_networks_unified
@@ -157,19 +157,16 @@ export class DatabaseStorage implements IStorage {
       `);
       return result;
     } catch (error) {
-      console.error("Error getting networks within radius:", error);
+      console.error('Error getting networks within radius:', error);
       return [];
     }
   }
 
   async createNetwork(network: InsertNetwork): Promise<Network> {
     const dbInstance = await getDb();
-    if (!dbInstance) throw new Error("Database not connected");
+    if (!dbInstance) throw new Error('Database not connected');
 
-    const [createdNetwork] = await dbInstance
-      .insert(networks)
-      .values(network)
-      .returning();
+    const [createdNetwork] = await dbInstance.insert(networks).values(network).returning();
     return createdNetwork;
   }
 
@@ -192,7 +189,7 @@ export class DatabaseStorage implements IStorage {
       `);
       return result;
     } catch (error) {
-      console.error("Error getting locations:", error);
+      console.error('Error getting locations:', error);
       return [];
     }
   }
@@ -212,7 +209,7 @@ export class DatabaseStorage implements IStorage {
       `);
       return result;
     } catch (error) {
-      console.error("Error getting locations for BSSID:", error);
+      console.error('Error getting locations for BSSID:', error);
       return [];
     }
   }
@@ -230,32 +227,26 @@ export class DatabaseStorage implements IStorage {
       `);
       return result;
     } catch (error) {
-      console.error("Error getting networks before time:", error);
+      console.error('Error getting networks before time:', error);
       return [];
     }
   }
 
   async getNetworkAnalytics(): Promise<any> {
-    const dbInstance = await getDb();
-    if (!dbInstance) return {};
-
     try {
-      const result = await dbInstance.execute(sql`
+      const result = await query(`
         SELECT * FROM app.api_network_analytics
       `);
-      return result[0] || {};
+      return result.rows[0] || {};
     } catch (error) {
-      console.error("Error getting network analytics:", error);
+      console.error('Error getting network analytics:', error);
       return {};
     }
   }
 
   async getSignalStrengthDistribution(): Promise<any> {
-    const dbInstance = await getDb();
-    if (!dbInstance) return [];
-
     try {
-      const result = await dbInstance.execute(sql`
+      const result = await query(`
         SELECT 
           CASE 
             WHEN signal_strength >= -30 THEN 'Excellent (-30 to 0 dBm)'
@@ -263,7 +254,7 @@ export class DatabaseStorage implements IStorage {
             WHEN signal_strength >= -60 THEN 'Fair (-60 to -50 dBm)'
             WHEN signal_strength >= -70 THEN 'Weak (-70 to -60 dBm)'
             ELSE 'Very Weak (< -70 dBm)'
-          END as signal_range,
+          END as range,
           COUNT(*) as count,
           AVG(signal_strength)::numeric(5,2) as avg_signal_in_range
         FROM app.network_observations
@@ -278,26 +269,23 @@ export class DatabaseStorage implements IStorage {
           END
         ORDER BY count DESC
       `);
-      return result;
+      return result.rows;
     } catch (error) {
-      console.error("Error getting signal strength distribution:", error);
+      console.error('Error getting signal strength distribution:', error);
       return [];
     }
   }
 
   async getSecurityAnalysis(): Promise<any> {
-    const dbInstance = await getDb();
-    if (!dbInstance) return [];
-
     try {
-      const result = await dbInstance.execute(sql`
+      const result = await query(`
         SELECT 
           CASE 
             WHEN current_capabilities ILIKE '%WPA3%' THEN 'WPA3'
             WHEN current_capabilities ILIKE '%WPA2%' THEN 'WPA2'
             WHEN current_capabilities ILIKE '%WPA%' THEN 'WPA'
             WHEN current_capabilities ILIKE '%WEP%' THEN 'WEP'
-            WHEN current_capabilities = '' OR current_capabilities IS NULL THEN 'Open Network'
+            WHEN current_capabilities = '' OR current_capabilities IS NULL THEN '[ESS]'
             ELSE 'Unknown'
           END as security,
           COUNT(*) as network_count,
@@ -317,7 +305,7 @@ export class DatabaseStorage implements IStorage {
             WHEN current_capabilities ILIKE '%WPA2%' THEN 'WPA2'
             WHEN current_capabilities ILIKE '%WPA%' THEN 'WPA'
             WHEN current_capabilities ILIKE '%WEP%' THEN 'WEP'
-            WHEN current_capabilities = '' OR current_capabilities IS NULL THEN 'Open Network'
+            WHEN current_capabilities = '' OR current_capabilities IS NULL THEN '[ESS]'
             ELSE 'Unknown'
           END,
           CASE 
@@ -329,13 +317,12 @@ export class DatabaseStorage implements IStorage {
           END
         ORDER BY network_count DESC
       `);
-      return result;
+      return result.rows;
     } catch (error) {
-      console.error("Error getting security analysis:", error);
+      console.error('Error getting security analysis:', error);
       return [];
     }
   }
-
 }
 
 // Use in-memory storage as fallback
@@ -350,7 +337,11 @@ export class MemStorage implements IStorage {
     return false;
   }
 
-  async getConnectionInfo(): Promise<{ activeConnections: number; maxConnections: number; postgisEnabled: boolean }> {
+  async getConnectionInfo(): Promise<{
+    activeConnections: number;
+    maxConnections: number;
+    postgisEnabled: boolean;
+  }> {
     return { activeConnections: 0, maxConnections: 5, postgisEnabled: false };
   }
 
@@ -359,9 +350,7 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    return Array.from(this.users.values()).find((user) => user.username === username);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -375,12 +364,17 @@ export class MemStorage implements IStorage {
     return [];
   }
 
-  async getNetworksWithin(lat: number, lon: number, radius: number, limit?: number): Promise<Network[]> {
+  async getNetworksWithin(
+    lat: number,
+    lon: number,
+    radius: number,
+    limit?: number
+  ): Promise<Network[]> {
     return [];
   }
 
   async createNetwork(network: InsertNetwork): Promise<Network> {
-    throw new Error("Database not connected");
+    throw new Error('Database not connected');
   }
 
   // Location methods - fallback

@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -7,22 +7,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, Signal, Wifi, Activity, TrendingUp, Eye } from 'lucide-react';
 
-export function G63AnalyticsDashboard() {
+export function AnalyticsDashboard() {
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
-    queryKey: ["/api/v1/g63/analytics"],
-    queryFn: () => api.getG63Analytics(),
+    queryKey: ['/api/v1/analytics'],
+    queryFn: () => api.getNetworkAnalytics(),
     refetchInterval: 30000,
   });
 
   const { data: signalDistribution, isLoading: signalLoading } = useQuery({
-    queryKey: ["/api/v1/g63/signal-strength"],
-    queryFn: () => api.getG63SignalStrengthDistribution(),
+    queryKey: ['/api/v1/signal-strength'],
+    queryFn: () => api.getSignalStrengthDistribution(),
     refetchInterval: 30000,
   });
 
   const { data: securityAnalysis, isLoading: securityLoading } = useQuery({
-    queryKey: ["/api/v1/g63/security-analysis"],
-    queryFn: () => api.getG63SecurityAnalysis(),
+    queryKey: ['/api/v1/security-analysis'],
+    queryFn: () => api.getSecurityAnalysis(),
     refetchInterval: 30000,
   });
 
@@ -42,7 +42,6 @@ export function G63AnalyticsDashboard() {
   const signalData = signalDistribution?.data || [];
   const securityData = securityAnalysis?.data || [];
 
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -50,10 +49,10 @@ export function G63AnalyticsDashboard() {
         <CardHeader>
           <CardTitle className="text-slate-600 flex items-center gap-2">
             <Activity className="h-5 w-5" />
-            G63 Forensics Analytics
+            SIGINT Forensics Analytics
           </CardTitle>
           <CardDescription>
-            Real-time analysis of SIGINT data from the G63 forensics database
+            Real-time analysis of SIGINT data from the forensics database
           </CardDescription>
         </CardHeader>
       </Card>
@@ -66,7 +65,10 @@ export function G63AnalyticsDashboard() {
               <Wifi className="h-4 w-4 text-green-600" />
               <span className="text-sm font-medium text-muted-foreground">Total Networks</span>
             </div>
-            <p className="text-2xl font-bold text-green-600 mt-1" data-testid="metric-total-networks">
+            <p
+              className="text-2xl font-bold text-green-600 mt-1"
+              data-testid="metric-total-networks"
+            >
               {Number(overview.total_networks || 0).toLocaleString()}
             </p>
           </CardContent>
@@ -90,7 +92,10 @@ export function G63AnalyticsDashboard() {
               <TrendingUp className="h-4 w-4 text-purple-600" />
               <span className="text-sm font-medium text-muted-foreground">Unique SSIDs</span>
             </div>
-            <p className="text-2xl font-bold text-purple-600 mt-1" data-testid="metric-unique-ssids">
+            <p
+              className="text-2xl font-bold text-purple-600 mt-1"
+              data-testid="metric-unique-ssids"
+            >
               {Number(overview.unique_ssids || 0).toLocaleString()}
             </p>
           </CardContent>
@@ -103,7 +108,9 @@ export function G63AnalyticsDashboard() {
               <span className="text-sm font-medium text-muted-foreground">Avg Signal</span>
             </div>
             <p className="text-2xl font-bold text-orange-600 mt-1" data-testid="metric-avg-signal">
-              {overview.avg_signal_strength ? `${Math.round(overview.avg_signal_strength)} dBm` : 'N/A'}
+              {overview.avg_signal_strength
+                ? `${Math.round(overview.avg_signal_strength)} dBm`
+                : 'N/A'}
             </p>
           </CardContent>
         </Card>
@@ -131,10 +138,7 @@ export function G63AnalyticsDashboard() {
                       {Number(range.count).toLocaleString()} networks
                     </Badge>
                   </div>
-                  <Progress 
-                    value={(range.count / signalData[0].count) * 100} 
-                    className="h-2"
-                  />
+                  <Progress value={(range.count / signalData[0].count) * 100} className="h-2" />
                   {range.avg_signal_in_range && (
                     <p className="text-xs text-muted-foreground">
                       Avg: {range.avg_signal_in_range} dBm
@@ -157,9 +161,7 @@ export function G63AnalyticsDashboard() {
               <Shield className="h-5 w-5" />
               Security Analysis
             </CardTitle>
-            <CardDescription>
-              Encryption and security protocol distribution
-            </CardDescription>
+            <CardDescription>Encryption and security protocol distribution</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {securityData.length > 0 ? (
@@ -170,26 +172,24 @@ export function G63AnalyticsDashboard() {
                       <span className="text-sm font-medium">
                         {security.security || 'Open Network'}
                       </span>
-                      <Badge 
+                      <Badge
                         variant={
-                          security.security_level === 'High Security' ? 'default' :
-                          security.security_level === 'Medium Security' ? 'secondary' :
-                          security.security_level === 'Low Security' ? 'destructive' :
-                          'outline'
+                          security.security_level === 'High Security'
+                            ? 'default'
+                            : security.security_level === 'Medium Security'
+                              ? 'secondary'
+                              : security.security_level === 'Low Security'
+                                ? 'destructive'
+                                : 'outline'
                         }
                         className="text-xs"
                       >
                         {security.security_level}
                       </Badge>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {security.percentage}%
-                    </span>
+                    <span className="text-xs text-muted-foreground">{security.percentage}%</span>
                   </div>
-                  <Progress 
-                    value={parseFloat(security.percentage)} 
-                    className="h-2"
-                  />
+                  <Progress value={parseFloat(security.percentage)} className="h-2" />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>{Number(security.network_count).toLocaleString()} networks</span>
                     <span>{Number(security.unique_devices).toLocaleString()} devices</span>
@@ -220,7 +220,10 @@ export function G63AnalyticsDashboard() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {analytics.data.securityBreakdown.map((item: any, index: number) => (
-                <div key={index} className="bg-background/60 border border-border/30 rounded-lg p-3">
+                <div
+                  key={index}
+                  className="bg-background/60 border border-border/30 rounded-lg p-3"
+                >
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-mono text-foreground">
                       {item.security || 'Open'}

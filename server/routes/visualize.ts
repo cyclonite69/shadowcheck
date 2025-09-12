@@ -1,5 +1,5 @@
-import { Router } from "express";
-import { query } from "../db";
+import { Router } from 'express';
+import { query } from '../db';
 
 const router = Router();
 
@@ -7,7 +7,7 @@ const router = Router();
  * GET /api/v1/visualize?limit=500
  * GeoJSON of recent observations (enriched).
  */
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
   const limit = Math.min(Number(req.query.limit ?? 500) || 500, 5000);
   try {
     const sql = `
@@ -27,10 +27,10 @@ router.get("/", async (req, res) => {
     const { rows } = await query(sql, [limit]);
 
     res.json({
-      type: "FeatureCollection",
-      features: rows.map(r => ({
-        type: "Feature",
-        geometry: { type: "Point", coordinates: [r.lon, r.lat] },
+      type: 'FeatureCollection',
+      features: rows.map((r) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [r.lon, r.lat] },
         properties: {
           id: r.id,
           bssid: r.bssid,
@@ -43,9 +43,9 @@ router.get("/", async (req, res) => {
           frequency_at_time: r.frequency_at_time,
           frequency_mhz: r.frequency_mhz,
           channel: r.channel,
-          band: r.band
-        }
-      }))
+          band: r.band,
+        },
+      })),
     });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message ?? String(err) });

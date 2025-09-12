@@ -9,12 +9,12 @@ export function SvgNetworkMap() {
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
 
   const { data: visualizationData, isLoading } = useQuery({
-    queryKey: ['/api/v1/g63/visualize'],
+    queryKey: ['/api/v1/visualize'],
     refetchInterval: 30000,
   });
 
   const { data: networks } = useQuery({
-    queryKey: ['/api/v1/g63/networks'],
+    queryKey: ['/api/v1/networks'],
     refetchInterval: 30000,
   });
 
@@ -23,7 +23,7 @@ export function SvgNetworkMap() {
   }
 
   const features = (visualizationData as any)?.data?.features || [];
-  
+
   // If no features, show placeholder
   if (features.length === 0) {
     return (
@@ -43,7 +43,7 @@ export function SvgNetworkMap() {
   const coords = features
     .map((f: any) => f.geometry?.coordinates)
     .filter((coord: any) => coord && coord.length >= 2 && !isNaN(coord[0]) && !isNaN(coord[1]));
-  
+
   if (coords.length === 0) {
     return (
       <div className="space-y-6">
@@ -89,44 +89,43 @@ export function SvgNetworkMap() {
         <CardHeader>
           <CardTitle className="text-slate-600 flex items-center gap-2">
             <Map className="h-5 w-5" />
-            Network GIS Map ({features.length} networks) 
+            Network GIS Map ({features.length} networks)
             {coords.length > 0 && (
-              <span className="text-xs text-slate-500">
-                [{coords.length} valid coordinates]
-              </span>
+              <span className="text-xs text-slate-500">[{coords.length} valid coordinates]</span>
             )}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="w-full bg-gray-900 rounded-lg border border-cyan-500/20 relative overflow-hidden">
-            <svg 
-              width="100%" 
-              height="400" 
-              viewBox="0 0 800 400"
-              className="bg-gray-900"
-            >
+            <svg width="100%" height="400" viewBox="0 0 800 400" className="bg-gray-900">
               {/* Grid background */}
               <defs>
                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1f2937" strokeWidth="1" opacity="0.3"/>
+                  <path
+                    d="M 40 0 L 0 0 0 40"
+                    fill="none"
+                    stroke="#1f2937"
+                    strokeWidth="1"
+                    opacity="0.3"
+                  />
                 </pattern>
               </defs>
               <rect width="100%" height="100%" fill="url(#grid)" />
-              
+
               {/* Networks */}
               {features.map((feature: any, index: number) => {
                 // Validate coordinates
                 if (!feature.geometry?.coordinates || feature.geometry.coordinates.length < 2) {
                   return null;
                 }
-                
+
                 const lat = feature.geometry.coordinates[1];
                 const lng = feature.geometry.coordinates[0];
-                
+
                 if (isNaN(lat) || isNaN(lng)) {
                   return null;
                 }
-                
+
                 const { x, y } = projectToSVG(lat, lng);
                 const isOpen = feature.properties?.encryption === 'Open';
                 const color = generateColorFromBSSID(feature.properties?.bssid || '').hex;
@@ -151,7 +150,7 @@ export function SvgNetworkMap() {
                       }}
                       data-testid={`network-point-${index}`}
                     />
-                    
+
                     {/* Signal strength ring */}
                     <circle
                       cx={x}
@@ -166,16 +165,22 @@ export function SvgNetworkMap() {
                   </g>
                 );
               })}
-              
+
               {/* Legend */}
               <g transform="translate(20, 340)">
                 <circle cx="0" cy="0" r="6" fill="#ef4444" />
-                <text x="15" y="5" fill="#94a3b8" fontSize="12">Open Networks</text>
-                
+                <text x="15" y="5" fill="#94a3b8" fontSize="12">
+                  Open Networks
+                </text>
+
                 <circle cx="120" cy="0" r="6" fill="#22d3ee" />
-                <text x="135" y="5" fill="#94a3b8" fontSize="12">Secured Networks</text>
-                
-                <text x="250" y="5" fill="#64748b" fontSize="11">Dot size = Signal strength</text>
+                <text x="135" y="5" fill="#94a3b8" fontSize="12">
+                  Secured Networks
+                </text>
+
+                <text x="250" y="5" fill="#64748b" fontSize="11">
+                  Dot size = Signal strength
+                </text>
               </g>
             </svg>
 
@@ -193,7 +198,7 @@ export function SvgNetworkMap() {
                       {selectedNetwork.ssid || 'Hidden Network'}
                     </span>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setSelectedNetwork(null)}
                     className="text-slate-500 hover:text-white"
                     data-testid="close-popup"
@@ -212,7 +217,11 @@ export function SvgNetworkMap() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Security:</span>
-                    <span className={selectedNetwork.encryption === 'Open' ? 'text-slate-500' : 'text-slate-500'}>
+                    <span
+                      className={
+                        selectedNetwork.encryption === 'Open' ? 'text-slate-500' : 'text-slate-500'
+                      }
+                    >
                       {selectedNetwork.encryption || 'Unknown'}
                     </span>
                   </div>
@@ -236,7 +245,9 @@ export function SvgNetworkMap() {
             <h3 className="text-slate-500 font-semibold mb-3">Network Statistics</h3>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-lg font-bold text-slate-500">{(networks as any)?.data?.length || 0}</p>
+                <p className="text-lg font-bold text-slate-500">
+                  {(networks as any)?.data?.length || 0}
+                </p>
                 <p className="text-xs text-muted-foreground">Total Networks</p>
               </div>
               <div>
@@ -263,15 +274,21 @@ export function SvgNetworkMap() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Lat range:</span>
-                <span className="text-slate-600">{coords.length > 0 ? `${minLat.toFixed(4)} → ${maxLat.toFixed(4)}` : 'N/A'}</span>
+                <span className="text-slate-600">
+                  {coords.length > 0 ? `${minLat.toFixed(4)} → ${maxLat.toFixed(4)}` : 'N/A'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Lng range:</span>
-                <span className="text-slate-600">{coords.length > 0 ? `${minLng.toFixed(4)} → ${maxLng.toFixed(4)}` : 'N/A'}</span>
+                <span className="text-slate-600">
+                  {coords.length > 0 ? `${minLng.toFixed(4)} → ${maxLng.toFixed(4)}` : 'N/A'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Selected:</span>
-                <span className="text-white">{selectedNetwork ? selectedNetwork.ssid || 'Hidden' : 'None'}</span>
+                <span className="text-white">
+                  {selectedNetwork ? selectedNetwork.ssid || 'Hidden' : 'None'}
+                </span>
               </div>
             </div>
           </CardContent>

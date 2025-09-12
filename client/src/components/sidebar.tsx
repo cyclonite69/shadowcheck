@@ -1,13 +1,13 @@
-import { Link, useLocation } from "wouter";
+import { Link, useLocation } from 'wouter';
 
 export function Sidebar() {
   const [location] = useLocation();
 
   const navItems = [
-    { href: "/", icon: "fas fa-tachometer-alt", label: "Dashboard" },
-    { href: "/networks", icon: "fas fa-wifi", label: "Observed Networks", highlight: true },
-    { href: "/visualization", icon: "fas fa-chart-line", label: "Network Visualization" },
-    { href: "/admin", icon: "fas fa-shield-alt", label: "Admin Panel" },
+    { href: '/', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
+    { href: '/networks', icon: 'fas fa-wifi', label: 'Observed Networks', highlight: true },
+    { href: '/visualization', icon: 'fas fa-chart-line', label: 'Network Visualization' },
+    { href: '/admin', icon: 'fas fa-shield-alt', label: 'Admin Panel' },
   ];
 
   return (
@@ -20,9 +20,9 @@ export function Sidebar() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <img 
-                src="@assets/file_00000000b84061f781450d9b33ae92f2_1756647850505.png" 
-                alt="ShadowCheck" 
+              <img
+                src="@assets/file_00000000b84061f781450d9b33ae92f2_1756647850505.png"
+                alt="ShadowCheck"
                 className="w-6 h-6 opacity-80"
               />
               <h1 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
@@ -35,7 +35,7 @@ export function Sidebar() {
           </div>
         </div>
       </div>
-      
+
       {/* Navigation */}
       <nav className="flex-1 p-4">
         <div className="space-y-1">
@@ -45,18 +45,22 @@ export function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group ${
                 location === item.href
-                  ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary border border-primary/20 shadow-sm"
+                  ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-primary border border-primary/20 shadow-sm'
                   : item.highlight
-                  ? "hover:bg-gradient-to-r hover:from-slate-500/10 hover:to-blue-500/10 text-slate-600 hover:text-cyan-300 border border-slate-500/20 hover:border-slate-500/40"
-                  : "hover:bg-muted/50 text-muted-foreground hover:text-foreground border border-transparent hover:border-border/50"
+                    ? 'hover:bg-gradient-to-r hover:from-slate-500/10 hover:to-blue-500/10 text-slate-600 hover:text-cyan-300 border border-slate-500/20 hover:border-slate-500/40'
+                    : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground border border-transparent hover:border-border/50'
               }`}
               data-testid={`nav-link-${item.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
             >
-              <i className={`${item.icon} w-4 transition-colors ${
-                location === item.href ? "text-primary" : 
-                item.highlight ? "text-slate-600 group-hover:text-cyan-300" :
-                "group-hover:text-primary"
-              }`}></i>
+              <i
+                className={`${item.icon} w-4 transition-colors ${
+                  location === item.href
+                    ? 'text-primary'
+                    : item.highlight
+                      ? 'text-slate-600 group-hover:text-cyan-300'
+                      : 'group-hover:text-primary'
+                }`}
+              ></i>
               <span className="text-sm font-medium">{item.label}</span>
               {item.highlight && location !== item.href && (
                 <div className="ml-auto px-1.5 py-0.5 bg-slate-500/20 text-slate-600 text-xs font-medium rounded">
@@ -69,7 +73,7 @@ export function Sidebar() {
             </Link>
           ))}
         </div>
-        
+
         {/* Quick Actions */}
         <div className="mt-8">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -88,7 +92,7 @@ export function Sidebar() {
           </div>
         </div>
       </nav>
-      
+
       {/* Footer */}
       <div className="p-4 border-t border-border/50 bg-muted/20">
         <div className="flex items-center justify-between text-xs">

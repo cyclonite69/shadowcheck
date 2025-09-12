@@ -51,9 +51,7 @@ const StatusCard: React.FC<StatusCardProps> = ({ status, isLoading, error }) => 
           <AlertCircle size={20} className="text-red-400" />
           <h3 className="text-lg font-semibold text-red-300">System Status</h3>
         </div>
-        <div className="text-center text-red-400">
-          Error loading status: {error.message}
-        </div>
+        <div className="text-center text-red-400">Error loading status: {error.message}</div>
       </div>
     );
   }
@@ -71,19 +69,24 @@ const StatusCard: React.FC<StatusCardProps> = ({ status, isLoading, error }) => 
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
-            <Database size={16} className={status.database.connected ? 'text-green-400' : 'text-red-400'} />
+            <Database
+              size={16}
+              className={status.database.connected ? 'text-green-400' : 'text-red-400'}
+            />
             <span className="text-sm font-medium text-gray-300">Database</span>
           </div>
-          <span className={`text-xs px-2 py-1 rounded-full ${
-            status.database.connected 
-              ? 'bg-green-900 text-green-300' 
-              : 'bg-red-900 text-red-300'
-          }`}>
+          <span
+            className={`text-xs px-2 py-1 rounded-full ${
+              status.database.connected ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
+            }`}
+          >
             {status.database.connected ? 'Connected' : 'Disconnected'}
           </span>
         </div>
         <div className="text-xs text-gray-400 space-y-1">
-          <div>Connections: {status.database.activeConnections}/{status.database.maxConnections}</div>
+          <div>
+            Connections: {status.database.activeConnections}/{status.database.maxConnections}
+          </div>
           <div>PostGIS: {status.database.postgisEnabled ? 'Enabled' : 'Disabled'}</div>
         </div>
       </div>
@@ -109,9 +112,7 @@ const StatusCard: React.FC<StatusCardProps> = ({ status, isLoading, error }) => 
 
       {/* Uptime */}
       <div className="text-center">
-        <div className="text-lg font-bold text-teal-300">
-          {formatUptime(status.uptime)}
-        </div>
+        <div className="text-lg font-bold text-teal-300">{formatUptime(status.uptime)}</div>
         <div className="text-xs text-gray-400">Uptime</div>
       </div>
     </div>

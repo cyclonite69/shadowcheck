@@ -55,7 +55,13 @@ export const useVisualizeQuery = () => {
   });
 };
 
-export const useWithinQuery = (lat: number, lon: number, radius: number, limit = 50, enabled = true) => {
+export const useWithinQuery = (
+  lat: number,
+  lon: number,
+  radius: number,
+  limit = 50,
+  enabled = true
+) => {
   return useQuery({
     queryKey: ['within', lat, lon, radius, limit],
     queryFn: () => fetchWithin(lat, lon, radius, limit),

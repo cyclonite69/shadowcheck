@@ -3,28 +3,34 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Button as _Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
-import { 
-  Network, 
-  Search, 
-  SortAsc, 
-  SortDesc, 
+import {
+  Network,
+  Search,
+  SortAsc,
+  SortDesc,
   Filter,
   Wifi,
   Signal,
-  Shield,
-  MapPin,
-  Calendar
+  Shield as _Shield,
+  MapPin as _MapPin,
+  Calendar as _Calendar,
 } from 'lucide-react';
-import { bssidToColor, bestlevelToDbm, formatBSSID, getBSSIDOctets, calculateColorSimilarity } from '@/utils/bssid-color';
+import {
+  bssidToColor,
+  bestlevelToDbm,
+  formatBSSID,
+  getBSSIDOctets,
+  calculateColorSimilarity as _calculateColorSimilarity,
+} from '@/utils/bssid-color';
 
 interface NetworkEntry {
   bssid: string;
@@ -54,7 +60,7 @@ export default function NetworksPage() {
   const [selectedNetworks, setSelectedNetworks] = useState<Set<string>>(new Set());
 
   const { data: networksData, isLoading } = useQuery({
-    queryKey: ['/api/v1/g63/networks'],
+    queryKey: ['/api/v1/networks'],
     refetchInterval: 30000,
   });
 
@@ -67,24 +73,33 @@ export default function NetworksPage() {
   const filteredAndSortedNetworks = useMemo(() => {
     const filtered = networks.filter((network) => {
       // Search filter
-      const searchMatch = !searchTerm || 
+      const searchMatch =
+        !searchTerm ||
         network.bssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
         network.ssid?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // Security filter  
-      const securityMatch = securityFilter === 'all' || 
-        (securityFilter === 'encrypted' && network.capabilities && network.capabilities !== '[ESS]') ||
-        (securityFilter === 'open' && (!network.capabilities || network.capabilities === '[ESS]')) ||
+      // Security filter
+      const securityMatch =
+        securityFilter === 'all' ||
+        (securityFilter === 'encrypted' &&
+          network.capabilities &&
+          network.capabilities !== '[ESS]') ||
+        (securityFilter === 'open' &&
+          (!network.capabilities || network.capabilities === '[ESS]')) ||
         (securityFilter === 'wpa' && network.capabilities?.includes('WPA')) ||
         (securityFilter === 'wep' && network.capabilities?.includes('WEP'));
 
       // Radio type filter
       const radioType = network.radio_type || network.type || 'wifi'; // Default to wifi
-      const radioMatch = radioTypeFilter === 'all' ||
-        (radioTypeFilter === 'wifi' && (radioType === 'W' || radioType === 'wifi' || radioType === 'WiFi')) ||
-        (radioTypeFilter === 'bluetooth' && (radioType === 'BT' || radioType === 'bluetooth' || radioType === 'Bluetooth')) ||
+      const radioMatch =
+        radioTypeFilter === 'all' ||
+        (radioTypeFilter === 'wifi' &&
+          (radioType === 'W' || radioType === 'wifi' || radioType === 'WiFi')) ||
+        (radioTypeFilter === 'bluetooth' &&
+          (radioType === 'BT' || radioType === 'bluetooth' || radioType === 'Bluetooth')) ||
         (radioTypeFilter === 'ble' && (radioType === 'BLE' || radioType === 'ble')) ||
-        (radioTypeFilter === 'cellular' && (radioType.includes('Cell') || radioType === 'cellular'));
+        (radioTypeFilter === 'cellular' &&
+          (radioType.includes('Cell') || radioType === 'cellular'));
 
       return searchMatch && securityMatch && radioMatch;
     });
@@ -125,30 +140,25 @@ export default function NetworksPage() {
       }
 
       if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return sortDirection === 'asc' 
-          ? aVal.localeCompare(bVal)
-          : bVal.localeCompare(aVal);
+        return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       }
 
-      return sortDirection === 'asc' 
-        ? aVal - bVal
-        : bVal - aVal;
+      return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
     });
 
     return filtered;
   }, [networks, searchTerm, sortField, sortDirection, securityFilter, radioTypeFilter]);
 
   // Group by BSSID octet for forensic analysis
-  const octetGroups = useMemo(() => {
+  const _octetGroups = useMemo(() => {
     const groups: { [key: string]: NetworkEntry[] } = {};
-    
-    filteredAndSortedNetworks.forEach(network => {
+
+    filteredAndSortedNetworks.forEach((network) => {
       const octets = getBSSIDOctets(network.bssid);
       if (octets.length === 6) {
-        const groupKey = selectedOctet !== null 
-          ? octets[selectedOctet] 
-          : octets.slice(0, 3).join(':'); // Group by OUI by default
-        
+        const groupKey =
+          selectedOctet !== null ? octets[selectedOctet] : octets.slice(0, 3).join(':'); // Group by OUI by default
+
         if (!groups[groupKey]) {
           groups[groupKey] = [];
         }
@@ -159,7 +169,7 @@ export default function NetworksPage() {
     return groups;
   }, [filteredAndSortedNetworks, selectedOctet]);
 
-  const handleSort = (field: SortField) => {
+  const _handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -168,9 +178,13 @@ export default function NetworksPage() {
     }
   };
 
-  const getSortIcon = (field: SortField) => {
+  const _getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
-    return sortDirection === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />;
+    return sortDirection === 'asc' ? (
+      <SortAsc className="h-4 w-4" />
+    ) : (
+      <SortDesc className="h-4 w-4" />
+    );
   };
 
   const getSecurityLevel = (capabilities: string) => {
@@ -220,7 +234,8 @@ export default function NetworksPage() {
               {filteredAndSortedNetworks.length} networks
             </Badge>
             <Badge variant="outline" className="ml-2">
-              {networks.reduce((total, network) => total + (network.network_count || 1), 0)} total sightings
+              {networks.reduce((total, network) => total + (network.network_count || 1), 0)} total
+              sightings
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -273,8 +288,8 @@ export default function NetworksPage() {
             </Select>
 
             {/* Octet Grouping */}
-            <Select 
-              value={selectedOctet?.toString() || 'oui'} 
+            <Select
+              value={selectedOctet?.toString() || 'oui'}
               onValueChange={(value) => setSelectedOctet(value === 'oui' ? null : parseInt(value))}
             >
               <SelectTrigger data-testid="select-octet-group">
@@ -334,7 +349,7 @@ export default function NetworksPage() {
                 const securityLevel = getSecurityLevel(network.capabilities);
                 const dbmSignal = network.level || bestlevelToDbm(network.bestlevel || 0);
                 const isSelected = selectedNetworks.has(network.bssid);
-                
+
                 return (
                   <Tooltip key={`${network.bssid}-${index}`}>
                     <TooltipTrigger asChild>
@@ -343,10 +358,8 @@ export default function NetworksPage() {
                           isSelected ? 'bg-background/50' : ''
                         }`}
                         style={{
-                          backgroundColor: isSelected 
-                            ? `${color.hex}10` 
-                            : 'transparent',
-                          borderLeft: `3px solid ${color.hex}`
+                          backgroundColor: isSelected ? `${color.hex}10` : 'transparent',
+                          borderLeft: `3px solid ${color.hex}`,
                         }}
                         onClick={() => toggleNetworkSelection(network.bssid)}
                         data-testid={`network-${network.bssid.replace(/:/g, '-')}`}
@@ -373,7 +386,7 @@ export default function NetworksPage() {
 
                         {/* Security Badge */}
                         <div className="w-16">
-                          <Badge 
+                          <Badge
                             variant={securityLevel === 'Open' ? 'destructive' : 'secondary'}
                             className="text-xs h-5"
                           >
@@ -383,7 +396,7 @@ export default function NetworksPage() {
 
                         {/* Signal Strength */}
                         <div className="w-20 text-right">
-                          <p 
+                          <p
                             className="text-xs font-medium"
                             style={{ color: getSignalStrengthColor(dbmSignal) }}
                           >
@@ -394,7 +407,11 @@ export default function NetworksPage() {
                         {/* Frequency */}
                         <div className="w-16 text-right">
                           <p className="text-xs text-muted-foreground">
-                            {network.frequency > 5000 ? '5G' : network.frequency > 2000 ? '2.4G' : '?'}
+                            {network.frequency > 5000
+                              ? '5G'
+                              : network.frequency > 2000
+                                ? '2.4G'
+                                : '?'}
                           </p>
                         </div>
 
@@ -434,7 +451,9 @@ export default function NetworksPage() {
                           <div>
                             <span className="text-muted-foreground">Frequency:</span>
                             <br />
-                            <span>{network.frequency ? `${network.frequency} MHz` : 'Unknown'}</span>
+                            <span>
+                              {network.frequency ? `${network.frequency} MHz` : 'Unknown'}
+                            </span>
                           </div>
                           {network.lastlat && network.lastlon && (
                             <div className="col-span-2">

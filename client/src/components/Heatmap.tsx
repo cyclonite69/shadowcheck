@@ -12,11 +12,7 @@ const data = [
 function Heatmap() {
   return (
     <div className="glassy p-4 rounded-lg mt-4">
-      <ScatterChart
-        width={400}
-        height={300}
-        margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
-      >
+      <ScatterChart width={400} height={300} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
         <CartesianGrid />
         <XAxis type="number" dataKey="x" name="X" />
         <YAxis type="number" dataKey="y" name="Y" />

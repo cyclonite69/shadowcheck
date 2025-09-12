@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from "wouter";
+import { Link, useLocation } from 'wouter';
 import { Menu, X } from 'lucide-react';
 
 interface MobileShellProps {
@@ -11,10 +11,10 @@ export function MobileShell({ children }: MobileShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const navItems = [
-    { href: "/", icon: "fas fa-tachometer-alt", label: "Dashboard" },
-    { href: "/networks", icon: "fas fa-wifi", label: "Observed Networks", highlight: true },
-    { href: "/visualization", icon: "fas fa-chart-line", label: "Network Visualization" },
-    { href: "/admin", icon: "fas fa-shield-alt", label: "Admin Panel" },
+    { href: '/', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
+    { href: '/networks', icon: 'fas fa-wifi', label: 'Observed Networks', highlight: true },
+    { href: '/visualization', icon: 'fas fa-chart-line', label: 'Network Visualization' },
+    { href: '/admin', icon: 'fas fa-shield-alt', label: 'Admin Panel' },
   ];
 
   return (
@@ -45,16 +45,15 @@ export function MobileShell({ children }: MobileShellProps) {
 
       {/* Mobile Drawer Overlay */}
       {isDrawerOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/50"
-          onClick={() => setIsDrawerOpen(false)}
-        />
+        <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setIsDrawerOpen(false)} />
       )}
 
       {/* Mobile Drawer */}
-      <div className={`fixed top-0 left-0 z-50 h-full w-64 bg-gradient-to-b from-card to-card/95 border-r border-border/50 backdrop-blur-sm transform transition-transform duration-300 ${
-        isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div
+        className={`fixed top-0 left-0 z-50 h-full w-64 bg-gradient-to-b from-card to-card/95 border-r border-border/50 backdrop-blur-sm transform transition-transform duration-300 ${
+          isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         {/* Drawer Header */}
         <div className="p-6 border-b border-border/50">
           <div className="flex items-center gap-3">
@@ -73,7 +72,7 @@ export function MobileShell({ children }: MobileShellProps) {
             </div>
           </div>
         </div>
-        
+
         {/* Navigation */}
         <nav className="flex-1 p-4">
           <div className="space-y-1">
@@ -83,19 +82,23 @@ export function MobileShell({ children }: MobileShellProps) {
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group ${
                   location === item.href
-                    ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary border border-primary/20 shadow-sm"
+                    ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-primary border border-primary/20 shadow-sm'
                     : item.highlight
-                    ? "hover:bg-gradient-to-r hover:from-slate-500/10 hover:to-blue-500/10 text-slate-600 hover:text-cyan-300 border border-slate-500/20 hover:border-slate-500/40"
-                    : "hover:bg-muted/50 text-muted-foreground hover:text-foreground border border-transparent hover:border-border/50"
+                      ? 'hover:bg-gradient-to-r hover:from-slate-500/10 hover:to-blue-500/10 text-slate-600 hover:text-cyan-300 border border-slate-500/20 hover:border-slate-500/40'
+                      : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground border border-transparent hover:border-border/50'
                 }`}
                 data-testid={`nav-link-${item.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                 onClick={() => setIsDrawerOpen(false)}
               >
-                <i className={`${item.icon} w-4 transition-colors ${
-                  location === item.href ? "text-primary" : 
-                  item.highlight ? "text-slate-600 group-hover:text-cyan-300" :
-                  "group-hover:text-primary"
-                }`}></i>
+                <i
+                  className={`${item.icon} w-4 transition-colors ${
+                    location === item.href
+                      ? 'text-primary'
+                      : item.highlight
+                        ? 'text-slate-600 group-hover:text-cyan-300'
+                        : 'group-hover:text-primary'
+                  }`}
+                ></i>
                 <span className="text-sm font-medium">{item.label}</span>
                 {item.highlight && location !== item.href && (
                   <div className="ml-auto px-1.5 py-0.5 bg-slate-500/20 text-slate-600 text-xs font-medium rounded">
@@ -109,7 +112,7 @@ export function MobileShell({ children }: MobileShellProps) {
             ))}
           </div>
         </nav>
-        
+
         {/* Footer */}
         <div className="p-4 border-t border-border/50 bg-muted/20">
           <div className="flex items-center justify-between text-xs">
@@ -126,9 +129,7 @@ export function MobileShell({ children }: MobileShellProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 pt-20 overflow-y-auto">
-        {children}
-      </div>
+      <div className="flex-1 pt-20 overflow-y-auto">{children}</div>
     </div>
   );
 }

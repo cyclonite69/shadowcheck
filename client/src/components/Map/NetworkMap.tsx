@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Map, Satellite, RotateCcw, Filter, MapPin, Activity, Layers, Zap } from 'lucide-react';
+import { Map, Filter, MapPin, Activity, Layers, Zap } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +13,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import mapboxgl from 'mapbox-gl';
 import { wireTooltipNetwork } from '@/components/Map/wireTooltipNetwork';
 
@@ -30,15 +30,15 @@ export default function NetworkMap() {
     wifi: true,
     ble: true,
     bluetooth: true,
-    cellular: true
+    cellular: true,
   });
 
   // GPS functionality to center map on user location
   const handleGpsCenter = () => {
     if (!map.current) return;
-    
+
     setGpsLoading(true);
-    
+
     if (!navigator.geolocation) {
       console.error('Geolocation is not supported by this browser');
       setGpsLoading(false);
@@ -51,7 +51,7 @@ export default function NetworkMap() {
         map.current?.flyTo({
           center: [longitude, latitude],
           zoom: 14,
-          duration: 2000
+          duration: 2000,
         });
         setGpsLoading(false);
       },
@@ -62,7 +62,7 @@ export default function NetworkMap() {
       {
         enableHighAccuracy: true,
         timeout: 5000,
-        maximumAge: 0
+        maximumAge: 0,
       }
     );
   };
@@ -77,31 +77,31 @@ export default function NetworkMap() {
   });
 
   const { data: visualizationData, isLoading } = useQuery({
-    queryKey: ['/api/v1/g63/visualize'],
+    queryKey: ['/api/v1/visualize'],
     refetchInterval: 30000,
   });
 
-  const { data: analytics } = useQuery({
-    queryKey: ['/api/v1/g63/analytics'],
+  const { data: _analytics } = useQuery({
+    queryKey: ['/api/v1/analytics'],
     refetchInterval: 30000,
   });
 
   // Initialize map with proper timing
   useEffect(() => {
     const token = (config as any)?.mapboxToken;
-    
+
     if (configLoading) {
       console.log('Config loading...');
       return;
     }
-    
+
     if (!token) {
       console.log('Waiting for Mapbox token...', { config, hasConfig: !!config });
       return;
     }
-    
+
     console.log('Token available, proceeding with map init');
-    
+
     if (map.current) {
       console.log('Map already exists');
       return;
@@ -115,12 +115,14 @@ export default function NetworkMap() {
         return;
       }
 
-      console.log('Initializing Mapbox...', { 
-        hasToken: !!token, 
+      console.log('Initializing Mapbox...', {
+        hasToken: !!token,
         hasContainer: !!mapContainer.current,
-        containerDims: mapContainer.current ? `${mapContainer.current.offsetWidth}x${mapContainer.current.offsetHeight}` : 'N/A'
+        containerDims: mapContainer.current
+          ? `${mapContainer.current.offsetWidth}x${mapContainer.current.offsetHeight}`
+          : 'N/A',
       });
-      
+
       mapboxgl.accessToken = token;
 
       try {
@@ -128,7 +130,7 @@ export default function NetworkMap() {
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/dark-v11',
           center: [-83.697, 43.023],
-          zoom: 12
+          zoom: 12,
         });
 
         map.current.on('load', () => {
@@ -139,7 +141,6 @@ export default function NetworkMap() {
         map.current.on('error', (e) => {
           console.error('Mapbox error:', e);
         });
-
       } catch (error) {
         console.error('Failed to initialize Mapbox:', error);
       }
@@ -164,16 +165,16 @@ export default function NetworkMap() {
   // Clean up existing layers and sources
   const cleanupMap = () => {
     if (!map.current) return;
-    
+
     // Remove existing layers
-    ['networks', 'networks-vector'].forEach(layerId => {
+    ['networks', 'networks-vector'].forEach((layerId) => {
       if (map.current!.getLayer(layerId)) {
         map.current!.removeLayer(layerId);
       }
     });
-    
+
     // Remove existing sources
-    ['networks', 'networks-vector'].forEach(sourceId => {
+    ['networks', 'networks-vector'].forEach((sourceId) => {
       if (map.current!.getSource(sourceId)) {
         map.current!.removeSource(sourceId);
       }
@@ -188,8 +189,8 @@ export default function NetworkMap() {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
-        features: filteredFeatures
-      }
+        features: filteredFeatures,
+      },
     });
 
     map.current.addLayer({
@@ -201,41 +202,57 @@ export default function NetworkMap() {
           'interpolate',
           ['linear'],
           ['get', 'signal_strength'],
-          -100, 4,  // Weak signal
-          -80, 6,   // Medium signal
-          -60, 8,   // Strong signal
-          -40, 10   // Very strong signal
+          -100,
+          4, // Weak signal
+          -80,
+          6, // Medium signal
+          -60,
+          8, // Strong signal
+          -40,
+          10, // Very strong signal
         ],
         'circle-color': [
           'case',
-          ['==', ['get', 'radio_type'], 'wifi'], '#22c55e',
-          ['==', ['get', 'radio_type'], 'ble'], '#8b5cf6',
-          ['==', ['get', 'radio_type'], 'bluetooth'], '#3b82f6',
-          ['==', ['get', 'radio_type'], 'cellular'], '#dc2626',
-          '#6b7280'
+          ['==', ['get', 'radio_type'], 'wifi'],
+          '#22c55e',
+          ['==', ['get', 'radio_type'], 'ble'],
+          '#8b5cf6',
+          ['==', ['get', 'radio_type'], 'bluetooth'],
+          '#3b82f6',
+          ['==', ['get', 'radio_type'], 'cellular'],
+          '#dc2626',
+          '#6b7280',
         ],
         'circle-stroke-width': [
           'case',
-          ['==', ['get', 'security_level'], 'high'], 2,
-          ['==', ['get', 'security_level'], 'medium'], 1.5,
-          ['==', ['get', 'security_level'], 'low'], 1,
-          ['==', ['get', 'security_level'], 'none'], 3,
-          1
+          ['==', ['get', 'security_level'], 'high'],
+          2,
+          ['==', ['get', 'security_level'], 'medium'],
+          1.5,
+          ['==', ['get', 'security_level'], 'low'],
+          1,
+          ['==', ['get', 'security_level'], 'none'],
+          3,
+          1,
         ],
         'circle-stroke-color': [
           'case',
-          ['==', ['get', 'security_level'], 'high'], '#16a34a',
-          ['==', ['get', 'security_level'], 'medium'], '#ca8a04',
-          ['==', ['get', 'security_level'], 'low'], '#ea580c',
-          ['==', ['get', 'security_level'], 'none'], '#dc2626',
-          '#9ca3af'
+          ['==', ['get', 'security_level'], 'high'],
+          '#16a34a',
+          ['==', ['get', 'security_level'], 'medium'],
+          '#ca8a04',
+          ['==', ['get', 'security_level'], 'low'],
+          '#ea580c',
+          ['==', ['get', 'security_level'], 'none'],
+          '#dc2626',
+          '#9ca3af',
         ],
-        'circle-opacity': 0.8
-      }
+        'circle-opacity': 0.8,
+      },
     });
 
     // Wire tooltip for standard mode
-    wireTooltipNetwork(map.current, "networks");
+    wireTooltipNetwork(map.current, 'networks');
   };
 
   // Vector tiles mode (PMTiles)
@@ -247,7 +264,7 @@ export default function NetworkMap() {
       type: 'vector',
       url: '/api/v1/tiles/{z}/{x}/{y}.mvt', // Dynamic tile endpoint
       maxzoom: 16,
-      minzoom: 8
+      minzoom: 8,
     });
 
     // Radio type filter for vector tiles
@@ -255,9 +272,8 @@ export default function NetworkMap() {
       .filter(([_, enabled]) => enabled)
       .map(([type]) => ['==', ['get', 'radio_type'], type]);
 
-    const radioFilter = radioTypeFilter.length > 0 
-      ? ['any', ...radioTypeFilter]
-      : ['literal', true];
+    const radioFilter =
+      radioTypeFilter.length > 0 ? ['any', ...radioTypeFilter] : ['literal', true];
 
     map.current.addLayer({
       id: 'networks-vector',
@@ -267,26 +283,34 @@ export default function NetworkMap() {
       filter: radioFilter,
       paint: {
         'circle-radius': [
-          'interpolate', ['linear'], ['zoom'],
-          8, ['case', ['<', ['get', 'signal_strength'], -80], 2, 4],
-          16, ['case', ['<', ['get', 'signal_strength'], -80], 6, 12]
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          8,
+          ['case', ['<', ['get', 'signal_strength'], -80], 2, 4],
+          16,
+          ['case', ['<', ['get', 'signal_strength'], -80], 6, 12],
         ],
         'circle-color': [
           'case',
-          ['==', ['get', 'radio_type'], 'wifi'], '#22c55e',
-          ['==', ['get', 'radio_type'], 'ble'], '#8b5cf6',
-          ['==', ['get', 'radio_type'], 'bluetooth'], '#3b82f6',
-          ['==', ['get', 'radio_type'], 'cellular'], '#dc2626',
-          '#6b7280'
+          ['==', ['get', 'radio_type'], 'wifi'],
+          '#22c55e',
+          ['==', ['get', 'radio_type'], 'ble'],
+          '#8b5cf6',
+          ['==', ['get', 'radio_type'], 'bluetooth'],
+          '#3b82f6',
+          ['==', ['get', 'radio_type'], 'cellular'],
+          '#dc2626',
+          '#6b7280',
         ],
         'circle-stroke-width': 1,
         'circle-stroke-color': '#ffffff',
-        'circle-opacity': 0.9
-      }
+        'circle-opacity': 0.9,
+      },
     });
 
     // Wire tooltip for vector mode
-    wireTooltipNetwork(map.current, "networks-vector");
+    wireTooltipNetwork(map.current, 'networks-vector');
   };
 
   // Update map data when mode, visualization data, or filters change
@@ -300,13 +324,13 @@ export default function NetworkMap() {
     } else {
       // Fallback to standard mode
       if (!visualizationData) return;
-      
+
       const allFeatures = (visualizationData as any)?.data?.features || [];
       const filteredFeatures = allFeatures.filter((feature: any) => {
         const radioType = feature.properties.radio_type;
         return radioFilters[radioType as keyof typeof radioFilters];
       });
-      
+
       setupStandardMode(filteredFeatures);
     }
   }, [mapLoaded, mapMode, visualizationData, radioFilters, tilesAvailable]);
@@ -323,15 +347,17 @@ export default function NetworkMap() {
           <CardTitle className="text-slate-600 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Map className="h-5 w-5" />
-              Observation Map ({(visualizationData as any)?.data?.features?.filter((f: any) => 
-                radioFilters[f.properties.radio_type as keyof typeof radioFilters]
-              ).length || 0} sightings)
+              Observation Map (
+              {(visualizationData as any)?.data?.features?.filter(
+                (f: any) => radioFilters[f.properties.radio_type as keyof typeof radioFilters]
+              ).length || 0}{' '}
+              sightings)
             </div>
             <div className="flex items-center gap-2">
               {/* Map Mode Toggle */}
-              <ToggleGroup 
-                type="single" 
-                value={mapMode} 
+              <ToggleGroup
+                type="single"
+                value={mapMode}
                 onValueChange={(value: MapMode) => value && setMapMode(value)}
                 className="border rounded-md"
               >
@@ -339,9 +365,9 @@ export default function NetworkMap() {
                   <Layers className="h-4 w-4 mr-1" />
                   Standard
                 </ToggleGroupItem>
-                <ToggleGroupItem 
-                  value="vector-tiles" 
-                  aria-label="Vector tiles mode" 
+                <ToggleGroupItem
+                  value="vector-tiles"
+                  aria-label="Vector tiles mode"
                   size="sm"
                   disabled={!tilesAvailable}
                   className="relative"
@@ -355,11 +381,11 @@ export default function NetworkMap() {
                   )}
                 </ToggleGroupItem>
               </ToggleGroup>
-              
+
               {/* GPS Button */}
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleGpsCenter}
                 disabled={gpsLoading || !mapLoaded}
                 className="gap-2"
@@ -371,7 +397,7 @@ export default function NetworkMap() {
                 )}
                 GPS
               </Button>
-              
+
               {/* Radio Type Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -388,8 +414,8 @@ export default function NetworkMap() {
                   <DropdownMenuSeparator />
                   <DropdownMenuCheckboxItem
                     checked={radioFilters.wifi}
-                    onCheckedChange={(checked) => 
-                      setRadioFilters(prev => ({ ...prev, wifi: checked }))
+                    onCheckedChange={(checked) =>
+                      setRadioFilters((prev) => ({ ...prev, wifi: checked }))
                     }
                   >
                     <span className="flex items-center gap-2">
@@ -399,8 +425,8 @@ export default function NetworkMap() {
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={radioFilters.ble}
-                    onCheckedChange={(checked) => 
-                      setRadioFilters(prev => ({ ...prev, ble: checked }))
+                    onCheckedChange={(checked) =>
+                      setRadioFilters((prev) => ({ ...prev, ble: checked }))
                     }
                   >
                     <span className="flex items-center gap-2">
@@ -410,8 +436,8 @@ export default function NetworkMap() {
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={radioFilters.bluetooth}
-                    onCheckedChange={(checked) => 
-                      setRadioFilters(prev => ({ ...prev, bluetooth: checked }))
+                    onCheckedChange={(checked) =>
+                      setRadioFilters((prev) => ({ ...prev, bluetooth: checked }))
                     }
                   >
                     <span className="flex items-center gap-2">
@@ -421,8 +447,8 @@ export default function NetworkMap() {
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={radioFilters.cellular}
-                    onCheckedChange={(checked) => 
-                      setRadioFilters(prev => ({ ...prev, cellular: checked }))
+                    onCheckedChange={(checked) =>
+                      setRadioFilters((prev) => ({ ...prev, cellular: checked }))
                     }
                   >
                     <span className="flex items-center gap-2">
@@ -437,8 +463,8 @@ export default function NetworkMap() {
         </CardHeader>
         <CardContent>
           <div className="relative">
-            <div 
-              ref={mapContainer} 
+            <div
+              ref={mapContainer}
               className="w-full h-96 rounded-lg overflow-hidden border border-border/30"
               style={{ minHeight: '384px' }}
             />
@@ -465,42 +491,58 @@ export default function NetworkMap() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {((visualizationData as any)?.data?.features || []).map((feature: any, index: number) => {
-              const props = feature.properties;
-              const coords = feature.geometry?.coordinates;
-              return (
-                <div key={index} className="p-3 border border-border/30 rounded-lg bg-background/40 hover:bg-muted/50 transition-colors">
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="font-medium text-foreground">{props.ssid || 'Hidden Network'}</p>
-                      <p className="text-xs text-muted-foreground font-mono">{props.bssid}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Radio Type</p>
-                      <div className="flex items-center gap-1">
-                        <div className={`w-2 h-2 rounded-full ${
-                          props.radio_type === 'wifi' ? 'bg-green-600' :
-                          props.radio_type === 'ble' ? 'bg-purple-600' :
-                          props.radio_type === 'bluetooth' ? 'bg-blue-600' :
-                          props.radio_type === 'cellular' ? 'bg-red-600' : 'bg-slate-500'
-                        }`}></div>
-                        <span className="text-xs font-medium capitalize">{props.radio_type}</span>
+            {((visualizationData as any)?.data?.features || []).map(
+              (feature: any, index: number) => {
+                const props = feature.properties;
+                const coords = feature.geometry?.coordinates;
+                return (
+                  <div
+                    key={index}
+                    className="p-3 border border-border/30 rounded-lg bg-background/40 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {props.ssid || 'Hidden Network'}
+                        </p>
+                        <p className="text-xs text-muted-foreground font-mono">{props.bssid}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">Signal: {props.signal_strength}dBm</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Location</p>
-                      <p className="text-xs font-mono text-foreground">
-                        {coords ? `${coords[1]?.toFixed(4)}, ${coords[0]?.toFixed(4)}` : 'N/A'}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Security: {props.security_level || 'Unknown'}
-                      </p>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Radio Type</p>
+                        <div className="flex items-center gap-1">
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              props.radio_type === 'wifi'
+                                ? 'bg-green-600'
+                                : props.radio_type === 'ble'
+                                  ? 'bg-purple-600'
+                                  : props.radio_type === 'bluetooth'
+                                    ? 'bg-blue-600'
+                                    : props.radio_type === 'cellular'
+                                      ? 'bg-red-600'
+                                      : 'bg-slate-500'
+                            }`}
+                          ></div>
+                          <span className="text-xs font-medium capitalize">{props.radio_type}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Signal: {props.signal_strength}dBm
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Location</p>
+                        <p className="text-xs font-mono text-foreground">
+                          {coords ? `${coords[1]?.toFixed(4)}, ${coords[0]?.toFixed(4)}` : 'N/A'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Security: {props.security_level || 'Unknown'}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              }
+            )}
             {((visualizationData as any)?.data?.features || []).length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <p>No observation data available</p>

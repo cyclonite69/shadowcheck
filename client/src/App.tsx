@@ -1,14 +1,14 @@
 import React, { useRef, useEffect } from 'react';
 import { LayoutDashboard, AlertCircle, Wifi, Loader } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
-import { 
-  useConfigQuery, 
-  useNetworksQuery, 
-  useVisualizeQuery, 
-  useAnalyticsQuery, 
-  useSignalStrengthQuery, 
+import {
+  useConfigQuery,
+  useNetworksQuery,
+  useVisualizeQuery,
+  useAnalyticsQuery,
+  useSignalStrengthQuery,
   useSecurityAnalysisQuery,
-  useStatusQuery
+  useStatusQuery,
 } from './hooks/useQueries';
 import NetworkCard from './components/cards/NetworkCard';
 import AnalyticsCard from './components/cards/AnalyticsCard';
@@ -24,7 +24,7 @@ function App() {
 
   // Queries
   const { data: config } = useConfigQuery();
-  const { data: networks, isLoading: networksLoading, error: networksError } = useNetworksQuery(10);
+  const { data: networks, isLoading: networksLoading, error: networksError } = useNetworksQuery(100);
   const { data: visualize } = useVisualizeQuery();
   const { data: analytics } = useAnalyticsQuery();
   const { data: signalStrength } = useSignalStrengthQuery();
@@ -34,15 +34,15 @@ function App() {
   // Initialize Mapbox
   useEffect(() => {
     if (map.current || !mapContainer.current) return;
-    
+
     const token = config?.mapboxToken || import.meta.env.VITE_MAPBOX_TOKEN;
     mapboxgl.accessToken = token || 'pk.test';
-    
+
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/standard',
       center: [-118.2437, 34.0522],
-      zoom: 10
+      zoom: 10,
     });
 
     return () => {
@@ -76,16 +76,19 @@ function App() {
                 'interpolate',
                 ['linear'],
                 ['get', 'signal_strength'],
-                -90, '#ef4444',
-                -70, '#f59e0b',
-                -50, '#10b981'
+                -90,
+                '#ef4444',
+                -70,
+                '#f59e0b',
+                -50,
+                '#10b981',
               ],
-              '#00d9e1'
+              '#00d9e1',
             ],
             'circle-opacity': 0.8,
             'circle-stroke-width': 1,
-            'circle-stroke-color': '#ffffff'
-          }
+            'circle-stroke-color': '#ffffff',
+          },
         });
 
         // Add click handler
@@ -94,14 +97,16 @@ function App() {
             const feature = e.features[0];
             new mapboxgl.Popup()
               .setLngLat(e.lngLat)
-              .setHTML(`
+              .setHTML(
+                `
                 <div class="text-black">
                   <strong>${feature.properties?.ssid || 'Hidden Network'}</strong><br>
                   <strong>BSSID:</strong> ${feature.properties?.bssid}<br>
                   <strong>Signal:</strong> ${feature.properties?.signal_strength || 'N/A'} dBm<br>
                   <strong>Security:</strong> ${feature.properties?.encryption || 'Unknown'}
                 </div>
-              `)
+              `
+              )
               .addTo(map.current!);
           }
         });
@@ -126,14 +131,10 @@ function App() {
             <LayoutDashboard size={24} className="text-[#00D9E1]" />
             <h2 className="text-xl font-bold">ShadowCheck</h2>
           </div>
-          
+
           {/* Status Card */}
-          <StatusCard 
-            status={status} 
-            isLoading={statusLoading} 
-            error={statusError} 
-          />
-          
+          <StatusCard status={status} isLoading={statusLoading} error={statusError} />
+
           <div className="mt-4">
             <ul className="space-y-2">
               <li className="flex items-center space-x-2 p-2 rounded hover:bg-white hover:bg-opacity-10 cursor-pointer">
@@ -151,14 +152,13 @@ function App() {
         {/* Main Content - Map and Analytics */}
         <main className="glassy p-4 rounded-lg mb-4 lg:mb-0">
           <h1 className="text-xl font-bold mb-4">SIGINT Forensics Dashboard</h1>
-          <div 
-            ref={mapContainer}
-            className="w-full h-[60vh] lg:h-[80vh] rounded-lg overflow-hidden mb-4"
-          />
-          
+          <div className="h-[60vh] lg:h-[80vh] mb-4">
+            <SpatialCard />
+          </div>
+
           {/* Analytics Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <AnalyticsCard 
+            <AnalyticsCard
               analytics={analytics}
               signalStrength={signalStrength}
               securityAnalysis={securityAnalysis}
@@ -167,35 +167,32 @@ function App() {
           </div>
         </main>
 
-        {/* Alerts Panel */}
-        <aside className="glassy p-4 rounded-lg space-y-4">
+        {/* Observations Panel */}
+        <aside className="glassy p-4 rounded-lg flex flex-col">
           <div className="flex items-center space-x-2 mb-4">
-            <AlertCircle size={20} className="text-red-400" />
-            <h3 className="text-lg font-semibold">Live Networks</h3>
+            <Wifi size={20} className="text-[#00D9E1]" />
+            <h3 className="text-lg font-semibold">Observations</h3>
           </div>
-          
-          {/* Networks List */}
-          <div className="max-h-64 overflow-y-auto space-y-2">
+
+          {/* Networks List - Full Height */}
+          <div className="flex-1 overflow-y-auto space-y-2">
             {networksLoading && (
               <div className="flex items-center justify-center p-4">
                 <Loader size={20} className="animate-spin text-[#00D9E1]" />
-                <span className="ml-2 text-gray-400">Loading networks...</span>
+                <span className="ml-2 text-gray-400">Loading observations...</span>
               </div>
             )}
-            
+
             {networksError && (
               <div className="text-center text-red-400 text-sm p-4">
-                Error loading networks: {networksError.message}
+                Error loading observations: {networksError.message}
               </div>
             )}
-            
+
             {networks?.data.map((network) => (
               <NetworkCard key={network.id} network={network} />
             ))}
           </div>
-
-          {/* Spatial Search */}
-          <SpatialCard />
         </aside>
       </div>
 

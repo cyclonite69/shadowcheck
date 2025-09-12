@@ -1,6 +1,6 @@
 // server/routes/visualize_latest.ts
-import { Router } from "express";
-import { query } from "../db";
+import { Router } from 'express';
+import { query } from '../db';
 
 const router = Router();
 
@@ -10,7 +10,7 @@ const router = Router();
  * Adds cell_mcc/mnc/cid for cellular IDs shaped like MCC_MNC_CID,
  * and ble_services[] for BT rows parsed from capabilities.
  */
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
   const limit = Math.min(Number(req.query.limit ?? 500) || 500, 5000);
 
   const sql = `
@@ -100,7 +100,7 @@ router.get("/", async (req, res) => {
 
   try {
     const { rows } = await query(sql, [limit]);
-    const fc = rows?.[0]?.fc ?? { type: "FeatureCollection", features: [] };
+    const fc = rows?.[0]?.fc ?? { type: 'FeatureCollection', features: [] };
     res.json(fc);
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message ?? String(err) });

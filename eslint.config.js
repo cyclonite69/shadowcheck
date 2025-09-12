@@ -1,75 +1,58 @@
 import js from '@eslint/js';
-import tsPlugin from '@typescript-eslint/eslint-plugin';
-import tsParser from '@typescript-eslint/parser';
+import tseslint from 'typescript-eslint';
+import react from 'eslint-plugin-react';
+import globals from 'globals';
 import prettier from 'eslint-config-prettier';
 
-export default [
+export default tseslint.config(
+  { ignores: ['dist/**', 'node_modules/**', 'server/vite.js', 'server/index.js', 'vite.config.js'] },
   js.configs.recommended,
-  {
-    files: ['client/**/*.{ts,tsx}'],
-    languageOptions: {
-      parser: tsParser,
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      globals: {
-        // Browser globals
-        window: true,
-        document: true,
-        console: true,
-        fetch: true,
-        navigator: true,
-        setTimeout: true,
-        HTMLDivElement: true,
-        MouseEvent: true,
-        crypto: true
-      },
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true
-        }
-      }
-    },
-    plugins: {
-      '@typescript-eslint': tsPlugin
-    },
-    rules: {
-      ...tsPlugin.configs.recommended.rules,
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
-      'prefer-const': 'error',
-      'no-var': 'error'
-    }
-  },
-  {
-    files: ['server/**/*.{ts,tsx}'],
-    languageOptions: {
-      parser: tsParser,
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      globals: {
-        // Node globals
-        process: true,
-        console: true,
-        require: true,
-        Buffer: true,
-        __dirname: true,
-        __filename: true
-      }
-    },
-    plugins: {
-      '@typescript-eslint': tsPlugin
-    },
-    rules: {
-      ...tsPlugin.configs.recommended.rules,
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-require-imports': 'off', // Allow require in server code
-      'prefer-const': 'error',
-      'no-var': 'error'
-    }
-  },
+  ...tseslint.configs.recommended,
+  react.configs.flat.recommended,
   prettier,
   {
-    ignores: ['dist/**', 'node_modules/**', 'eslint.config.js', '**/*.js']
+    files: ['**/*.{ts,tsx}'],
+    ignores: ['**/*.test.ts*', '**/*.d.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...globals.es2022
+      },
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        project: './tsconfig.json',
+        tsconfigRootDir: import.meta.dirname
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint.plugin,
+      react: react
+    },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_'
+        }
+      ],
+      'react/react-in-jsx-scope': 'off',
+      'react/jsx-uses-react': 'off',
+      'react/jsx-uses-vars': 'off',
+      'react/prop-types': 'off',
+      'no-empty': 'warn',
+      'no-useless-escape': 'error',
+      'no-undef': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-unused-expressions': 'warn'
+    },
+    settings: {
+      react: { version: 'detect' }
+    }
   }
-];
+);

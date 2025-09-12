@@ -1,79 +1,105 @@
-import { sql } from "drizzle-orm";
-import { pgTable, pgSchema, text, varchar, timestamp, decimal, integer, bigint, doublePrecision, unique, index } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
+import { sql } from 'drizzle-orm';
+import {
+  pgTable,
+  pgSchema,
+  text,
+  varchar,
+  timestamp,
+  decimal,
+  integer,
+  bigint,
+  doublePrecision,
+  unique,
+  index,
+} from 'drizzle-orm/pg-core';
+import { createInsertSchema } from 'drizzle-zod';
+import { z } from 'zod';
 
 // App Schema (normalized structure)
-export const appSchema = pgSchema("app");
+export const appSchema = pgSchema('app');
 
 // Normalized WiFi Network Registry
-export const networks = appSchema.table("networks", {
-  id: bigint("id", { mode: "bigint" }).primaryKey().generatedByDefaultAsIdentity(),
-  bssid: text("bssid").notNull().unique(),
-  first_seen_at: timestamp("first_seen_at", { withTimezone: true }).notNull(),
-  last_seen_at: timestamp("last_seen_at", { withTimezone: true }).notNull(),
-  current_ssid: text("current_ssid"),
-  current_frequency: integer("current_frequency"),
-  current_capabilities: text("current_capabilities"),
-  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-}, (table) => ({
-  bssidIdx: index("idx_networks_bssid").on(table.bssid),
-  lastSeenIdx: index("idx_networks_last_seen").on(table.last_seen_at),
-}));
+export const networks = appSchema.table(
+  'networks',
+  {
+    id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
+    bssid: text('bssid').notNull().unique(),
+    first_seen_at: timestamp('first_seen_at', { withTimezone: true }).notNull(),
+    last_seen_at: timestamp('last_seen_at', { withTimezone: true }).notNull(),
+    current_ssid: text('current_ssid'),
+    current_frequency: integer('current_frequency'),
+    current_capabilities: text('current_capabilities'),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    bssidIdx: index('idx_networks_bssid').on(table.bssid),
+    lastSeenIdx: index('idx_networks_last_seen').on(table.last_seen_at),
+  })
+);
 
-// GPS Scan Locations  
-export const locations = appSchema.table("locations", {
-  id: bigint("id", { mode: "bigint" }).primaryKey().generatedByDefaultAsIdentity(),
-  latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
-  longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(), 
-  altitude: decimal("altitude", { precision: 8, scale: 2 }),
-  accuracy: decimal("accuracy", { precision: 6, scale: 2 }),
-  observed_at: timestamp("observed_at", { withTimezone: true }).notNull(),
-  device_id: text("device_id").default("termux_import"),
-  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-}, (table) => ({
-  uniqueLocationTime: unique().on(table.latitude, table.longitude, table.observed_at),
-}));
+// GPS Scan Locations
+export const locations = appSchema.table(
+  'locations',
+  {
+    id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
+    latitude: decimal('latitude', { precision: 10, scale: 8 }).notNull(),
+    longitude: decimal('longitude', { precision: 11, scale: 8 }).notNull(),
+    altitude: decimal('altitude', { precision: 8, scale: 2 }),
+    accuracy: decimal('accuracy', { precision: 6, scale: 2 }),
+    observed_at: timestamp('observed_at', { withTimezone: true }).notNull(),
+    device_id: text('device_id').default('termux_import'),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    uniqueLocationTime: unique().on(table.latitude, table.longitude, table.observed_at),
+  })
+);
 
 // Network Observations Junction Table
-export const networkObservations = appSchema.table("network_observations", {
-  id: bigint("id", { mode: "bigint" }).primaryKey().generatedByDefaultAsIdentity(),
-  network_id: bigint("network_id", { mode: "bigint" }).notNull().references(() => networks.id, { onDelete: "cascade" }),
-  location_id: bigint("location_id", { mode: "bigint" }).notNull().references(() => locations.id, { onDelete: "cascade" }),
-  signal_strength: integer("signal_strength"),
-  observed_at: timestamp("observed_at", { withTimezone: true }).notNull(),
-  frequency_at_time: integer("frequency_at_time"),
-  capabilities_at_time: text("capabilities_at_time"),
-  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+export const networkObservations = appSchema.table('network_observations', {
+  id: bigint('id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
+  network_id: bigint('network_id', { mode: 'bigint' })
+    .notNull()
+    .references(() => networks.id, { onDelete: 'cascade' }),
+  location_id: bigint('location_id', { mode: 'bigint' })
+    .notNull()
+    .references(() => locations.id, { onDelete: 'cascade' }),
+  signal_strength: integer('signal_strength'),
+  observed_at: timestamp('observed_at', { withTimezone: true }).notNull(),
+  frequency_at_time: integer('frequency_at_time'),
+  capabilities_at_time: text('capabilities_at_time'),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
 // GPS Tracking Data (independent)
-export const routes = appSchema.table("routes", {
-  _id: bigint("_id", { mode: "bigint" }).primaryKey().generatedByDefaultAsIdentity(),
-  run_id: integer("run_id").notNull(),
-  wifi_visible: integer("wifi_visible").notNull().default(0),
-  cell_visible: integer("cell_visible").notNull().default(0),
-  bt_visible: integer("bt_visible").notNull().default(0),
-  lat: doublePrecision("lat").notNull(),
-  lon: doublePrecision("lon").notNull(), 
-  altitude: doublePrecision("altitude").notNull(),
-  accuracy: doublePrecision("accuracy").notNull(),
-  time: bigint("time", { mode: "bigint" }).notNull(),
+export const routes = appSchema.table('routes', {
+  _id: bigint('_id', { mode: 'bigint' }).primaryKey().generatedByDefaultAsIdentity(),
+  run_id: integer('run_id').notNull(),
+  wifi_visible: integer('wifi_visible').notNull().default(0),
+  cell_visible: integer('cell_visible').notNull().default(0),
+  bt_visible: integer('bt_visible').notNull().default(0),
+  lat: doublePrecision('lat').notNull(),
+  lon: doublePrecision('lon').notNull(),
+  altitude: doublePrecision('altitude').notNull(),
+  accuracy: doublePrecision('accuracy').notNull(),
+  time: bigint('time', { mode: 'bigint' }).notNull(),
 });
 
 // IEEE OUI Lookup Table
-export const ieeeOuis = appSchema.table("ieee_ouis", {
-  assignment: text("assignment").primaryKey(),
-  organization_name: text("organization_name"),
-  organization_address: text("organization_address"),
+export const ieeeOuis = appSchema.table('ieee_ouis', {
+  assignment: text('assignment').primaryKey(),
+  organization_name: text('organization_name'),
+  organization_address: text('organization_address'),
 });
 
 // User management
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+export const users = pgTable('users', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  username: text('username').notNull().unique(),
+  password: text('password').notNull(),
 });
 
 // Schema validation

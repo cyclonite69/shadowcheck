@@ -1,16 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 
 export function DatabaseStatus() {
   const { data: systemStatus, isLoading } = useQuery({
-    queryKey: ["/api/v1/status"],
+    queryKey: ['/api/v1/status'],
     queryFn: () => api.getSystemStatus(),
     refetchInterval: 5000,
   });
 
   const handleRestoreDatabase = () => {
     // This would open a file upload dialog or redirect to database restoration workflow
-    console.log("Database restoration requested");
+    console.log('Database restoration requested');
     // TODO: Implement database restoration workflow
   };
 
@@ -42,7 +42,9 @@ export function DatabaseStatus() {
     <div className="bg-card rounded-lg border border-border">
       <div className="p-6 border-b border-border">
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          <i className={`fas fa-database ${systemStatus?.database.connected ? "text-accent" : "text-destructive"}`}></i>
+          <i
+            className={`fas fa-database ${systemStatus?.database.connected ? 'text-accent' : 'text-destructive'}`}
+          ></i>
           Database Status
         </h3>
         <p className="text-sm text-muted-foreground mt-1">PostgreSQL + PostGIS connection</p>
@@ -51,30 +53,34 @@ export function DatabaseStatus() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm">Connection Pool</span>
-            <span className={`px-2 py-1 text-xs rounded ${
-              systemStatus?.database.connected 
-                ? "bg-accent/20 text-accent" 
-                : "bg-destructive/20 text-destructive"
-            }`} data-testid="db-status">
-              {systemStatus?.database.connected ? "Connected" : "Dormant"}
+            <span
+              className={`px-2 py-1 text-xs rounded ${
+                systemStatus?.database.connected
+                  ? 'bg-accent/20 text-accent'
+                  : 'bg-destructive/20 text-destructive'
+              }`}
+              data-testid="db-status"
+            >
+              {systemStatus?.database.connected ? 'Connected' : 'Dormant'}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm">Active Connections</span>
             <span className="text-sm font-mono" data-testid="db-connections">
-              {systemStatus?.database.activeConnections || 0}/{systemStatus?.database.maxConnections || 5}
+              {systemStatus?.database.activeConnections || 0}/
+              {systemStatus?.database.maxConnections || 5}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm">PostGIS Extension</span>
             <span className="text-sm text-muted-foreground" data-testid="postgis-status">
-              {systemStatus?.database.postgisEnabled ? "Available" : "Not Available"}
+              {systemStatus?.database.postgisEnabled ? 'Available' : 'Not Available'}
             </span>
           </div>
-          
+
           {!systemStatus?.database.connected && (
             <div className="pt-4 border-t border-border">
-              <button 
+              <button
                 onClick={handleRestoreDatabase}
                 className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm font-medium"
                 data-testid="restore-database-button"
@@ -87,7 +93,7 @@ export function DatabaseStatus() {
               </p>
             </div>
           )}
-          
+
           {systemStatus?.database.connected && (
             <div className="pt-4 border-t border-border">
               <div className="flex items-center gap-2 text-sm text-accent">

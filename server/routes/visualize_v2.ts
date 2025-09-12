@@ -1,6 +1,6 @@
 // server/routes/visualize_v2.ts
-import { Router } from "express";
-import { query } from "../db";
+import { Router } from 'express';
+import { query } from '../db';
 
 const router = Router();
 
@@ -11,7 +11,7 @@ const router = Router();
  * - Cell normalization (cell_mcc/mnc/cid when bssid is MCC_MNC_CID)
  * - BLE service UUIDs (ble_services[]) parsed from capabilities for BT rows
  */
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
   const limit = Math.min(Number(req.query.limit ?? 500) || 500, 5000);
   try {
     const sql = `
@@ -80,7 +80,7 @@ router.get("/", async (req, res) => {
       FROM rows r;
     `;
     const { rows } = await query(sql, [limit]);
-    const fc = rows?.[0]?.fc ?? { type: "FeatureCollection", features: [] };
+    const fc = rows?.[0]?.fc ?? { type: 'FeatureCollection', features: [] };
     res.json(fc);
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message ?? String(err) });

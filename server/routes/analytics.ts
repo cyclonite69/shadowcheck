@@ -1,5 +1,5 @@
-import { Router } from "express";
-import { query } from "../db";
+import { Router } from 'express';
+import { query } from '../db';
 
 const router = Router();
 
@@ -7,7 +7,7 @@ const router = Router();
  * GET /api/v1/analytics?recent_limit=20&before_time_ms=...
  * Counts + recent list (cursor pagination). Uses enriched view.
  */
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
   const recentLimit = Math.min(Number(req.query.recent_limit ?? 20) || 20, 200);
   const before = Number(req.query.before_time_ms);
   const hasBefore = Number.isFinite(before);
@@ -21,8 +21,8 @@ router.get("/", async (req, res) => {
     const counts = await query(countsSql);
 
     const where = hasBefore
-      ? "WHERE d.lat IS NOT NULL AND d.lon IS NOT NULL AND d.time < $1"
-      : "WHERE d.lat IS NOT NULL AND d.lon IS NOT NULL";
+      ? 'WHERE d.lat IS NOT NULL AND d.lon IS NOT NULL AND d.time < $1'
+      : 'WHERE d.lat IS NOT NULL AND d.lon IS NOT NULL';
     const limPos = hasBefore ? 2 : 1;
 
     const recentSql = `
@@ -45,9 +45,11 @@ router.get("/", async (req, res) => {
       ok: true,
       counts: counts.rows[0] ?? {},
       cursor: {
-        next_before_time_ms: recent.rows.length ? recent.rows[recent.rows.length - 1].time_epoch_ms : null
+        next_before_time_ms: recent.rows.length
+          ? recent.rows[recent.rows.length - 1].time_epoch_ms
+          : null,
       },
-      recent: recent.rows
+      recent: recent.rows,
     });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message ?? String(err) });

@@ -1,6 +1,6 @@
 // server/routes/networks.ts
-import { Router } from "express";
-import { query } from "../db";
+import { Router } from 'express';
+import { query } from '../db';
 
 const router = Router();
 
@@ -18,18 +18,18 @@ const router = Router();
  * Adds BLE service UUIDs for BT rows when present in capabilities:
  *   ble_services[]
  */
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
   const limit = Math.min(Number(req.query.limit ?? 100) || 100, 1000);
   const before = Number(req.query.before_time_ms);
   const hasBefore = Number.isFinite(before);
 
   const distinctLatest =
-    req.query.distinct_latest === "1" ||
-    req.query.distinct_latest === "true" ||
-    req.query.distinct_latest === "yes";
+    req.query.distinct_latest === '1' ||
+    req.query.distinct_latest === 'true' ||
+    req.query.distinct_latest === 'yes';
 
   // Build base CTE depending on distinct_latest
-  const whereTime = hasBefore ? "WHERE d.time < $1" : "";
+  const whereTime = hasBefore ? 'WHERE d.time < $1' : '';
   const paramOffset = hasBefore ? 2 : 1;
 
   const baseCTE = distinctLatest
@@ -129,9 +129,9 @@ router.get("/", async (req, res) => {
       ok: true,
       count: rows.length,
       cursor: {
-        next_before_time_ms: rows.length ? rows[rows.length - 1].time_epoch_ms : null
+        next_before_time_ms: rows.length ? rows[rows.length - 1].time_epoch_ms : null,
       },
-      rows
+      rows,
     });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message ?? String(err) });

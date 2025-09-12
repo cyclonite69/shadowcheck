@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 export function ApiTestPanel() {
   const { toast } = useToast();
   const [testResults, setTestResults] = useState<Record<string, any>>({});
 
   const { data: systemStatus } = useQuery({
-    queryKey: ["/api/v1/status"],
+    queryKey: ['/api/v1/status'],
     queryFn: () => api.getSystemStatus(),
     refetchInterval: 5000,
   });
@@ -17,51 +17,51 @@ export function ApiTestPanel() {
     mutationFn: async (endpoint: string) => {
       let result;
       const startTime = performance.now();
-      
+
       try {
         switch (endpoint) {
-          case "health":
+          case 'health':
             result = await api.getHealth();
             break;
-          case "version":
+          case 'version':
             result = await api.getVersion();
             break;
-          case "networks":
+          case 'networks':
             result = await api.getNetworks(10);
             break;
           default:
-            throw new Error("Unknown endpoint");
+            throw new Error('Unknown endpoint');
         }
-        
+
         const endTime = performance.now();
         const duration = Math.round(endTime - startTime);
-        
+
         return { success: true, data: result, duration };
       } catch (error: any) {
         const endTime = performance.now();
         const duration = Math.round(endTime - startTime);
-        
-        return { 
-          success: false, 
-          error: error.message, 
+
+        return {
+          success: false,
+          error: error.message,
           status: error.status || 500,
-          duration 
+          duration,
         };
       }
     },
     onSuccess: (result, endpoint) => {
-      setTestResults(prev => ({ ...prev, [endpoint]: result }));
-      
+      setTestResults((prev) => ({ ...prev, [endpoint]: result }));
+
       if (result.success) {
         toast({
-          title: "Test Successful",
+          title: 'Test Successful',
           description: `${endpoint} endpoint responded in ${result.duration}ms`,
         });
       } else {
         toast({
-          title: "Test Failed",
+          title: 'Test Failed',
           description: `${endpoint} endpoint failed: ${result.error}`,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     },
@@ -69,25 +69,25 @@ export function ApiTestPanel() {
 
   const endpoints = [
     {
-      method: "GET",
-      path: "/api/v1/health",
-      endpoint: "health",
+      method: 'GET',
+      path: '/api/v1/health',
+      endpoint: 'health',
       available: true,
-      description: "Check system health status",
+      description: 'Check system health status',
     },
     {
-      method: "GET",
-      path: "/api/v1/version",
-      endpoint: "version",
+      method: 'GET',
+      path: '/api/v1/version',
+      endpoint: 'version',
       available: true,
-      description: "Get system version information",
+      description: 'Get system version information',
     },
     {
-      method: "GET",
-      path: "/api/v1/networks",
-      endpoint: "networks",
+      method: 'GET',
+      path: '/api/v1/networks',
+      endpoint: 'networks',
       available: systemStatus?.database.connected || false,
-      description: "Fetch network observations",
+      description: 'Fetch network observations',
     },
   ];
 
@@ -105,9 +105,13 @@ export function ApiTestPanel() {
           <div key={ep.endpoint} className="space-y-2">
             <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
               <div className="flex items-center gap-3">
-                <span className={`px-2 py-1 text-xs font-mono rounded ${
-                  ep.available ? "bg-accent text-accent-foreground" : "bg-destructive text-destructive-foreground"
-                }`}>
+                <span
+                  className={`px-2 py-1 text-xs font-mono rounded ${
+                    ep.available
+                      ? 'bg-accent text-accent-foreground'
+                      : 'bg-destructive text-destructive-foreground'
+                  }`}
+                >
                   {ep.method}
                 </span>
                 <span className="font-mono text-sm">{ep.path}</span>
@@ -119,7 +123,7 @@ export function ApiTestPanel() {
                   className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors disabled:opacity-50"
                   data-testid={`test-button-${ep.endpoint}`}
                 >
-                  {testEndpointMutation.isPending ? "Testing..." : "Test"}
+                  {testEndpointMutation.isPending ? 'Testing...' : 'Test'}
                 </button>
               ) : (
                 <span className="px-3 py-1 text-xs bg-destructive/20 text-destructive rounded">
@@ -127,16 +131,20 @@ export function ApiTestPanel() {
                 </span>
               )}
             </div>
-            
+
             {testResults[ep.endpoint] && (
-              <div className={`p-3 rounded-md text-xs font-mono ${
-                testResults[ep.endpoint].success 
-                  ? "bg-accent/10 text-accent" 
-                  : "bg-destructive/10 text-destructive"
-              }`}>
+              <div
+                className={`p-3 rounded-md text-xs font-mono ${
+                  testResults[ep.endpoint].success
+                    ? 'bg-accent/10 text-accent'
+                    : 'bg-destructive/10 text-destructive'
+                }`}
+              >
                 {testResults[ep.endpoint].success ? (
                   <div>
-                    <div className="font-semibold">✓ Success ({testResults[ep.endpoint].duration}ms)</div>
+                    <div className="font-semibold">
+                      ✓ Success ({testResults[ep.endpoint].duration}ms)
+                    </div>
                     <div className="mt-1 opacity-75">
                       {JSON.stringify(testResults[ep.endpoint].data, null, 2).slice(0, 200)}...
                     </div>

@@ -1,5 +1,5 @@
-import { Router } from "express";
-import { query } from "../db";
+import { Router } from 'express';
+import { query } from '../db';
 
 const router = Router();
 
@@ -7,14 +7,14 @@ const router = Router();
  * GET /api/v1/within?lat=..&lon=..&radius_m=200&limit=200
  * Haversine (no PostGIS). Reads from enriched view.
  */
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
   const lat = Number(req.query.lat);
   const lon = Number(req.query.lon);
   const radius = Number(req.query.radius_m ?? 200); // meters
-  const limit  = Math.min(Number(req.query.limit ?? 200) || 200, 2000);
+  const limit = Math.min(Number(req.query.limit ?? 200) || 200, 2000);
 
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-    return res.status(400).json({ ok: false, error: "lat and lon are required numbers" });
+    return res.status(400).json({ ok: false, error: 'lat and lon are required numbers' });
   }
 
   const sql = `

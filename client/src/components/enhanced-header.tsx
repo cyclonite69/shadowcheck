@@ -4,7 +4,6 @@ interface EnhancedHeaderProps {
 }
 
 export function EnhancedHeader({ title, subtitle }: EnhancedHeaderProps) {
-
   return (
     <header className="bg-gradient-to-r from-card to-card/80 border-b border-border/50 backdrop-blur-sm">
       <div className="px-6 py-5">
@@ -20,16 +19,16 @@ export function EnhancedHeader({ title, subtitle }: EnhancedHeaderProps) {
               <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            <button 
+            <button
               className="p-2.5 rounded-lg hover:bg-muted/50 transition-all duration-200 border border-border/30 hover:border-primary/30"
               onClick={() => window.location.reload()}
               data-testid="refresh-button"
             >
               <i className="fas fa-sync-alt text-muted-foreground hover:text-primary transition-colors"></i>
             </button>
-            
+
             <button className="p-2.5 rounded-lg hover:bg-muted/50 transition-all duration-200 border border-border/30 hover:border-primary/30">
               <i className="fas fa-cog text-muted-foreground hover:text-primary transition-colors"></i>
             </button>

@@ -1,10 +1,8 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@import "tailwindcss";
 
 body {
   margin: 0;
-  background: #001A00; /* Dark mode for ShadowCheck */
+  background: #001a00; /* Dark mode for ShadowCheck */
   color: white;
   font-family: 'Inter', sans-serif;
 }
@@ -15,7 +13,9 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
-  transition: transform 0.3s ease, filter 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    filter 0.3s ease;
 }
 
 .glassy:hover {

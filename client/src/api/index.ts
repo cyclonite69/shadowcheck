@@ -3,7 +3,10 @@ const API_BASE = '/api/v1';
 
 // Error handling utility
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string
+  ) {
     super(message);
     this.name = 'ApiError';
   }
@@ -12,17 +15,17 @@ export class ApiError extends Error {
 // Base fetch function with error handling
 export const apiRequest = async <T>(endpoint: string): Promise<T> => {
   const response = await fetch(`${API_BASE}${endpoint}`);
-  
+
   if (!response.ok) {
     throw new ApiError(response.status, `API Error: ${response.statusText}`);
   }
-  
+
   const data = await response.json();
-  
+
   if (!data.ok) {
     throw new ApiError(response.status, data.error || 'API request failed');
   }
-  
+
   return data;
 };
 
@@ -38,7 +41,12 @@ export const fetchConfig = async () => {
 export const fetchStatus = async () => {
   return apiRequest<{
     ok: boolean;
-    database: { connected: boolean; activeConnections: number; maxConnections: number; postgisEnabled: boolean };
+    database: {
+      connected: boolean;
+      activeConnections: number;
+      maxConnections: number;
+      postgisEnabled: boolean;
+    };
     memory: { used: number; total: number };
     uptime: number;
   }>('/status');

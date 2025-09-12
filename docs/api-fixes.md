@@ -3,22 +3,28 @@
 ## Issues Identified
 
 ### 1. Storage Layer Misalignment
+
 **Problem**: `storage.ts` methods query wrong tables/schemas
+
 - `getNetworks()` queries `app.networks` but APIs expect `location_details_enriched` structure
 - G63 APIs work correctly but main APIs have schema mismatch
 
 **Fix**: Update storage methods to use new unified views
 
 ### 2. Route Handler Inconsistency
+
 **Problem**: Different network endpoints use different data sources
-- `/api/v1/networks` (in routes.ts) calls `storage.getNetworks()` 
+
+- `/api/v1/networks` (in routes.ts) calls `storage.getNetworks()`
 - `/api/v1/networks` (in routes/networks.ts) directly queries `location_details_enriched`
 - Routes are duplicated and conflicting
 
 **Fix**: Consolidate to single network endpoint using unified view
 
 ### 3. Schema vs API Response Mismatch
+
 **Problem**: Normalized schema doesn't match expected API responses
+
 - Schema has `networks` with `first_seen_at`, `last_seen_at`, `current_ssid`
 - APIs expect `observed_at`, `ssid`, `signal_strength`, `latitude`, `longitude`
 
@@ -80,10 +86,10 @@ async getNetworksWithin(lat: number, lon: number, radius: number, limit: number 
 
 ```typescript
 // In routes/networks.ts - update to use storage layer
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
   const limit = Math.min(Number(req.query.limit ?? 100) || 100, 1000);
   const before = Number(req.query.before_time_ms);
-  
+
   try {
     let networks;
     if (before && Number.isFinite(before)) {
@@ -92,14 +98,14 @@ router.get("/", async (req, res) => {
     } else {
       networks = await storage.getNetworks(limit);
     }
-    
+
     res.json({
       ok: true,
       count: networks.length,
       cursor: {
-        next_before_time_ms: networks.length ? networks[networks.length - 1].time_epoch_ms : null
+        next_before_time_ms: networks.length ? networks[networks.length - 1].time_epoch_ms : null,
       },
-      rows: networks
+      rows: networks,
     });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message ?? String(err) });
@@ -110,35 +116,36 @@ router.get("/", async (req, res) => {
 ### 3. Update Main Routes
 
 **Remove conflicting endpoints from routes.ts**:
+
 - Remove `/api/v1/networks` (line 74-101)
 - Keep visualization endpoints but update to use storage methods
 
 ```typescript
 // In routes.ts - update visualization endpoint
-app.get("/api/v1/visualize", async (req, res) => {
+app.get('/api/v1/visualize', async (req, res) => {
   const isConnected = await storage.isDatabaseConnected();
   if (!isConnected) {
     return res.status(501).json({
       ok: false,
-      error: "Database not connected. Please restore your PostgreSQL backup for visualization.",
-      code: "DB_NOT_CONNECTED"
+      error: 'Database not connected. Please restore your PostgreSQL backup for visualization.',
+      code: 'DB_NOT_CONNECTED',
     });
   }
 
   try {
     // Use storage method instead of direct query
     const networks = await storage.getNetworks(1000);
-    
+
     // Format for Mapbox visualization
     const geojson = {
-      type: "FeatureCollection", 
+      type: 'FeatureCollection',
       features: networks
-        .filter(n => n.latitude && n.longitude)
-        .map(network => ({
-          type: "Feature",
+        .filter((n) => n.latitude && n.longitude)
+        .map((network) => ({
+          type: 'Feature',
           geometry: {
-            type: "Point",
-            coordinates: [parseFloat(network.longitude), parseFloat(network.latitude)]
+            type: 'Point',
+            coordinates: [parseFloat(network.longitude), parseFloat(network.latitude)],
           },
           properties: {
             id: network.id,
@@ -146,21 +153,21 @@ app.get("/api/v1/visualize", async (req, res) => {
             bssid: network.bssid,
             signal_strength: network.signal_strength,
             encryption: network.encryption,
-            observed_at: network.observed_at
-          }
-        }))
+            observed_at: network.observed_at,
+          },
+        })),
     };
 
     res.json({
       ok: true,
       data: geojson,
-      count: geojson.features.length
+      count: geojson.features.length,
     });
   } catch (error) {
-    console.error("Error generating visualization data:", error);
+    console.error('Error generating visualization data:', error);
     res.status(500).json({
       ok: false,
-      error: "Failed to generate visualization data"
+      error: 'Failed to generate visualization data',
     });
   }
 });
@@ -170,13 +177,13 @@ app.get("/api/v1/visualize", async (req, res) => {
 
 ```typescript
 // Add to routes.ts
-app.get("/api/v1/analytics", async (req, res) => {
+app.get('/api/v1/analytics', async (req, res) => {
   const isConnected = await storage.isDatabaseConnected();
   if (!isConnected) {
     return res.status(501).json({
       ok: false,
-      error: "Database not connected",
-      code: "DB_NOT_CONNECTED"
+      error: 'Database not connected',
+      code: 'DB_NOT_CONNECTED',
     });
   }
 
@@ -184,13 +191,13 @@ app.get("/api/v1/analytics", async (req, res) => {
     const analytics = await storage.getNetworkAnalytics();
     res.json({
       ok: true,
-      data: analytics
+      data: analytics,
     });
   } catch (error) {
-    console.error("Error fetching analytics:", error);
+    console.error('Error fetching analytics:', error);
     res.status(500).json({
       ok: false,
-      error: "Failed to fetch analytics"
+      error: 'Failed to fetch analytics',
     });
   }
 });
