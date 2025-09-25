@@ -23,7 +23,8 @@
       "Bash(./generate_simple_surveillance_geojson.sh:*)",
       "Bash(./generate_corrected_surveillance_geojson.sh:*)",
       "Bash(xargs ls:*)",
-      "Bash(./generate_complete_surveillance_geojson.sh:*)"
+      "Bash(./generate_complete_surveillance_geojson.sh:*)",
+      "Bash(./organize-shadowcheck.sh)"
     ],
     "deny": [],
     "ask": []
