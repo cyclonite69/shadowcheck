@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    container_name: shadowcheck_postgres
+    environment:
+      POSTGRES_DB: shadowcheck
+      POSTGRES_USER: shadowcheck
+      POSTGRES_PASSWORD: your_secure_password_here
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C --auth-host=scram-sha-256 --auth-local=scram-sha-256"
+      # Performance environment variables
+      POSTGRES_SHARED_BUFFERS: "4GB"
+      POSTGRES_EFFECTIVE_CACHE_SIZE: "12GB"
+      POSTGRES_WORK_MEM: "128MB"
+      POSTGRES_MAINTENANCE_WORK_MEM: "1GB"
+    volumes:
+      - shadowcheck_pgdata:/var/lib/postgresql/data
+      - ./backups:/backups
+      - ./config/postgres-config:/etc/postgresql/conf.d:ro
+      - /dev/shm:/dev/shm  # Use host shared memory for better performance
+    networks:
+      - shadowcheck_network
+    ports:
+      - "127.0.0.1:5432:5432"  # Bind only to localhost
+    restart: unless-stopped
+    # Resource limits optimized for Ryzen 5 + 16GB RAM
+    deploy:
+      resources:
+        limits:
+          cpus: '10'        # Allow use of most CPU cores
+          memory: 14G       # Reserve 2GB for OS
+        reservations:
+          cpus: '6'         # Guarantee 6 cores
+          memory: 8G        # Guarantee 8GB
+    # Performance optimizations
+    shm_size: 2g            # Larger shared memory for spatial operations
+    tmpfs:
+      - /tmp:size=1g,exec   # Fast temporary storage
+    sysctls:
+      # Kernel tuning for database performance
+      - kernel.shmmax=8589934592      # 8GB shared memory max
+      - kernel.shmall=2097152         # Total shared memory pages
+      - vm.dirty_ratio=5              # Dirty page writeback threshold
+      - vm.dirty_background_ratio=2   # Background writeback threshold
+      - vm.overcommit_memory=2        # Don't overcommit memory
+      - vm.swappiness=1               # Minimize swapping
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shadowcheck -d shadowcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: shadowcheck_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@shadowcheck.local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - shadowcheck_pgadmin:/var/lib/pgadmin
+    networks:
+      - shadowcheck_network
+    ports:
+      - "127.0.0.1:8080:80"  # Bind only to localhost
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - admin
+
+networks:
+  shadowcheck_network:
+    driver: bridge
+
+volumes:
+  shadowcheck_pgdata:
+    driver: local
+  shadowcheck_pgadmin:
+    driver: local

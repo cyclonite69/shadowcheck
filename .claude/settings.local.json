@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker exec:*)",
+      "Bash(chmod:*)",
+      "Bash(./deploy_complete_surveillance_system.sh:*)",
+      "Bash(psql:*)",
+      "Bash(docker start:*)",
+      "Bash(docker cp:*)",
+      "Bash(find:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"Executing Phase $phase...\")",
+      "Bash(done)",
+      "Bash(do echo \"Executing $file...\")",
+      "Bash(do)",
+      "Bash(head:*)",
+      "Bash(git add:*)",
+      "Bash(env)",
+      "Bash(./analyze_schema.sh)",
+      "Read(//home/nunya/**)",
+      "Bash(source .env)",
+      "Bash(sudo -u postgres psql:*)",
+      "Bash(./generate_simple_surveillance_geojson.sh:*)",
+      "Bash(./generate_corrected_surveillance_geojson.sh:*)",
+      "Bash(xargs ls:*)",
+      "Bash(./generate_complete_surveillance_geojson.sh:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

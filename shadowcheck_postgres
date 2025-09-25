@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+USAGE="Usage: $0 <container_name> <volume_name> [--apply]
+  e.g. $0 shadowcheck_postgres shadowcheck_pgdata --apply"
+
+if [[ $# -lt 2 ]]; then
+  echo "$USAGE"
+  exit 1
+fi
+
+CONTAINER=$1
+VOLUME=$2
+APPLY=false
+
+if [[ "${3-}" == "--apply" ]]; then
+  APPLY=true
+fi
+
+# 1) detect PGDATA inside the container
+PGDATA=$(docker exec -u postgres "$CONTAINER" printenv PGDATA || echo "")
+if [[ -z "$PGDATA" ]]; then
+  echo "❌ Could not read PGDATA from container '$CONTAINER'"
+  exit 1
+fi
+
+# 2) detect where the named volume is mounted
+MOUNT_DEST=$(docker inspect "$CONTAINER" \
+  --format '{{range .Mounts}}{{if eq .Name "'"$VOLUME"'"}}{{.Destination}}{{end}}{{end}}' \
+  | tr -d '\n')
+
+if [[ -z "$MOUNT_DEST" ]]; then
+  echo "❌ Volume '$VOLUME' is not mounted in container '$CONTAINER'"
+  exit 1
+fi
+
+echo "🔍 PGDATA inside container: $PGDATA"
+echo "🔍 Volume '$VOLUME' is mounted at: $MOUNT_DEST"
+
+if [[ "$PGDATA" == "$MOUNT_DEST" ]]; then
+  echo "✅ Volume is already mounted at the correct path."
+  exit 0
+fi
+
+echo
+echo "⚠️  Mismatch detected! Volume must be mounted to PGDATA."
+echo "    ---> '$VOLUME' currently at '$MOUNT_DEST'"
+echo "    ---> should be at '$PGDATA'"
+echo
+
+# 3) reconstruct the original run parameters
+IMAGE=$(docker inspect --format='{{.Config.Image}}' "$CONTAINER")
+
+# port mappings
+PORTS=$(docker inspect --format='{{range $p,$b := .HostConfig.PortBindings}}-p {{$b 0.HostPort}}:{{$p}} {{end}}' "$CONTAINER")
+
+# env vars
+ENVS=$(docker inspect --format='{{range .Config.Env}}-e {{.}} {{end}}' "$CONTAINER")
+
+# other mounts (excluding the named volume we’re fixing)
+OTHER_MOUNTS=$(docker inspect --format='{{range .Mounts}}{{if ne .Name "'"$VOLUME"'"}}-v {{if .Name}}{{.Name}}{{else}}{{.Source}}{{end}}:{{.Destination}} {{end}}{{end}}' "$CONTAINER")
+
+# Build the corrected docker run command
+FIXED_CMD="docker run -d \
+  --name ${CONTAINER} \
+  ${PORTS} \
+  ${ENVS} \
+  ${OTHER_MOUNTS} \
+  -e PGDATA=${PGDATA} \
+  -v ${VOLUME}:${PGDATA} \
+  ${IMAGE}"
+
+echo "▶️  Proposed fixed command:"
+echo
+echo "  $FIXED_CMD"
+echo
+
+if ! $APPLY; then
+  echo "👉  If that looks correct, re-run this script with the --apply flag:"
+  echo "    $0 $CONTAINER $VOLUME --apply"
+  exit 0
+fi
+
+# 4) apply the fix
+echo "⏹ Stopping & removing container '$CONTAINER'…"
+docker stop "$CONTAINER" >/dev/null
+docker rm   "$CONTAINER" >/dev/null
+
+echo "▶️  Launching new container with corrected mount…"
+eval "$FIXED_CMD"
+
+echo "✅ Done. Your volume '$VOLUME' is now mounted at PGDATA='$PGDATA'."
+exit 0
