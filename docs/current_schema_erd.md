@@ -302,13 +302,13 @@ flowchart TD
 
 ## Schema Issues Summary
 
-| Issue Type | Table(s) Affected | Impact |
-|------------|------------------|---------|
-| **Empty Tables** | `radio_manufacturers`, `stalking_incidents`, `location_visits` | Missing functionality |
-| **Data Duplication** | `locations`/`location_measurements`, `networks`/`radio_access_points` | Storage waste, sync issues |
-| **Naming Confusion** | `network_observations` | Unclear purpose |
-| **Broken Relationships** | `radio_manufacturers` FK constraint | Data integrity issues |
-| **Inconsistent Types** | Mixed timestamp formats | Query complexity |
-| **Missing Constraints** | Signal strength, coordinates | Data quality issues |
+| Issue Type               | Table(s) Affected                                                     | Impact                     |
+| ------------------------ | --------------------------------------------------------------------- | -------------------------- |
+| **Empty Tables**         | `radio_manufacturers`, `stalking_incidents`, `location_visits`        | Missing functionality      |
+| **Data Duplication**     | `locations`/`location_measurements`, `networks`/`radio_access_points` | Storage waste, sync issues |
+| **Naming Confusion**     | `network_observations`                                                | Unclear purpose            |
+| **Broken Relationships** | `radio_manufacturers` FK constraint                                   | Data integrity issues      |
+| **Inconsistent Types**   | Mixed timestamp formats                                               | Query complexity           |
+| **Missing Constraints**  | Signal strength, coordinates                                          | Data quality issues        |
 
 This diagram illustrates the current state complexity and identifies areas requiring refactoring attention.

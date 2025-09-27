@@ -72,6 +72,7 @@ Based on your existing files, you have:
 ### 📊 Current Data Profile
 
 Your analysis shows:
+
 - **389,203** location measurements (legacy + normalized)
 - **141,798** signal observations
 - **126,904** deduplicated access points
@@ -106,16 +107,19 @@ app.wigle_api_enrichments     -- External API data
 ## Database Connection Options
 
 ### 1. Command Line (psql)
+
 ```bash
 psql postgresql://shadowcheck:your_secure_password_here@localhost:5432/shadowcheck
 ```
 
 ### 2. pgAdmin Web Interface
+
 - URL: http://localhost:8080
 - Email: admin@shadowcheck.local
 - Password: admin123
 
 ### 3. Application Connection String
+
 ```
 postgresql://shadowcheck:your_secure_password_here@localhost:5432/shadowcheck
 ```
@@ -123,6 +127,7 @@ postgresql://shadowcheck:your_secure_password_here@localhost:5432/shadowcheck
 ## Example Queries
 
 ### Basic Network Analysis
+
 ```sql
 -- Count by technology type
 SELECT radio_technology, COUNT(*) as count
@@ -142,6 +147,7 @@ LIMIT 10;
 ```
 
 ### Spatial Analysis
+
 ```sql
 -- Networks within 1km of a point
 SELECT
@@ -157,6 +163,7 @@ ORDER BY distance_meters;
 ```
 
 ### Security Analysis
+
 ```sql
 -- Check for potential stalking incidents
 SELECT
@@ -172,6 +179,7 @@ ORDER BY threat_level DESC, detection_confidence_score DESC;
 ## Maintenance Tasks
 
 ### Regular Maintenance
+
 ```bash
 # Backup database
 pg_dump -h localhost -U shadowcheck shadowcheck > backup_$(date +%Y%m%d).sql
@@ -188,6 +196,7 @@ ORDER BY idx_scan DESC;"
 ```
 
 ### Performance Monitoring
+
 ```sql
 -- Check table sizes
 SELECT
@@ -208,9 +217,11 @@ ORDER BY total_time DESC;
 ## Data Import Workflows
 
 ### 1. WiGLE Data Import
+
 Your migration script handles this automatically for existing legacy data.
 
 ### 2. Kismet Integration
+
 ```sql
 -- Example structure for Kismet import
 INSERT INTO app.signal_measurements (
@@ -220,6 +231,7 @@ INSERT INTO app.signal_measurements (
 ```
 
 ### 3. Manual Wardriving Data
+
 Use the `data_sources` table to track manual collection sessions.
 
 ## Troubleshooting
@@ -227,12 +239,14 @@ Use the `data_sources` table to track manual collection sessions.
 ### Common Issues
 
 1. **Connection refused**
+
    ```bash
    docker-compose ps  # Check if postgres is running
    docker-compose logs postgres  # Check postgres logs
    ```
 
 2. **PostGIS functions not found**
+
    ```sql
    CREATE EXTENSION IF NOT EXISTS postgis;
    ```
@@ -246,6 +260,7 @@ Use the `data_sources` table to track manual collection sessions.
 ### Performance Issues
 
 1. **Slow spatial queries**
+
    ```sql
    -- Check if spatial indexes exist
    SELECT indexname FROM pg_indexes
@@ -262,18 +277,23 @@ Use the `data_sources` table to track manual collection sessions.
 ## Security Considerations
 
 ### Data Privacy
+
 - Location data retention policies
 - MAC address handling (your schema includes privacy flags)
 - Personal device anonymization
 
 ### Access Control
+
 Your `roles.sql` should implement:
+
 - `shadowcheck_admin` - Full schema access
 - `shadowcheck_user` - Read-only access
 - `shadowcheck_analyzer` - Analytics access
 
 ### Audit Trail
+
 The schema includes:
+
 - Record creation timestamps
 - Data source tracking
 - Quality confidence scores

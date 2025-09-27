@@ -1,11 +1,13 @@
 # ShadowCheck Database Schema Analysis and Refactoring
 
 ## Context
+
 You are analyzing a SIGINT/wardriving geospatial database for the ShadowCheck platform. The database currently contains a mix of legacy tables (from WiGLE SQLite imports) and a partially-completed normalized schema.
 
 ## Current Database State
 
 ### Legacy Tables (DO NOT MODIFY - Keep Intact)
+
 - `app.ieee_oui` - IEEE OUI manufacturer registry
 - `app.provenance` - Data source tracking (s22, s22b, j24, g63 devices)
 - `app.locations` - Raw location observations from WiGLE
@@ -13,6 +15,7 @@ You are analyzing a SIGINT/wardriving geospatial database for the ShadowCheck pl
 - `app.routes` - Raw route/waypoint data from WiGLE
 
 ### Current Normalized Tables (Need Refactoring)app.data_sources (2 rows) - Import metadata
+
 app.radio_access_points (126,402 rows) - Deduplicated access points
 app.network_observations (141,232 rows) - Individual signal observations
 app.location_measurements (388,557 rows) - GPS measurements
@@ -36,21 +39,26 @@ app.wigle_observations (78 rows)
 ## Requirements
 
 ### 1. Schema Analysis
+
 Analyze the current schema and provide:
+
 - Entity-Relationship diagram (Mermaid format)
 - Data flow from raw legacy tables → normalized schema
 - Identification of redundant or unused tables
 - Clear purpose statement for each table
 
 ### 2. Refactoring Plan
+
 Design a **fully normalized (3NF)** schema with:
 
 **Naming Convention**:
+
 - Tables: plural nouns (e.g., `signal_readings` not `network_observations`)
 - Columns: descriptive, snake_case
 - No abbreviations unless industry standard (bssid, ssid ok)
 
 **Core Entities** (propose better structure):
+
 - Access points (WiFi/BT/Cellular)
 - Signal measurements (what, where, when, strength)
 - Geographic data (locations, routes, visits)
@@ -59,12 +67,15 @@ Design a **fully normalized (3NF)** schema with:
 - Data provenance (sources, imports, quality)
 
 **Referential Integrity**:
+
 - All foreign keys properly defined
 - Cascade rules for deletions
 - Constraints for data quality
 
 ### 3. Migration Strategy
+
 Provide SQL migration scripts:
+
 1. Create new properly-named tables
 2. Migrate data from old → new (preserving all data)
 3. Create indexes for performance
@@ -73,7 +84,9 @@ Provide SQL migration scripts:
    - `shadowcheck_user` - read-only to app schema
 
 ### 4. Documentation
+
 For each table provide:
+
 - Purpose and use case
 - Relationship to other tables
 - Sample queries demonstrating usage

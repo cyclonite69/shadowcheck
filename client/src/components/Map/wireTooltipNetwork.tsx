@@ -1,6 +1,6 @@
-import ReactDOM from "react-dom";
-import OriginalTooltip from "@/components/ref-tooltip/OriginalTooltip";
-import "@/components/ref-tooltip/ref-tooltip.css";
+import ReactDOM from 'react-dom';
+import OriginalTooltip from '@/components/ref-tooltip/OriginalTooltip';
+import '@/components/ref-tooltip/ref-tooltip.css';
 
 /**
  * wireTooltipNetwork(map, pointLayerId = "networks", options?)
@@ -13,7 +13,7 @@ import "@/components/ref-tooltip/ref-tooltip.css";
  * Click: shows your OriginalTooltip and "locks" it until background click or ESC.
  */
 
-type Env = "urban" | "suburban" | "rural";
+type Env = 'urban' | 'suburban' | 'rural';
 type Opts = { env?: Env; min?: number; max?: number };
 
 const EARTH_R = 6378137; // meters
@@ -22,7 +22,9 @@ const toDeg = (r: number) => (r * 180) / Math.PI;
 
 // Draw a geodesic circle polygon (no extra deps)
 function circlePolygon(lon: number, lat: number, radiusMeters: number, steps = 96) {
-  const latR = toRad(lat), lonR = toRad(lon), ang = radiusMeters / EARTH_R;
+  const latR = toRad(lat),
+    lonR = toRad(lon),
+    ang = radiusMeters / EARTH_R;
   const coords: [number, number][] = [];
   for (let i = 0; i <= steps; i++) {
     const b = (i * 2 * Math.PI) / steps;
@@ -33,7 +35,11 @@ function circlePolygon(lon: number, lat: number, radiusMeters: number, steps = 9
     const dLon = lonR + Math.atan2(y, x);
     coords.push([toDeg(dLon), toDeg(dLat)]);
   }
-  return { type: "Feature", geometry: { type: "Polygon", coordinates: [coords] }, properties: {} } as const;
+  return {
+    type: 'Feature',
+    geometry: { type: 'Polygon', coordinates: [coords] },
+    properties: {},
+  } as const;
 }
 
 /**
@@ -47,13 +53,13 @@ function circlePolygon(lon: number, lat: number, radiusMeters: number, steps = 9
 function radiusFromSignalFreqEnv(
   signal?: number,
   frequency?: number,
-  env: Env = "urban",
+  env: Env = 'urban',
   min = 8,
   max = 250
 ) {
   // 1) Base meters from RSSI (piecewise)
   let base: number;
-  if (typeof signal !== "number") base = 60;
+  if (typeof signal !== 'number') base = 60;
   else if (signal >= -45) base = 10;
   else if (signal >= -55) base = 18;
   else if (signal >= -65) base = 30;
@@ -65,16 +71,16 @@ function radiusFromSignalFreqEnv(
   // 2.4 GHz ≈ best penetration, 5 GHz ≈ moderate, 6 GHz ≈ worst
   const f = Number(frequency ?? 0);
   const bandMul =
-    f >= 5900 ? 0.75 :     // 6 GHz
-    f >= 4900 ? 0.9  :     // 5 GHz
-    f >= 2300 ? 1.0  :     // 2.4 GHz
-                 0.95;     // unknown/other
+    f >= 5900
+      ? 0.75 // 6 GHz
+      : f >= 4900
+        ? 0.9 // 5 GHz
+        : f >= 2300
+          ? 1.0 // 2.4 GHz
+          : 0.95; // unknown/other
 
   // 3) Environment multiplier
-  const envMul =
-    env === "urban" ? 0.85 :
-    env === "suburban" ? 1.0 :
-    1.15; // rural
+  const envMul = env === 'urban' ? 0.85 : env === 'suburban' ? 1.0 : 1.15; // rural
 
   // Clamp to [min, max]
   return Math.max(min, Math.min(max, Math.round(base * bandMul * envMul)));
@@ -82,71 +88,78 @@ function radiusFromSignalFreqEnv(
 
 // Tooltip root
 function ensureTooltipRoot() {
-  let el = document.getElementById("sc-tooltip-root");
+  let el = document.getElementById('sc-tooltip-root');
   if (!el) {
-    el = document.createElement("div");
-    el.id = "sc-tooltip-root";
-    el.style.position = "fixed";
-    el.style.left = "-9999px";
-    el.style.top = "-9999px";
-    el.style.zIndex = "9999";
+    el = document.createElement('div');
+    el.id = 'sc-tooltip-root';
+    el.style.position = 'fixed';
+    el.style.left = '-9999px';
+    el.style.top = '-9999px';
+    el.style.zIndex = '9999';
     document.body.appendChild(el);
   }
   return el as HTMLDivElement;
 }
 
-export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Opts = {}) {
+export function wireTooltipNetwork(map: any, pointLayerId = 'networks', opts: Opts = {}) {
   const tipRoot = ensureTooltipRoot();
-  const env: Env = (opts.env ?? (window as any).SC_ENV ?? "urban") as Env;
-  const min = typeof opts.min === "number" ? opts.min : 8;
-  const max = typeof opts.max === "number" ? opts.max : 250;
+  const env: Env = (opts.env ?? (window as any).SC_ENV ?? 'urban') as Env;
+  const min = typeof opts.min === 'number' ? opts.min : 8;
+  const max = typeof opts.max === 'number' ? opts.max : 250;
 
   let tooltipLocked = false;
 
   // Add range source
-  if (!map.getSource("range")) {
-    map.addSource("range", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+  if (!map.getSource('range')) {
+    map.addSource('range', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
   }
 
   // Insert range layers **BELOW** the point layer so clicks still hit points
   const beforeId = pointLayerId;
 
-  if (!map.getLayer("range-fill")) {
+  if (!map.getLayer('range-fill')) {
     map.addLayer(
       {
-        id: "range-fill",
-        type: "fill",
-        source: "range",
-        paint: { "fill-color": "#22d3ee", "fill-opacity": 0.08 }
+        id: 'range-fill',
+        type: 'fill',
+        source: 'range',
+        paint: { 'fill-color': '#22d3ee', 'fill-opacity': 0.08 },
       },
       beforeId
     );
   }
-  if (!map.getLayer("range-outline")) {
+  if (!map.getLayer('range-outline')) {
     map.addLayer(
       {
-        id: "range-outline",
-        type: "line",
-        source: "range",
-        paint: { "line-color": "#22d3ee", "line-width": 1.5, "line-opacity": 0.6 }
+        id: 'range-outline',
+        type: 'line',
+        source: 'range',
+        paint: { 'line-color': '#22d3ee', 'line-width': 1.5, 'line-opacity': 0.6 },
       },
       beforeId
     );
   }
 
   const hideTooltip = () => {
-    tipRoot.style.left = "-9999px";
-    tipRoot.style.top = "-9999px";
-    try { ReactDOM.render(<></>, tipRoot); } catch {}
+    tipRoot.style.left = '-9999px';
+    tipRoot.style.top = '-9999px';
+    try {
+      ReactDOM.render(<></>, tipRoot);
+    } catch {
+      // This can throw if the component is unmounted, which is fine.
+    }
   };
   const clearRange = () => {
-    (map.getSource("range") as any)?.setData({ type: "FeatureCollection", features: [] });
+    (map.getSource('range'))?.setData({ type: 'FeatureCollection', features: [] });
   };
 
   // HOVER → update rings only; keep tooltip if locked
-  map.on("mousemove", pointLayerId, (e: any) => {
+  map.on('mousemove', pointLayerId, (e: any) => {
     const f = e.features?.[0];
-    if (!f) { clearRange(); return; }
+    if (!f) {
+      clearRange();
+      return;
+    }
 
     const p = f.properties || {};
     const [lon, lat] = (f.geometry?.coordinates || []) as [number, number];
@@ -154,7 +167,7 @@ export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Op
     const frequency = Number(p.frequency ?? p.freq ?? p.freq_mhz);
 
     const r = radiusFromSignalFreqEnv(
-      typeof signal === "number" ? Number(signal) : undefined,
+      typeof signal === 'number' ? Number(signal) : undefined,
       Number.isFinite(frequency) ? frequency : undefined,
       env,
       min,
@@ -162,25 +175,25 @@ export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Op
     );
 
     const poly = circlePolygon(Number(lon), Number(lat), r, 96);
-    (map.getSource("range") as any).setData({ type: "FeatureCollection", features: [poly] });
+    (map.getSource('range')).setData({ type: 'FeatureCollection', features: [poly] });
 
-    map.setFilter?.("hover", ["==", "uid", p.uid ?? -1]);
+    map.setFilter?.('hover', ['==', 'uid', p.uid ?? -1]);
     if (!tooltipLocked) hideTooltip();
   });
 
-  map.on("mouseleave", pointLayerId, () => {
+  map.on('mouseleave', pointLayerId, () => {
     clearRange();
-    map.setFilter?.("hover", ["==", "uid", -1]);
+    map.setFilter?.('hover', ['==', 'uid', -1]);
     if (!tooltipLocked) hideTooltip();
   });
 
   // CLICK → lock tooltip (merge geometry + aliases so lat/lon/alt/seen show)
-  map.on("click", pointLayerId, (e: any) => {
+  map.on('click', pointLayerId, (e: any) => {
     const f = e.features?.[0];
     if (!f) return;
 
     const raw: any = f.properties || {};
-    const coords: any = (f.geometry && (f.geometry as any).coordinates) || [];
+    const coords: any = (f.geometry && (f.geometry).coordinates) || [];
     const lon = Number(raw.lon ?? coords[0]);
     const lat = Number(raw.lat ?? coords[1]);
 
@@ -190,20 +203,20 @@ export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Op
       lat,
       // identifiers
       bssid: raw.bssid ?? raw.mac ?? raw.address,
-      ssid:  raw.ssid  ?? raw.essid,
+      ssid: raw.ssid ?? raw.essid,
       vendor: raw.vendor ?? raw.oui_vendor ?? raw.oui,
       // radio
-      signal: (raw.signal ?? raw.rssi ?? raw.dbm),
-      frequency: (raw.frequency ?? raw.freq ?? raw.freq_mhz),
-      channel:   (raw.channel   ?? raw.ch),
-      security:  (raw.security  ?? raw.encryption ?? raw.encryptionValue),
+      signal: raw.signal ?? raw.rssi ?? raw.dbm,
+      frequency: raw.frequency ?? raw.freq ?? raw.freq_mhz,
+      channel: raw.channel ?? raw.ch,
+      security: raw.security ?? raw.encryption ?? raw.encryptionValue,
       // altitude
-      alt: (raw.alt ?? raw.altitude ?? raw.altitude_m ?? raw.ele ?? raw.elevation),
+      alt: raw.alt ?? raw.altitude ?? raw.altitude_m ?? raw.ele ?? raw.elevation,
       // timestamps (prefer last/observed for "Seen")
       // timestamps (normalize all into seen)
-      seen: (raw.observed_at ?? raw.last_seen ?? raw.lastupd ?? raw.time ?? raw.seen),
+      seen: raw.observed_at ?? raw.last_seen ?? raw.lastupd ?? raw.time ?? raw.seen,
       // styling
-      colour: (raw.colour ?? raw.color)
+      colour: raw.colour ?? raw.color,
     };
 
     const evt = e.originalEvent as MouseEvent;
@@ -217,15 +230,25 @@ export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Op
   });
 
   // Click background → unlock + hide
-  map.on("click", (e: any) => {
+  map.on('click', (e: any) => {
     const feats = map.queryRenderedFeatures?.(e.point, { layers: [pointLayerId] }) || [];
-    if (!feats.length) { tooltipLocked = false; hideTooltip(); }
+    if (!feats.length) {
+      tooltipLocked = false;
+      hideTooltip();
+    }
   });
 
   // ESC to close
-  window.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape") { tooltipLocked = false; hideTooltip(); }
+  window.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape') {
+      tooltipLocked = false;
+      hideTooltip();
+    }
   });
 
-  return () => { tooltipLocked = false; hideTooltip(); clearRange(); };
+  return () => {
+    tooltipLocked = false;
+    hideTooltip();
+    clearRange();
+  };
 }

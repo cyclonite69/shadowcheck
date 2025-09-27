@@ -28,7 +28,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '10'        # Allow use of most CPU cores
+          cpus: '8'        # Allow use of most CPU cores
           memory: 14G       # Reserve 2GB for OS
         reservations:
           cpus: '6'         # Guarantee 6 cores

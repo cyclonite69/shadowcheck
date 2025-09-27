@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { Map, MapPin, Filter, Activity } from 'lucide-react';
 import {
   DropdownMenu,
@@ -12,7 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
 // Deck.gl imports
 import DeckGL from '@deck.gl/react';
@@ -31,7 +30,7 @@ const INITIAL_VIEW_STATE = {
   latitude: 43.023,
   zoom: 12,
   pitch: 0,
-  bearing: 0
+  bearing: 0,
 };
 
 export default function DeckNetworkMap() {
@@ -40,11 +39,11 @@ export default function DeckNetworkMap() {
     wifi: true,
     ble: true,
     bluetooth: true,
-    cellular: true
+    cellular: true,
   });
 
   const { data: visualizationData, isLoading } = useQuery({
-    queryKey: ['/api/v1/g63/visualize'],
+    queryKey: ['/api/v1/visualize'],
     refetchInterval: 30000,
   });
 
@@ -56,22 +55,22 @@ export default function DeckNetworkMap() {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      position => {
         const { latitude, longitude } = position.coords;
         setViewState({
           ...viewState,
           latitude,
           longitude,
-          zoom: 14
+          zoom: 14,
         });
       },
-      (error) => {
+      error => {
         console.error('Error getting location:', error);
       },
       {
         enableHighAccuracy: true,
         timeout: 5000,
-        maximumAge: 0
+        maximumAge: 0,
       }
     );
   };
@@ -81,7 +80,7 @@ export default function DeckNetworkMap() {
     if (!visualizationData) return [];
 
     const allFeatures = (visualizationData as any)?.data?.features || [];
-    
+
     // Filter features based on radio type selection
     const filteredFeatures = allFeatures.filter((feature: any) => {
       const radioType = feature.properties.radio_type;
@@ -92,15 +91,20 @@ export default function DeckNetworkMap() {
     return filteredFeatures.map((feature: any) => {
       const [longitude, latitude] = feature.geometry.coordinates;
       const props = feature.properties;
-      
+
       // Color mapping for radio types
       const getRadioColor = (type: string) => {
         switch (type) {
-          case 'wifi': return [34, 197, 94]; // Green
-          case 'ble': return [168, 85, 247]; // Purple  
-          case 'bluetooth': return [59, 130, 246]; // Blue
-          case 'cellular': return [239, 68, 68]; // Red
-          default: return [156, 163, 175]; // Gray
+          case 'wifi':
+            return [34, 197, 94]; // Green
+          case 'ble':
+            return [168, 85, 247]; // Purple
+          case 'bluetooth':
+            return [59, 130, 246]; // Blue
+          case 'cellular':
+            return [239, 68, 68]; // Red
+          default:
+            return [156, 163, 175]; // Gray
         }
       };
 
@@ -121,7 +125,7 @@ export default function DeckNetworkMap() {
         radioType: props.radio_type,
         signalStrength: props.signal_strength,
         securityLevel: props.security_level,
-        frequency: props.frequency
+        frequency: props.frequency,
       };
     });
   };
@@ -144,10 +148,10 @@ export default function DeckNetworkMap() {
     getRadius: (d: any) => d.radius,
     getFillColor: (d: any) => d.color,
     getLineColor: [255, 255, 255, 150],
-    onHover: (info) => {
+    onHover: () => {
       // Custom tooltip handling could be added here
       return true;
-    }
+    },
   });
 
   // Create text labels for important networks
@@ -163,96 +167,100 @@ export default function DeckNetworkMap() {
     getAlignmentBaseline: 'center',
     getColor: [255, 255, 255, 180],
     fontFamily: 'ui-monospace, monospace',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   });
 
   const layers = [scatterplotLayer, textLayer];
 
   if (isLoading) {
-    return <Skeleton className="h-96" />;
+    return <Skeleton className='h-96' />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Map */}
-      <div className="premium-card">
+      <div className='premium-card'>
         <CardHeader>
-          <CardTitle className="text-slate-300 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="icon-container w-8 h-8 mr-2">
-                <Map className="h-4 w-4 text-cyan-300" />
+          <CardTitle className='text-slate-300 flex items-center justify-between'>
+            <div className='flex items-center gap-2'>
+              <div className='icon-container w-8 h-8 mr-2'>
+                <Map className='h-4 w-4 text-cyan-300' />
               </div>
               Advanced SIGINT Visualization ({networkData.length} observations)
             </div>
-            <div className="flex items-center gap-2">
+            <div className='flex items-center gap-2'>
               {/* GPS Button */}
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant='outline'
+                size='sm'
                 onClick={handleGpsCenter}
-                className="gap-2 premium-card hover:scale-105"
+                className='gap-2 premium-card hover:scale-105'
               >
-                <MapPin className="h-4 w-4" />
+                <MapPin className='h-4 w-4' />
                 GPS Center
               </Button>
-              
+
               {/* Radio Type Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 premium-card hover:scale-105">
-                    <Filter className="h-4 w-4" />
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='gap-2 premium-card hover:scale-105'
+                  >
+                    <Filter className='h-4 w-4' />
                     Radio Types
-                    <div className="silver-accent px-2 py-1 rounded-full ml-1">
-                      <span className="text-xs font-semibold text-slate-700">
+                    <div className='silver-accent px-2 py-1 rounded-full ml-1'>
+                      <span className='text-xs font-semibold text-slate-700'>
                         {Object.values(radioFilters).filter(Boolean).length}/4
                       </span>
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 premium-card">
+                <DropdownMenuContent align='end' className='w-48 premium-card'>
                   <DropdownMenuLabel>Filter by Radio Type</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuCheckboxItem
                     checked={radioFilters.wifi}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={checked =>
                       setRadioFilters(prev => ({ ...prev, wifi: checked }))
                     }
                   >
-                    <span className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span className='flex items-center gap-2'>
+                      <div className='w-3 h-3 rounded-full bg-green-500'></div>
                       WiFi Networks
                     </span>
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={radioFilters.ble}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={checked =>
                       setRadioFilters(prev => ({ ...prev, ble: checked }))
                     }
                   >
-                    <span className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                    <span className='flex items-center gap-2'>
+                      <div className='w-3 h-3 rounded-full bg-purple-500'></div>
                       BLE Beacons
                     </span>
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={radioFilters.bluetooth}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={checked =>
                       setRadioFilters(prev => ({ ...prev, bluetooth: checked }))
                     }
                   >
-                    <span className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    <span className='flex items-center gap-2'>
+                      <div className='w-3 h-3 rounded-full bg-blue-500'></div>
                       Bluetooth Devices
                     </span>
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={radioFilters.cellular}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={checked =>
                       setRadioFilters(prev => ({ ...prev, cellular: checked }))
                     }
                   >
-                    <span className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <span className='flex items-center gap-2'>
+                      <div className='w-3 h-3 rounded-full bg-red-500'></div>
                       Cellular Towers
                     </span>
                   </DropdownMenuCheckboxItem>
@@ -262,9 +270,9 @@ export default function DeckNetworkMap() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="relative">
-            <div 
-              className="w-full h-[500px] rounded-lg overflow-hidden border border-border/30"
+          <div className='relative'>
+            <div
+              className='w-full h-[500px] rounded-lg overflow-hidden border border-border/30'
               style={{ minHeight: '500px' }}
             >
               <DeckGL
@@ -273,7 +281,7 @@ export default function DeckNetworkMap() {
                 layers={layers}
                 onViewStateChange={(evt: any) => setViewState(evt.viewState)}
                 viewState={viewState}
-                getTooltip={({object}: {object: any}) => {
+                getTooltip={({ object }: { object: any }) => {
                   if (!object) return null;
                   return {
                     html: `
@@ -302,14 +310,14 @@ export default function DeckNetworkMap() {
                     `,
                     style: {
                       backgroundColor: 'transparent',
-                      fontSize: '12px'
-                    }
+                      fontSize: '12px',
+                    },
                   };
                 }}
               >
                 <ReactMapGL
                   mapboxAccessToken={MAPBOX_ACCESS_TOKEN}
-                  mapStyle="mapbox://styles/mapbox/dark-v11"
+                  mapStyle='mapbox://styles/mapbox/dark-v11'
                 />
               </DeckGL>
             </div>
@@ -318,41 +326,48 @@ export default function DeckNetworkMap() {
       </div>
 
       {/* Individual Observations List */}
-      <div className="premium-card">
+      <div className='premium-card'>
         <CardHeader>
-          <CardTitle className="text-slate-300 flex items-center gap-2">
-            <div className="icon-container w-8 h-8 mr-2">
-              <Activity className="h-4 w-4 text-green-300" />
+          <CardTitle className='text-slate-300 flex items-center gap-2'>
+            <div className='icon-container w-8 h-8 mr-2'>
+              <Activity className='h-4 w-4 text-green-300' />
             </div>
             Individual Observations ({networkData.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className='space-y-2 max-h-96 overflow-y-auto'>
             {networkData.map((network: any, index: number) => (
-              <div key={index} className="p-3 border border-border/30 rounded-lg bg-background/40 hover:bg-muted/50 transition-colors">
-                <div className="grid grid-cols-3 gap-4 text-sm">
+              <div
+                key={index}
+                className='p-3 border border-border/30 rounded-lg bg-background/40 hover:bg-muted/50 transition-colors'
+              >
+                <div className='grid grid-cols-3 gap-4 text-sm'>
                   <div>
-                    <p className="font-medium text-slate-200">{network.ssid}</p>
-                    <p className="text-xs text-slate-400 font-mono">{network.bssid}</p>
+                    <p className='font-medium text-slate-200'>{network.ssid}</p>
+                    <p className='text-xs text-slate-400 font-mono'>{network.bssid}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-400">Radio Type</p>
-                    <div className="flex items-center gap-1">
-                      <div 
-                        className="w-2 h-2 rounded-full" 
-                        style={{backgroundColor: `rgb(${network.color.join(',')})`}}
+                    <p className='text-xs text-slate-400'>Radio Type</p>
+                    <div className='flex items-center gap-1'>
+                      <div
+                        className='w-2 h-2 rounded-full'
+                        style={{ backgroundColor: `rgb(${network.color.join(',')})` }}
                       ></div>
-                      <span className="text-xs font-medium capitalize text-slate-300">{network.radioType}</span>
+                      <span className='text-xs font-medium capitalize text-slate-300'>
+                        {network.radioType}
+                      </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">Signal: {network.signalStrength}dBm</p>
+                    <p className='text-xs text-slate-400 mt-1'>
+                      Signal: {network.signalStrength}dBm
+                    </p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-400">Location</p>
-                    <p className="text-xs font-mono text-slate-300">
+                    <p className='text-xs text-slate-400'>Location</p>
+                    <p className='text-xs font-mono text-slate-300'>
                       {network.position[1]?.toFixed(4)}, {network.position[0]?.toFixed(4)}
                     </p>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className='text-xs text-slate-400 mt-1'>
                       Security: {network.securityLevel || 'Unknown'}
                     </p>
                   </div>
@@ -360,7 +375,7 @@ export default function DeckNetworkMap() {
               </div>
             ))}
             {networkData.length === 0 && (
-              <div className="text-center py-8 text-slate-400">
+              <div className='text-center py-8 text-slate-400'>
                 <p>No observation data available</p>
               </div>
             )}

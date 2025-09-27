@@ -1,4 +1,5 @@
 # ShadowCheck Optimized Deployment Guide
+
 ## Ryzen 5 + 16GB RAM + Parrot OS Bare Metal
 
 Complete deployment guide for maximum performance on your hardware configuration.
@@ -22,6 +23,7 @@ sudo reboot
 ## 🔧 Performance Optimizations Applied
 
 ### Hardware Utilization
+
 - **CPU**: Optimized for Ryzen 5 (6 cores/12 threads)
   - 12 max worker processes
   - 4 parallel workers per query
@@ -80,12 +82,14 @@ net.ipv4.tcp_congestion_control = bbr
 ## 📊 Expected Performance
 
 ### Wardriving Data Import
+
 - **WiGLE SQLite Import**: ~50,000 records/second
 - **Real-time Signal Collection**: <10ms insert latency
 - **Spatial Queries**: <100ms for 1km radius searches
 - **Bulk Analytics**: Full parallel processing utilization
 
 ### Resource Usage (Typical)
+
 ```
 CPU Usage: 30-60% during imports, 5-15% steady state
 Memory Usage: 8-12GB PostgreSQL, 2-4GB OS/containers
@@ -96,12 +100,14 @@ Network: Minimal (localhost only)
 ## 🔐 Security Configuration
 
 ### Authentication
+
 - **SCRAM-SHA-256** password encryption
 - **Auto-generated** 32-40 character passwords
 - **Localhost-only** binding (127.0.0.1)
 - **Role-based** access control
 
 ### Generated Roles
+
 ```
 shadowcheck_admin    - Full database access (5 connections)
 shadowcheck_analyst  - Security analysis (10 connections)
@@ -112,6 +118,7 @@ shadowcheck_emergency - Emergency access (disabled by default)
 ```
 
 ### Network Security
+
 - Docker containers isolated on private network
 - PostgreSQL: `127.0.0.1:5432` only
 - pgAdmin: `127.0.0.1:8080` only (optional)
@@ -120,6 +127,7 @@ shadowcheck_emergency - Emergency access (disabled by default)
 ## 📈 Performance Monitoring
 
 ### Real-time Monitoring
+
 ```bash
 # System performance overview
 ./monitor_performance.sh
@@ -135,6 +143,7 @@ ORDER BY total_time DESC LIMIT 10;"
 ```
 
 ### Key Metrics to Watch
+
 - **Memory usage**: Should stay under 14GB total
 - **CPU usage**: Should spike during imports, low otherwise
 - **Disk I/O**: Should be consistent, no blocked processes
@@ -164,6 +173,7 @@ ORDER BY total_time DESC LIMIT 10;"
 ### Performance Issues
 
 1. **Slow Queries**
+
    ```bash
    # Check for missing indexes
    docker exec shadowcheck_postgres psql -U shadowcheck_admin -d shadowcheck -c "
@@ -172,6 +182,7 @@ ORDER BY total_time DESC LIMIT 10;"
    ```
 
 2. **High Memory Usage**
+
    ```bash
    # Check shared memory usage
    ipcs -m
@@ -192,6 +203,7 @@ ORDER BY total_time DESC LIMIT 10;"
 ### System Issues
 
 1. **Docker Performance**
+
    ```bash
    # Check Docker daemon status
    sudo systemctl status docker
@@ -202,6 +214,7 @@ ORDER BY total_time DESC LIMIT 10;"
    ```
 
 2. **Kernel Optimization**
+
    ```bash
    # Verify sysctl settings
    sysctl vm.swappiness vm.dirty_ratio kernel.shmmax
@@ -213,6 +226,7 @@ ORDER BY total_time DESC LIMIT 10;"
 ## 📋 Maintenance Tasks
 
 ### Daily
+
 ```bash
 # Monitor performance
 ./monitor_performance.sh
@@ -223,6 +237,7 @@ SELECT * FROM app.password_expiry_status;"
 ```
 
 ### Weekly
+
 ```bash
 # Backup database
 docker exec shadowcheck_postgres pg_dump -U shadowcheck_admin shadowcheck > "backups/shadowcheck_$(date +%Y%m%d).sql"
@@ -235,6 +250,7 @@ docker exec shadowcheck_postgres psql -U shadowcheck_admin -d shadowcheck -c "AN
 ```
 
 ### Monthly
+
 ```bash
 # Rotate passwords (if policy requires)
 docker exec shadowcheck_postgres psql -U shadowcheck_admin -d shadowcheck -c "
@@ -251,6 +267,7 @@ ORDER BY idx_scan;"
 ## 🎯 Use Cases & Examples
 
 ### Wardriving Import
+
 ```bash
 # Start monitoring
 ./monitor_performance.sh &
@@ -264,6 +281,7 @@ docker stats shadowcheck_postgres
 ```
 
 ### Spatial Analysis
+
 ```sql
 -- Find networks near coordinates (should be <100ms)
 SELECT mac_address, network_name,
@@ -276,6 +294,7 @@ ORDER BY distance_meters LIMIT 20;
 ```
 
 ### Security Analysis
+
 ```sql
 -- Check for potential stalking (should be <1s)
 SELECT device_1_mac, device_2_mac, stalking_risk_score, colocation_count

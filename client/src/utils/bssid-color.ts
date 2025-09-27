@@ -26,7 +26,7 @@ export function bssidToColor(bssid: string): BSSIDColor {
 
   // Normalize a BSSID/MAC to uppercase hex (no separators)
   function normalizeMac(mac: string): string {
-    return (mac || "").toUpperCase().replace(/[^0-9A-F]/g, "");
+    return (mac || '').toUpperCase().replace(/[^0-9A-F]/g, '');
   }
 
   const cleaned = normalizeMac(bssid);
@@ -34,8 +34,8 @@ export function bssidToColor(bssid: string): BSSIDColor {
     return { hex: '#999999', hsl: { h: 0, s: 0, l: 60 } }; // too short → gray
   }
 
-  const oui = cleaned.slice(0, 6);                   // vendor/OUI
-  const devicePart = cleaned.slice(6);               // device portion (may be "")
+  const oui = cleaned.slice(0, 6); // vendor/OUI
+  const devicePart = cleaned.slice(6); // device portion (may be "")
 
   const hue = BASE_HUES[stringToHash(oui) % BASE_HUES.length];
 
@@ -56,9 +56,9 @@ export function bssidToColor(bssid: string): BSSIDColor {
 export function bestlevelToDbm(bestlevel: number): number {
   // G63 bestlevel is typically 0-100, convert to realistic dBm range
   if (!bestlevel || bestlevel === 0) return -100;
-  
+
   // Map 0-100 range to -100 to -30 dBm (typical WiFi range)
-  return Math.round(-100 + (bestlevel * 0.7));
+  return Math.round(-100 + bestlevel * 0.7);
 }
 
 /**
@@ -78,12 +78,10 @@ export function calculateColorSimilarity(bssid1: string, bssid2: string): number
 
   // Weighted distance (hue is most important for grouping)
   const distance = Math.sqrt(
-    (hueDiff / 180) ** 2 * 0.6 +
-    (satDiff / 100) ** 2 * 0.2 +
-    (lightDiff / 100) ** 2 * 0.2
+    (hueDiff / 180) ** 2 * 0.6 + (satDiff / 100) ** 2 * 0.2 + (lightDiff / 100) ** 2 * 0.2
   );
 
-  return Math.max(0, 100 - (distance * 100));
+  return Math.max(0, 100 - distance * 100);
 }
 
 /**
@@ -121,14 +119,14 @@ export function groupBSSIDsByColor(bssids: string[], threshold = 80): string[][]
 export function getBSSIDOctets(bssid: string): string[] {
   const clean = bssid.toLowerCase().replace(/[^a-f0-9]/g, '');
   if (clean.length !== 12) return [];
-  
+
   return [
     clean.substring(0, 2),
     clean.substring(2, 4),
     clean.substring(4, 6),
     clean.substring(6, 8),
     clean.substring(8, 10),
-    clean.substring(10, 12)
+    clean.substring(10, 12),
   ];
 }
 
@@ -157,10 +155,17 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-      default: h = 0;
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+      default:
+        h = 0;
     }
     h /= 6;
   }
@@ -181,22 +186,40 @@ function hslToHex(h: number, s: number, l: number): string {
   let r: number, g: number, b: number;
 
   if (hDecimal * 6 < 1) {
-    r = c; g = x; b = 0;
+    r = c;
+    g = x;
+    b = 0;
   } else if (hDecimal * 6 < 2) {
-    r = x; g = c; b = 0;
+    r = x;
+    g = c;
+    b = 0;
   } else if (hDecimal * 6 < 3) {
-    r = 0; g = c; b = x;
+    r = 0;
+    g = c;
+    b = x;
   } else if (hDecimal * 6 < 4) {
-    r = 0; g = x; b = c;
+    r = 0;
+    g = x;
+    b = c;
   } else if (hDecimal * 6 < 5) {
-    r = x; g = 0; b = c;
+    r = x;
+    g = 0;
+    b = c;
   } else {
-    r = c; g = 0; b = x;
+    r = c;
+    g = 0;
+    b = x;
   }
 
-  const rHex = Math.round((r + m) * 255).toString(16).padStart(2, '0');
-  const gHex = Math.round((g + m) * 255).toString(16).padStart(2, '0');
-  const bHex = Math.round((b + m) * 255).toString(16).padStart(2, '0');
+  const rHex = Math.round((r + m) * 255)
+    .toString(16)
+    .padStart(2, '0');
+  const gHex = Math.round((g + m) * 255)
+    .toString(16)
+    .padStart(2, '0');
+  const bHex = Math.round((b + m) * 255)
+    .toString(16)
+    .padStart(2, '0');
 
   return `#${rHex}${gHex}${bHex}`;
 }

@@ -1,0 +1,66 @@
+{
+  "name": "shadowcheck",
+  "version": "1.0.0",
+  "description": "Counter-surveillance platform for detecting professional surveillance operations",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "tsx watch server/index.ts",
+    "dev:client": "cd client && npm run dev",
+    "build": "npm run build:client && npm run build:server",
+    "build:server": "tsx server/index.ts",
+    "build:client": "cd client && npm run build",
+    "start": "tsx server/index.ts",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "typecheck": "concurrently \"npm:typecheck:*\"",
+    "typecheck:client": "tsc --noEmit -p client/tsconfig.json",
+    "typecheck:server": "tsc --noEmit -p server/tsconfig.json"
+  },
+  "keywords": [
+    "surveillance",
+    "counter-surveillance",
+    "sigint",
+    "wardriving",
+    "security"
+  ],
+  "author": "ShadowCheck",
+  "license": "MIT",
+  "dependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.3",
+    "@types/pg": "^8.10.9",
+    "@vitejs/plugin-react": "^5.0.3",
+    "autoprefixer": "^10.4.21",
+    "cors": "^2.8.5",
+    "drizzle-orm": "^0.44.5",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "nanoid": "^5.1.6",
+    "pg": "^8.11.3",
+    "postcss": "^8.5.6",
+    "postgres": "^3.4.3",
+    "tailwindcss": "^4.1.13",
+    "vite": "^7.1.7"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.36.0",
+    "@types/node": "^24.5.2",
+    "@typescript-eslint/eslint-plugin": "^8.44.1",
+    "@typescript-eslint/parser": "^8.44.1",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.36.0",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

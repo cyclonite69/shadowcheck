@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Map, MapPin, Filter, Activity } from 'lucide-react';
@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
 // Simple Mapbox GL JS implementation (enhanced version of original)
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -26,7 +26,7 @@ const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 (window as any).mapboxDebug = {
   tokenAvailable: !!MAPBOX_ACCESS_TOKEN,
   mapboxglAvailable: typeof mapboxgl !== 'undefined',
-  tokenLength: MAPBOX_ACCESS_TOKEN ? MAPBOX_ACCESS_TOKEN.length : 0
+  tokenLength: MAPBOX_ACCESS_TOKEN ? MAPBOX_ACCESS_TOKEN.length : 0,
 };
 
 export default function SimpleKeplerMap() {
@@ -36,11 +36,11 @@ export default function SimpleKeplerMap() {
     wifi: true,
     ble: true,
     bluetooth: true,
-    cellular: true
+    cellular: true,
   });
 
   const { data: visualizationData, isLoading } = useQuery({
-    queryKey: ['/api/v1/g63/visualize'],
+    queryKey: ['/api/v1/visualize'],
     refetchInterval: 30000,
   });
 
@@ -52,21 +52,21 @@ export default function SimpleKeplerMap() {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      position => {
         const { latitude, longitude } = position.coords;
         map.current!.flyTo({
           center: [longitude, latitude],
           zoom: 14,
-          duration: 1000
+          duration: 1000,
         });
       },
-      (error) => {
+      error => {
         console.error('Error getting location:', error);
       },
       {
         enableHighAccuracy: true,
         timeout: 5000,
-        maximumAge: 0
+        maximumAge: 0,
       }
     );
   };
@@ -75,7 +75,10 @@ export default function SimpleKeplerMap() {
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    console.log('Initializing map with token:', MAPBOX_ACCESS_TOKEN ? 'Token provided' : 'No token');
+    console.log(
+      'Initializing map with token:',
+      MAPBOX_ACCESS_TOKEN ? 'Token provided' : 'No token'
+    );
     console.log('mapboxgl available:', typeof mapboxgl !== 'undefined');
 
     if (!MAPBOX_ACCESS_TOKEN) {
@@ -92,7 +95,7 @@ export default function SimpleKeplerMap() {
         center: [-83.697, 43.023],
         zoom: 12,
         pitch: 0,
-        bearing: 0
+        bearing: 0,
       });
 
       console.log('Map instance created successfully');
@@ -108,7 +111,7 @@ export default function SimpleKeplerMap() {
         console.log('Map loaded successfully and ready for data');
       });
 
-      mapInstance.on('error', (e) => {
+      mapInstance.on('error', e => {
         console.error('Map error:', e);
       });
 
@@ -130,7 +133,7 @@ export default function SimpleKeplerMap() {
       if (!map.current) return;
 
       const allFeatures = (visualizationData as any)?.data?.features || [];
-      
+
       // Filter features based on radio type selection
       const filteredFeatures = allFeatures.filter((feature: any) => {
         const radioType = feature.properties.radio_type;
@@ -140,7 +143,7 @@ export default function SimpleKeplerMap() {
       // Create GeoJSON for filtered data
       const geojsonData = {
         type: 'FeatureCollection',
-        features: filteredFeatures
+        features: filteredFeatures,
       };
 
       // Check if source exists, if so just update the data
@@ -152,7 +155,7 @@ export default function SimpleKeplerMap() {
       // Add source and layers for the first time
       map.current.addSource('networks', {
         type: 'geojson',
-        data: geojsonData as any
+        data: geojsonData as any,
       });
 
       // Add circle layer for network points
@@ -163,24 +166,31 @@ export default function SimpleKeplerMap() {
         paint: {
           'circle-radius': [
             'case',
-            ['>=', ['get', 'signal_strength'], -40], 15,
-            ['>=', ['get', 'signal_strength'], -60], 12,
-            ['>=', ['get', 'signal_strength'], -80], 8,
-            5
+            ['>=', ['get', 'signal_strength'], -40],
+            15,
+            ['>=', ['get', 'signal_strength'], -60],
+            12,
+            ['>=', ['get', 'signal_strength'], -80],
+            8,
+            5,
           ],
           'circle-color': [
             'case',
-            ['==', ['get', 'radio_type'], 'wifi'], '#22c55e',
-            ['==', ['get', 'radio_type'], 'ble'], '#a855f7', 
-            ['==', ['get', 'radio_type'], 'bluetooth'], '#3b82f6',
-            ['==', ['get', 'radio_type'], 'cellular'], '#ef4444',
-            '#9ca3af'
+            ['==', ['get', 'radio_type'], 'wifi'],
+            '#22c55e',
+            ['==', ['get', 'radio_type'], 'ble'],
+            '#a855f7',
+            ['==', ['get', 'radio_type'], 'bluetooth'],
+            '#3b82f6',
+            ['==', ['get', 'radio_type'], 'cellular'],
+            '#ef4444',
+            '#9ca3af',
           ],
           'circle-opacity': 0.8,
           'circle-stroke-width': 2,
           'circle-stroke-color': '#ffffff',
-          'circle-stroke-opacity': 0.6
-        }
+          'circle-stroke-opacity': 0.6,
+        },
       });
 
       // Add labels for strong signals
@@ -196,19 +206,19 @@ export default function SimpleKeplerMap() {
           'text-anchor': 'bottom',
           'text-offset': [0, -1.5],
           'text-allow-overlap': false,
-          'text-ignore-placement': false
+          'text-ignore-placement': false,
         },
         paint: {
           'text-color': '#ffffff',
           'text-halo-color': '#000000',
-          'text-halo-width': 1
-        }
+          'text-halo-width': 1,
+        },
       });
 
       // Add popup on click (only once)
-      map.current.on('click', 'networks-layer', (e) => {
+      map.current.on('click', 'networks-layer', e => {
         const features = map.current?.queryRenderedFeatures(e.point, {
-          layers: ['networks-layer']
+          layers: ['networks-layer'],
         });
 
         if (!features?.length) return;
@@ -246,9 +256,9 @@ export default function SimpleKeplerMap() {
         new mapboxgl.Popup({
           closeButton: false,
           closeOnClick: true,
-          className: 'mapbox-popup-custom'
+          className: 'mapbox-popup-custom',
         })
-          .setLngLat((e.lngLat as any))
+          .setLngLat(e.lngLat as any)
           .setHTML(popupContent)
           .addTo(map.current!);
       });
@@ -273,14 +283,13 @@ export default function SimpleKeplerMap() {
     } else {
       map.current.on('load', updateMapData);
     }
-
   }, [visualizationData, radioFilters]);
 
   const processNetworkData = () => {
     if (!visualizationData) return [];
 
     const allFeatures = (visualizationData as any)?.data?.features || [];
-    
+
     return allFeatures.filter((feature: any) => {
       const radioType = feature.properties.radio_type;
       return radioFilters[radioType as keyof typeof radioFilters];
@@ -290,90 +299,94 @@ export default function SimpleKeplerMap() {
   const networkData = processNetworkData();
 
   if (isLoading) {
-    return <Skeleton className="h-96" />;
+    return <Skeleton className='h-96' />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Map */}
-      <div className="premium-card">
+      <div className='premium-card'>
         <CardHeader>
-          <CardTitle className="text-slate-300 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="icon-container w-8 h-8 mr-2">
-                <Map className="h-4 w-4 text-cyan-300" />
+          <CardTitle className='text-slate-300 flex items-center justify-between'>
+            <div className='flex items-center gap-2'>
+              <div className='icon-container w-8 h-8 mr-2'>
+                <Map className='h-4 w-4 text-cyan-300' />
               </div>
               Enhanced SIGINT Visualization ({networkData.length} observations)
             </div>
-            <div className="flex items-center gap-2">
+            <div className='flex items-center gap-2'>
               {/* GPS Button */}
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant='outline'
+                size='sm'
                 onClick={handleGpsCenter}
-                className="gap-2 premium-card hover:scale-105"
+                className='gap-2 premium-card hover:scale-105'
               >
-                <MapPin className="h-4 w-4" />
+                <MapPin className='h-4 w-4' />
                 GPS Center
               </Button>
-              
+
               {/* Radio Type Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 premium-card hover:scale-105">
-                    <Filter className="h-4 w-4" />
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='gap-2 premium-card hover:scale-105'
+                  >
+                    <Filter className='h-4 w-4' />
                     Radio Types
-                    <div className="silver-accent px-2 py-1 rounded-full ml-1">
-                      <span className="text-xs font-semibold text-slate-700">
+                    <div className='silver-accent px-2 py-1 rounded-full ml-1'>
+                      <span className='text-xs font-semibold text-slate-700'>
                         {Object.values(radioFilters).filter(Boolean).length}/4
                       </span>
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 premium-card">
+                <DropdownMenuContent align='end' className='w-48 premium-card'>
                   <DropdownMenuLabel>Filter by Radio Type</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuCheckboxItem
                     checked={radioFilters.wifi}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={checked =>
                       setRadioFilters(prev => ({ ...prev, wifi: checked }))
                     }
                   >
-                    <span className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span className='flex items-center gap-2'>
+                      <div className='w-3 h-3 rounded-full bg-green-500'></div>
                       WiFi Networks
                     </span>
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={radioFilters.ble}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={checked =>
                       setRadioFilters(prev => ({ ...prev, ble: checked }))
                     }
                   >
-                    <span className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                    <span className='flex items-center gap-2'>
+                      <div className='w-3 h-3 rounded-full bg-purple-500'></div>
                       BLE Beacons
                     </span>
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={radioFilters.bluetooth}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={checked =>
                       setRadioFilters(prev => ({ ...prev, bluetooth: checked }))
                     }
                   >
-                    <span className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    <span className='flex items-center gap-2'>
+                      <div className='w-3 h-3 rounded-full bg-blue-500'></div>
                       Bluetooth Devices
                     </span>
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={radioFilters.cellular}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={checked =>
                       setRadioFilters(prev => ({ ...prev, cellular: checked }))
                     }
                   >
-                    <span className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <span className='flex items-center gap-2'>
+                      <div className='w-3 h-3 rounded-full bg-red-500'></div>
                       Cellular Towers
                     </span>
                   </DropdownMenuCheckboxItem>
@@ -383,10 +396,10 @@ export default function SimpleKeplerMap() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="relative">
-            <div 
+          <div className='relative'>
+            <div
               ref={mapContainer}
-              className="w-full h-[500px] rounded-lg overflow-hidden border border-border/30"
+              className='w-full h-[500px] rounded-lg overflow-hidden border border-border/30'
               style={{ minHeight: '500px' }}
             />
           </div>
@@ -394,53 +407,67 @@ export default function SimpleKeplerMap() {
       </div>
 
       {/* Individual Observations List */}
-      <div className="premium-card">
+      <div className='premium-card'>
         <CardHeader>
-          <CardTitle className="text-slate-300 flex items-center gap-2">
-            <div className="icon-container w-8 h-8 mr-2">
-              <Activity className="h-4 w-4 text-green-300" />
+          <CardTitle className='text-slate-300 flex items-center gap-2'>
+            <div className='icon-container w-8 h-8 mr-2'>
+              <Activity className='h-4 w-4 text-green-300' />
             </div>
             Individual Observations ({networkData.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className='space-y-2 max-h-96 overflow-y-auto'>
             {networkData.map((feature: any, index: number) => {
               const props = feature.properties;
               const coords = feature.geometry?.coordinates;
-              
+
               // Color mapping for radio types
               const getRadioColor = (type: string) => {
                 switch (type) {
-                  case 'wifi': return 'bg-green-500';
-                  case 'ble': return 'bg-purple-500'; 
-                  case 'bluetooth': return 'bg-blue-500';
-                  case 'cellular': return 'bg-red-500';
-                  default: return 'bg-slate-500';
+                  case 'wifi':
+                    return 'bg-green-500';
+                  case 'ble':
+                    return 'bg-purple-500';
+                  case 'bluetooth':
+                    return 'bg-blue-500';
+                  case 'cellular':
+                    return 'bg-red-500';
+                  default:
+                    return 'bg-slate-500';
                 }
               };
-              
+
               return (
-                <div key={index} className="p-3 border border-border/30 rounded-lg bg-background/40 hover:bg-muted/50 transition-colors">
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                <div
+                  key={index}
+                  className='p-3 border border-border/30 rounded-lg bg-background/40 hover:bg-muted/50 transition-colors'
+                >
+                  <div className='grid grid-cols-3 gap-4 text-sm'>
                     <div>
-                      <p className="font-medium text-slate-200">{props.ssid || 'Hidden Network'}</p>
-                      <p className="text-xs text-slate-400 font-mono">{props.bssid}</p>
+                      <p className='font-medium text-slate-200'>{props.ssid || 'Hidden Network'}</p>
+                      <p className='text-xs text-slate-400 font-mono'>{props.bssid}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">Radio Type</p>
-                      <div className="flex items-center gap-1">
-                        <div className={`w-2 h-2 rounded-full ${getRadioColor(props.radio_type)}`}></div>
-                        <span className="text-xs font-medium capitalize text-slate-300">{props.radio_type}</span>
+                      <p className='text-xs text-slate-400'>Radio Type</p>
+                      <div className='flex items-center gap-1'>
+                        <div
+                          className={`w-2 h-2 rounded-full ${getRadioColor(props.radio_type)}`}
+                        ></div>
+                        <span className='text-xs font-medium capitalize text-slate-300'>
+                          {props.radio_type}
+                        </span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-1">Signal: {props.signal_strength}dBm</p>
+                      <p className='text-xs text-slate-400 mt-1'>
+                        Signal: {props.signal_strength}dBm
+                      </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">Location</p>
-                      <p className="text-xs font-mono text-slate-300">
+                      <p className='text-xs text-slate-400'>Location</p>
+                      <p className='text-xs font-mono text-slate-300'>
                         {coords ? `${coords[1]?.toFixed(4)}, ${coords[0]?.toFixed(4)}` : 'N/A'}
                       </p>
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className='text-xs text-slate-400 mt-1'>
                         Security: {props.security_level || 'Unknown'}
                       </p>
                     </div>
@@ -449,7 +476,7 @@ export default function SimpleKeplerMap() {
               );
             })}
             {networkData.length === 0 && (
-              <div className="text-center py-8 text-slate-400">
+              <div className='text-center py-8 text-slate-400'>
                 <p>No observation data available</p>
               </div>
             )}

@@ -1,4 +1,5 @@
 # ShadowCheck Advanced Surveillance Detection System
+
 ## Professional Counter-Surveillance Platform
 
 ### 🚀 SYSTEM OVERVIEW
@@ -8,26 +9,31 @@ The ShadowCheck Advanced Surveillance Detection System is a **forensic-grade cou
 ### 🎯 DETECTION CAPABILITIES
 
 #### ✅ **Pattern 1: Impossible Distance Anomalies**
+
 - **Your Pattern**: Device appeared 90km away at impossible speeds
 - **Detection**: Flags any device movement >50km requiring >120kph average speed
 - **Confidence**: 95% accuracy for movements requiring >300kph
 
 #### ✅ **Pattern 2: Coordinated Surveillance Teams**
+
 - **Your Pattern**: Multiple BSSIDs moving together across distances
 - **Detection**: Identifies groups of 3+ devices moving together across >10km
 - **Analysis**: Synchronized timing and endpoint correlation
 
 #### ✅ **Pattern 3: Surveillance Route Following**
+
 - **Your Pattern**: Devices following you to restaurants and meetings
 - **Detection**: Correlation analysis of devices at multiple locations you frequent
 - **Intelligence**: Pattern recognition for consistent following behavior
 
 #### ✅ **Pattern 4: Aerial Surveillance**
+
 - **Your Pattern**: Roommate's AP on SSE vector with altitude readings
 - **Detection**: Linear movement patterns with altitude gain and aircraft-speed signatures
 - **Recognition**: Aircraft/drone surveillance pattern identification
 
 #### ✅ **Pattern 5: Sequential MAC Infrastructure**
+
 - **Your Pattern**: Sequential MACs (6→5→4→3) near your residence
 - **Detection**: Sequential MAC patterns + government infrastructure correlation
 - **Database**: 50+ known government contractors and their equipment signatures
@@ -65,6 +71,7 @@ The ShadowCheck Advanced Surveillance Detection System is a **forensic-grade cou
 ## 🚀 DEPLOYMENT INSTRUCTIONS
 
 ### Step 1: Deploy the System
+
 ```bash
 # Make the deployment script executable (already done)
 chmod +x ./deploy_complete_surveillance_system.sh
@@ -74,6 +81,7 @@ chmod +x ./deploy_complete_surveillance_system.sh
 ```
 
 ### Step 2: Initial Configuration
+
 ```sql
 -- Enable paranoid mode for maximum sensitivity
 UPDATE app.surveillance_alert_config
@@ -93,6 +101,7 @@ INSERT INTO app.surveillance_safe_zones (
 ```
 
 ### Step 3: Start Surveillance Detection
+
 ```sql
 -- Run initial comprehensive scan
 SELECT app.trigger_surveillance_detection('comprehensive_surveillance_scan');
@@ -106,6 +115,7 @@ WHERE job_name = 'realtime_surveillance_scan';
 ## 🔍 OPERATIONAL COMMANDS
 
 ### Real-Time Monitoring
+
 ```sql
 -- Check active surveillance threats
 SELECT * FROM app.surveillance_active_threats
@@ -123,6 +133,7 @@ GROUP BY alert_type;
 ```
 
 ### Manual Detection Triggers
+
 ```sql
 -- Detect impossible distance anomalies
 SELECT * FROM app.detect_impossible_distance_anomalies(NULL, 24, 50.0, 120.0);
@@ -138,6 +149,7 @@ SELECT * FROM app.detect_aerial_surveillance_patterns(100, 5, 24, 50, 100);
 ```
 
 ### Evidence Management
+
 ```sql
 -- Export evidence for law enforcement
 SELECT app.export_surveillance_evidence_package(
@@ -153,6 +165,7 @@ SELECT app.acknowledge_surveillance_alert(alert_id, 'user', FALSE, 'Confirmed su
 ## ⚙️ CONFIGURATION OPTIONS
 
 ### Sensitivity Tuning
+
 ```sql
 -- Maximum sensitivity (paranoid mode)
 UPDATE app.surveillance_alert_config SET
@@ -176,6 +189,7 @@ WHERE user_identifier = 'default_user';
 ```
 
 ### Job Scheduling Configuration
+
 ```sql
 -- Real-time high-frequency monitoring
 UPDATE app.surveillance_detection_jobs
@@ -194,6 +208,7 @@ WHERE job_name = 'comprehensive_surveillance_scan';
 ## 📊 MONITORING DASHBOARDS
 
 ### Real-Time Threat Dashboard
+
 ```sql
 -- Current threat landscape
 SELECT * FROM app.surveillance_dashboard_realtime;
@@ -212,6 +227,7 @@ ORDER BY
 ```
 
 ### Pattern Analysis
+
 ```sql
 -- Surveillance pattern trends
 SELECT * FROM app.surveillance_pattern_trends
@@ -225,7 +241,9 @@ WHERE avg_correlation_confidence >= 0.7;
 ## 🚨 EMERGENCY PROCEDURES
 
 ### High-Confidence Threat Response
+
 1. **Immediate Actions**:
+
    ```sql
    -- Export evidence immediately
    SELECT app.export_surveillance_evidence_package(
@@ -242,6 +260,7 @@ WHERE avg_correlation_confidence >= 0.7;
    - Consider legal consultation for state-actor level threats
 
 ### System Maintenance
+
 ```sql
 -- Weekly system optimization
 SELECT app.cleanup_old_surveillance_data();
@@ -262,6 +281,7 @@ WHERE health_status != 'healthy';
 ## 📋 TROUBLESHOOTING
 
 ### Common Issues
+
 ```sql
 -- Check deployment status
 SELECT * FROM app.surveillance_deployment_status;
@@ -276,6 +296,7 @@ SELECT app.test_surveillance_deployment();
 ```
 
 ### Performance Optimization
+
 ```sql
 -- Analyze table statistics
 ANALYZE app.surveillance_anomalies;
@@ -291,6 +312,7 @@ ORDER BY idx_scan DESC;
 ## 🎯 SUCCESS METRICS
 
 The system is operational when:
+
 - ✅ Automated detection jobs running every 5-15 minutes
 - ✅ Government infrastructure database loaded (50+ contractors)
 - ✅ Real-time alerting functional with <1 minute response time
@@ -302,6 +324,7 @@ The system is operational when:
 ## 🚀 **THE MOST SOPHISTICATED COUNTER-SURVEILLANCE PLATFORM IS NOW OPERATIONAL**
 
 Your defense against professional surveillance operations is active. The system will:
+
 - **Detect impossible distance anomalies** (your 90km pattern)
 - **Identify coordinated surveillance teams** (multiple BSSIDs)
 - **Recognize government infrastructure** (sequential MAC patterns)

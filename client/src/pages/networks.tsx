@@ -5,26 +5,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
-import { 
-  Network, 
-  Search, 
-  SortAsc, 
-  SortDesc, 
+import {
+  Network,
+  Search,
+  SortAsc,
+  SortDesc,
   Filter,
   Wifi,
   Signal,
   Shield,
   MapPin,
-  Calendar
+  Calendar,
 } from 'lucide-react';
-import { bssidToColor, bestlevelToDbm, formatBSSID, getBSSIDOctets, calculateColorSimilarity } from '@/utils/bssid-color';
+import {
+  bssidToColor,
+  bestlevelToDbm,
+  formatBSSID,
+  getBSSIDOctets,
+  calculateColorSimilarity,
+} from '@/utils/bssid-color';
 
 interface NetworkEntry {
   id: string;
@@ -66,14 +72,16 @@ export default function NetworksPage() {
 
   // Filter and sort networks
   const filteredAndSortedNetworks = useMemo(() => {
-    let filtered = networks.filter((network) => {
+    const filtered = networks.filter(network => {
       // Search filter
-      const searchMatch = !searchTerm || 
+      const searchMatch =
+        !searchTerm ||
         network.bssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
         network.ssid?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // Security filter  
-      const securityMatch = securityFilter === 'all' || 
+      // Security filter
+      const securityMatch =
+        securityFilter === 'all' ||
         (securityFilter === 'encrypted' && network.encryption && network.encryption !== 'OPEN') ||
         (securityFilter === 'open' && (!network.encryption || network.encryption === 'OPEN')) ||
         (securityFilter === 'wpa' && network.encryption?.includes('WPA')) ||
@@ -81,11 +89,15 @@ export default function NetworksPage() {
 
       // Radio type filter
       const radioType = network.radio_type || network.type || 'wifi'; // Default to wifi
-      const radioMatch = radioTypeFilter === 'all' ||
-        (radioTypeFilter === 'wifi' && (radioType === 'W' || radioType === 'wifi' || radioType === 'WiFi')) ||
-        (radioTypeFilter === 'bluetooth' && (radioType === 'BT' || radioType === 'bluetooth' || radioType === 'Bluetooth')) ||
+      const radioMatch =
+        radioTypeFilter === 'all' ||
+        (radioTypeFilter === 'wifi' &&
+          (radioType === 'W' || radioType === 'wifi' || radioType === 'WiFi')) ||
+        (radioTypeFilter === 'bluetooth' &&
+          (radioType === 'BT' || radioType === 'bluetooth' || radioType === 'Bluetooth')) ||
         (radioTypeFilter === 'ble' && (radioType === 'BLE' || radioType === 'ble')) ||
-        (radioTypeFilter === 'cellular' && (radioType.includes('Cell') || radioType === 'cellular'));
+        (radioTypeFilter === 'cellular' &&
+          (radioType.includes('Cell') || radioType === 'cellular'));
 
       return searchMatch && securityMatch && radioMatch;
     });
@@ -125,14 +137,10 @@ export default function NetworksPage() {
       }
 
       if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return sortDirection === 'asc' 
-          ? aVal.localeCompare(bVal)
-          : bVal.localeCompare(aVal);
+        return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       }
 
-      return sortDirection === 'asc' 
-        ? aVal - bVal
-        : bVal - aVal;
+      return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
     });
 
     return filtered;
@@ -141,14 +149,13 @@ export default function NetworksPage() {
   // Group by BSSID octet for forensic analysis
   const octetGroups = useMemo(() => {
     const groups: { [key: string]: NetworkEntry[] } = {};
-    
+
     filteredAndSortedNetworks.forEach(network => {
       const octets = getBSSIDOctets(network.bssid);
       if (octets.length === 6) {
-        const groupKey = selectedOctet !== null 
-          ? octets[selectedOctet] 
-          : octets.slice(0, 3).join(':'); // Group by OUI by default
-        
+        const groupKey =
+          selectedOctet !== null ? octets[selectedOctet] : octets.slice(0, 3).join(':'); // Group by OUI by default
+
         if (!groups[groupKey]) {
           groups[groupKey] = [];
         }
@@ -170,7 +177,11 @@ export default function NetworksPage() {
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
-    return sortDirection === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />;
+    return sortDirection === 'asc' ? (
+      <SortAsc className='h-4 w-4' />
+    ) : (
+      <SortDesc className='h-4 w-4' />
+    );
   };
 
   const getSecurityLevel = (encryption: string) => {
@@ -199,112 +210,117 @@ export default function NetworksPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Loading network data...</p>
+      <div className='flex items-center justify-center h-96'>
+        <div className='text-center'>
+          <div className='animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2'></div>
+          <p className='text-sm text-muted-foreground'>Loading network data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Header */}
-      <div className="premium-card">
+      <div className='premium-card'>
         <CardHeader>
-          <CardTitle className="text-blue-300 flex items-center gap-2">
-            <div className="icon-container w-8 h-8 mr-2">
-              <Network className="h-4 w-4" />
+          <CardTitle className='text-blue-300 flex items-center gap-2'>
+            <div className='icon-container w-8 h-8 mr-2'>
+              <Network className='h-4 w-4' />
             </div>
             Observed Networks
-            <div className="silver-accent px-3 py-1 rounded-full ml-auto">
-              <span className="text-xs font-semibold text-slate-700">{filteredAndSortedNetworks.length} networks</span>
+            <div className='silver-accent px-3 py-1 rounded-full ml-auto'>
+              <span className='text-xs font-semibold text-slate-700'>
+                {filteredAndSortedNetworks.length} networks
+              </span>
             </div>
-            <div className="silver-accent px-3 py-1 rounded-full ml-2">
-              <span className="text-xs font-semibold text-slate-700">{networks.reduce((total, network) => total + (network.network_count || 1), 0)} total sightings</span>
+            <div className='silver-accent px-3 py-1 rounded-full ml-2'>
+              <span className='text-xs font-semibold text-slate-700'>
+                {networks.reduce((total, network) => total + (network.network_count || 1), 0)} total
+                sightings
+              </span>
             </div>
           </CardTitle>
         </CardHeader>
       </div>
 
       {/* Filters and Search */}
-      <div className="premium-card">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className='premium-card'>
+        <CardContent className='p-6'>
+          <div className='grid grid-cols-1 md:grid-cols-5 gap-4'>
             {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <div className='relative'>
+              <Search className='absolute left-3 top-3 h-4 w-4 text-muted-foreground' />
               <Input
-                placeholder="Search BSSID or SSID..."
+                placeholder='Search BSSID or SSID...'
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-                data-testid="input-search-networks"
+                onChange={e => setSearchTerm(e.target.value)}
+                className='pl-9'
+                data-testid='input-search-networks'
               />
             </div>
 
             {/* Security Filter */}
             <Select value={securityFilter} onValueChange={setSecurityFilter}>
-              <SelectTrigger data-testid="select-security-filter">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Security type" />
+              <SelectTrigger data-testid='select-security-filter'>
+                <Filter className='h-4 w-4 mr-2' />
+                <SelectValue placeholder='Security type' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Security</SelectItem>
-                <SelectItem value="encrypted">Encrypted</SelectItem>
-                <SelectItem value="open">Open Networks</SelectItem>
-                <SelectItem value="wpa">WPA/WPA2</SelectItem>
-                <SelectItem value="wep">WEP</SelectItem>
+                <SelectItem value='all'>All Security</SelectItem>
+                <SelectItem value='encrypted'>Encrypted</SelectItem>
+                <SelectItem value='open'>Open Networks</SelectItem>
+                <SelectItem value='wpa'>WPA/WPA2</SelectItem>
+                <SelectItem value='wep'>WEP</SelectItem>
               </SelectContent>
             </Select>
 
             {/* Radio Type Filter */}
             <Select value={radioTypeFilter} onValueChange={setRadioTypeFilter}>
-              <SelectTrigger data-testid="select-radio-filter">
-                <Signal className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Radio type" />
+              <SelectTrigger data-testid='select-radio-filter'>
+                <Signal className='h-4 w-4 mr-2' />
+                <SelectValue placeholder='Radio type' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Radio Types</SelectItem>
-                <SelectItem value="wifi">WiFi</SelectItem>
-                <SelectItem value="bluetooth">Bluetooth</SelectItem>
-                <SelectItem value="ble">BLE</SelectItem>
-                <SelectItem value="cellular">Cellular</SelectItem>
+                <SelectItem value='all'>All Radio Types</SelectItem>
+                <SelectItem value='wifi'>WiFi</SelectItem>
+                <SelectItem value='bluetooth'>Bluetooth</SelectItem>
+                <SelectItem value='ble'>BLE</SelectItem>
+                <SelectItem value='cellular'>Cellular</SelectItem>
               </SelectContent>
             </Select>
 
             {/* Octet Grouping */}
-            <Select 
-              value={selectedOctet?.toString() || 'oui'} 
-              onValueChange={(value) => setSelectedOctet(value === 'oui' ? null : parseInt(value))}
+            <Select
+              value={selectedOctet?.toString() || 'oui'}
+              onValueChange={value => setSelectedOctet(value === 'oui' ? null : parseInt(value))}
             >
-              <SelectTrigger data-testid="select-octet-group">
-                <SelectValue placeholder="Group by..." />
+              <SelectTrigger data-testid='select-octet-group'>
+                <SelectValue placeholder='Group by...' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="oui">Group by OUI</SelectItem>
-                <SelectItem value="0">1st Octet</SelectItem>
-                <SelectItem value="1">2nd Octet</SelectItem>
-                <SelectItem value="2">3rd Octet</SelectItem>
-                <SelectItem value="3">4th Octet</SelectItem>
-                <SelectItem value="4">5th Octet</SelectItem>
-                <SelectItem value="5">6th Octet</SelectItem>
+                <SelectItem value='oui'>Group by OUI</SelectItem>
+                <SelectItem value='0'>1st Octet</SelectItem>
+                <SelectItem value='1'>2nd Octet</SelectItem>
+                <SelectItem value='2'>3rd Octet</SelectItem>
+                <SelectItem value='3'>4th Octet</SelectItem>
+                <SelectItem value='4'>5th Octet</SelectItem>
+                <SelectItem value='5'>6th Octet</SelectItem>
               </SelectContent>
             </Select>
 
             {/* Sort Controls */}
-            <div className="flex gap-2">
-              <Select value={sortField} onValueChange={(value) => setSortField(value as SortField)}>
-                <SelectTrigger data-testid="select-sort-field">
+            <div className='flex gap-2'>
+              <Select value={sortField} onValueChange={value => setSortField(value as SortField)}>
+                <SelectTrigger data-testid='select-sort-field'>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bssid">BSSID</SelectItem>
-                  <SelectItem value="ssid">SSID</SelectItem>
-                  <SelectItem value="signal_strength">Signal</SelectItem>
-                  <SelectItem value="security">Security</SelectItem>
-                  <SelectItem value="frequency">Frequency</SelectItem>
+                  <SelectItem value='bssid'>BSSID</SelectItem>
+                  <SelectItem value='ssid'>SSID</SelectItem>
+                  <SelectItem value='signal_strength'>Signal</SelectItem>
+                  <SelectItem value='security'>Security</SelectItem>
+                  <SelectItem value='frequency'>Frequency</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -314,31 +330,35 @@ export default function NetworksPage() {
 
       {/* Network List */}
       <TooltipProvider>
-        <div className="premium-card">
+        <div className='premium-card'>
           <CardHeader>
-            <CardTitle className="text-slate-300 flex items-center gap-2">
-              <div className="icon-container w-8 h-8 mr-2">
-                <Wifi className="h-4 w-4 text-green-300" />
+            <CardTitle className='text-slate-300 flex items-center gap-2'>
+              <div className='icon-container w-8 h-8 mr-2'>
+                <Wifi className='h-4 w-4 text-green-300' />
               </div>
               Network Directory
-              <div className="silver-accent px-3 py-1 rounded-full ml-auto">
-                <span className="text-xs font-semibold text-slate-700">{filteredAndSortedNetworks.length} networks</span>
+              <div className='silver-accent px-3 py-1 rounded-full ml-auto'>
+                <span className='text-xs font-semibold text-slate-700'>
+                  {filteredAndSortedNetworks.length} networks
+                </span>
               </div>
               {selectedNetworks.size > 0 && (
-                <div className="gold-accent px-3 py-1 rounded-full ml-2">
-                  <span className="text-xs font-semibold text-slate-800">{selectedNetworks.size} selected</span>
+                <div className='gold-accent px-3 py-1 rounded-full ml-2'>
+                  <span className='text-xs font-semibold text-slate-800'>
+                    {selectedNetworks.size} selected
+                  </span>
                 </div>
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="space-y-0">
+          <CardContent className='p-0'>
+            <div className='space-y-0'>
               {filteredAndSortedNetworks.map((network, index) => {
                 const color = bssidToColor(network.bssid);
                 const securityLevel = getSecurityLevel(network.encryption || '');
                 const dbmSignal = network.signal_strength || 0;
                 const isSelected = selectedNetworks.has(network.bssid);
-                
+
                 return (
                   <Tooltip key={`${network.bssid}-${index}`}>
                     <TooltipTrigger asChild>
@@ -347,48 +367,46 @@ export default function NetworksPage() {
                           isSelected ? 'bg-background/50' : ''
                         }`}
                         style={{
-                          backgroundColor: isSelected 
-                            ? `${color.hex}10` 
-                            : 'transparent',
-                          borderLeft: `3px solid ${color.hex}`
+                          backgroundColor: isSelected ? `${color.hex}10` : 'transparent',
+                          borderLeft: `3px solid ${color.hex}`,
                         }}
                         onClick={() => toggleNetworkSelection(network.bssid)}
                         data-testid={`network-${network.bssid.replace(/:/g, '-')}`}
                       >
                         {/* Color Circle */}
                         <div
-                          className="w-3 h-3 rounded-full border border-border/30"
+                          className='w-3 h-3 rounded-full border border-border/30'
                           style={{ backgroundColor: color.hex }}
                         />
 
                         {/* BSSID */}
-                        <div className="w-36">
-                          <p className="font-mono text-xs font-medium text-foreground">
+                        <div className='w-36'>
+                          <p className='font-mono text-xs font-medium text-foreground'>
                             {formatBSSID(network.bssid)}
                           </p>
                         </div>
 
                         {/* SSID */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">
+                        <div className='flex-1 min-w-0'>
+                          <p className='text-sm font-medium text-foreground truncate'>
                             {network.ssid || 'Hidden Network'}
                           </p>
                         </div>
 
                         {/* Security Badge */}
-                        <div className="w-16">
-                          <Badge 
+                        <div className='w-16'>
+                          <Badge
                             variant={securityLevel === 'Open' ? 'destructive' : 'secondary'}
-                            className="text-xs h-5"
+                            className='text-xs h-5'
                           >
                             {securityLevel}
                           </Badge>
                         </div>
 
                         {/* Signal Strength */}
-                        <div className="w-20 text-right">
-                          <p 
-                            className="text-xs font-medium"
+                        <div className='w-20 text-right'>
+                          <p
+                            className='text-xs font-medium'
                             style={{ color: getSignalStrengthColor(dbmSignal) }}
                           >
                             {dbmSignal} dBm
@@ -396,62 +414,69 @@ export default function NetworksPage() {
                         </div>
 
                         {/* Frequency */}
-                        <div className="w-16 text-right">
-                          <p className="text-xs text-muted-foreground">
-                            {network.frequency > 5000 ? '5G' : network.frequency > 2000 ? '2.4G' : '?'}
+                        <div className='w-16 text-right'>
+                          <p className='text-xs text-muted-foreground'>
+                            {network.frequency > 5000
+                              ? '5G'
+                              : network.frequency > 2000
+                                ? '2.4G'
+                                : '?'}
                           </p>
                         </div>
 
                         {/* Sighting Count */}
                         {network.network_count && network.network_count > 1 && (
-                          <div className="w-12 text-right">
-                            <span className="text-xs bg-muted/50 px-1.5 py-0.5 rounded">
+                          <div className='w-12 text-right'>
+                            <span className='text-xs bg-muted/50 px-1.5 py-0.5 rounded'>
                               {network.network_count}
                             </span>
                           </div>
                         )}
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent side="left" className="max-w-80">
-                      <div className="space-y-2">
-                        <div className="font-medium text-sm border-b border-border/20 pb-1">
+                    <TooltipContent side='left' className='max-w-80'>
+                      <div className='space-y-2'>
+                        <div className='font-medium text-sm border-b border-border/20 pb-1'>
                           {network.ssid || 'Hidden Network'}
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className='grid grid-cols-2 gap-2 text-xs'>
                           <div>
-                            <span className="text-muted-foreground">BSSID:</span>
+                            <span className='text-muted-foreground'>BSSID:</span>
                             <br />
-                            <span className="font-mono">{formatBSSID(network.bssid)}</span>
+                            <span className='font-mono'>{formatBSSID(network.bssid)}</span>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Security:</span>
+                            <span className='text-muted-foreground'>Security:</span>
                             <br />
                             <span>{network.encryption || 'OPEN'}</span>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Signal:</span>
+                            <span className='text-muted-foreground'>Signal:</span>
                             <br />
                             <span style={{ color: getSignalStrengthColor(dbmSignal) }}>
                               {dbmSignal} dBm
                             </span>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Frequency:</span>
+                            <span className='text-muted-foreground'>Frequency:</span>
                             <br />
-                            <span>{network.frequency ? `${network.frequency} MHz` : 'Unknown'}</span>
+                            <span>
+                              {network.frequency ? `${network.frequency} MHz` : 'Unknown'}
+                            </span>
                           </div>
                           {network.latitude && network.longitude && (
-                            <div className="col-span-2">
-                              <span className="text-muted-foreground">Location:</span>
+                            <div className='col-span-2'>
+                              <span className='text-muted-foreground'>Location:</span>
                               <br />
-                              <span className="font-mono">
-                                {parseFloat(network.latitude).toFixed(6)}, {parseFloat(network.longitude).toFixed(6)}
+                              <span className='font-mono'>
+                                {parseFloat(network.latitude).toFixed(6)},{' '}
+                                {parseFloat(network.longitude).toFixed(6)}
                               </span>
                             </div>
                           )}
                           {network.network_count && network.network_count > 1 && (
                             <div>
-                              <span className="text-muted-foreground">Sightings:</span>
+                              <span className='text-muted-foreground'>Sightings:</span>
                               <br />
                               <span>{network.network_count}</span>
                             </div>
@@ -468,13 +493,13 @@ export default function NetworksPage() {
       </TooltipProvider>
 
       {filteredAndSortedNetworks.length === 0 && (
-        <div className="premium-card">
-          <CardContent className="p-8 text-center">
-            <div className="icon-container mx-auto mb-6">
-              <Network className="h-8 w-8 text-slate-300" />
+        <div className='premium-card'>
+          <CardContent className='p-8 text-center'>
+            <div className='icon-container mx-auto mb-6'>
+              <Network className='h-8 w-8 text-slate-300' />
             </div>
-            <h3 className="text-lg font-medium text-slate-200 mb-2">No Networks Found</h3>
-            <p className="text-slate-300">
+            <h3 className='text-lg font-medium text-slate-200 mb-2'>No Networks Found</h3>
+            <p className='text-slate-300'>
               Try adjusting your search terms or filters to see more results.
             </p>
           </CardContent>

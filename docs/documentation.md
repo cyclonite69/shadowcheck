@@ -31,18 +31,20 @@ app/
 ### Reference Tables
 
 #### `oui_manufacturers`
+
 **Purpose**: IEEE OUI registry for identifying device manufacturers from MAC addresses
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `manufacturer_id` | SERIAL | Primary key |
-| `oui_prefix_hex` | CHAR(6) | First 6 hex digits of MAC (e.g., '001122') |
-| `organization_name` | TEXT | Manufacturer name |
-| `organization_address` | TEXT | Registered address |
-| `registry_type` | TEXT | MA-L, MA-M, or MA-S |
-| `is_active` | BOOLEAN | Currently valid assignment |
+| Column                 | Type    | Description                                |
+| ---------------------- | ------- | ------------------------------------------ |
+| `manufacturer_id`      | SERIAL  | Primary key                                |
+| `oui_prefix_hex`       | CHAR(6) | First 6 hex digits of MAC (e.g., '001122') |
+| `organization_name`    | TEXT    | Manufacturer name                          |
+| `organization_address` | TEXT    | Registered address                         |
+| `registry_type`        | TEXT    | MA-L, MA-M, or MA-S                        |
+| `is_active`            | BOOLEAN | Currently valid assignment                 |
 
 **Usage Example**:
+
 ```sql
 -- Find manufacturer of a device
 SELECT m.organization_name
@@ -51,18 +53,20 @@ WHERE m.oui_prefix_hex = LEFT(REPLACE('00:11:22:33:44:55', ':', ''), 6);
 ```
 
 #### `data_sources`
+
 **Purpose**: Track data provenance and import metadata
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `data_source_id` | SERIAL | Primary key |
-| `source_name` | TEXT | Human-readable source name |
-| `source_type` | ENUM | wigle_import, manual_scan, etc. |
-| `import_configuration` | JSONB | Import parameters and settings |
-| `data_quality_score` | NUMERIC(3,2) | Confidence in data quality (0.0-1.0) |
-| `total_records_imported` | BIGINT | Running count of imported records |
+| Column                   | Type         | Description                          |
+| ------------------------ | ------------ | ------------------------------------ |
+| `data_source_id`         | SERIAL       | Primary key                          |
+| `source_name`            | TEXT         | Human-readable source name           |
+| `source_type`            | ENUM         | wigle_import, manual_scan, etc.      |
+| `import_configuration`   | JSONB        | Import parameters and settings       |
+| `data_quality_score`     | NUMERIC(3,2) | Confidence in data quality (0.0-1.0) |
+| `total_records_imported` | BIGINT       | Running count of imported records    |
 
 **Usage Example**:
+
 ```sql
 -- Data quality report by source
 SELECT source_name, data_quality_score, total_records_imported
@@ -73,29 +77,32 @@ ORDER BY data_quality_score DESC;
 ### Core Entities
 
 #### `wireless_access_points`
+
 **Purpose**: Deduplicated wireless devices (WiFi APs, Bluetooth devices, etc.)
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `access_point_id` | BIGSERIAL | Primary key |
-| `mac_address` | TEXT | Full MAC address (BSSID) |
-| `manufacturer_id` | INTEGER | FK to oui_manufacturers |
-| `radio_technology` | ENUM | wifi_2_4_ghz, wifi_5_ghz, bluetooth_classic, etc. |
-| `network_name` | TEXT | SSID for WiFi, device name for Bluetooth |
-| `is_hidden_network` | BOOLEAN | Network broadcasts SSID |
-| `is_mobile_device` | BOOLEAN | Detected as mobile/portable |
-| `primary_location_point` | GEOMETRY | Best-estimate location |
-| `coverage_area_polygon` | GEOMETRY | Estimated coverage area |
-| `total_signal_readings` | INTEGER | Count of signal measurements |
-| `first_observed_at` | TIMESTAMPTZ | First detection timestamp |
-| `last_observed_at` | TIMESTAMPTZ | Most recent detection |
+| Column                   | Type        | Description                                       |
+| ------------------------ | ----------- | ------------------------------------------------- |
+| `access_point_id`        | BIGSERIAL   | Primary key                                       |
+| `mac_address`            | TEXT        | Full MAC address (BSSID)                          |
+| `manufacturer_id`        | INTEGER     | FK to oui_manufacturers                           |
+| `radio_technology`       | ENUM        | wifi_2_4_ghz, wifi_5_ghz, bluetooth_classic, etc. |
+| `network_name`           | TEXT        | SSID for WiFi, device name for Bluetooth          |
+| `is_hidden_network`      | BOOLEAN     | Network broadcasts SSID                           |
+| `is_mobile_device`       | BOOLEAN     | Detected as mobile/portable                       |
+| `primary_location_point` | GEOMETRY    | Best-estimate location                            |
+| `coverage_area_polygon`  | GEOMETRY    | Estimated coverage area                           |
+| `total_signal_readings`  | INTEGER     | Count of signal measurements                      |
+| `first_observed_at`      | TIMESTAMPTZ | First detection timestamp                         |
+| `last_observed_at`       | TIMESTAMPTZ | Most recent detection                             |
 
 **Key Relationships**:
+
 - One-to-many with `signal_measurements`
 - One-to-many with `position_measurements`
 - References `oui_manufacturers`
 
 **Usage Examples**:
+
 ```sql
 -- Find all WiFi access points in an area
 SELECT ap.mac_address, ap.network_name, m.organization_name
@@ -113,18 +120,20 @@ ORDER BY unique_observation_locations DESC;
 ```
 
 #### `user_devices`
+
 **Purpose**: Track personal devices for privacy protection and stalking detection
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `device_id` | SERIAL | Primary key |
-| `device_name` | TEXT | User-assigned name |
-| `device_type` | TEXT | smartphone, laptop, tablet, etc. |
-| `mac_address_hash` | TEXT | Hashed MAC for privacy |
-| `is_owned_by_user` | BOOLEAN | Belongs to current user |
-| `privacy_enabled` | BOOLEAN | Enhanced privacy protections |
+| Column             | Type    | Description                      |
+| ------------------ | ------- | -------------------------------- |
+| `device_id`        | SERIAL  | Primary key                      |
+| `device_name`      | TEXT    | User-assigned name               |
+| `device_type`      | TEXT    | smartphone, laptop, tablet, etc. |
+| `mac_address_hash` | TEXT    | Hashed MAC for privacy           |
+| `is_owned_by_user` | BOOLEAN | Belongs to current user          |
+| `privacy_enabled`  | BOOLEAN | Enhanced privacy protections     |
 
 **Usage Example**:
+
 ```sql
 -- List user's devices with recent activity
 SELECT d.device_name, d.device_type, d.last_observed_at
@@ -136,28 +145,31 @@ ORDER BY d.last_observed_at DESC;
 ### Measurement Tables
 
 #### `signal_measurements`
+
 **Purpose**: Individual signal strength readings and network properties
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `measurement_id` | BIGSERIAL | Primary key |
-| `access_point_id` | BIGINT | FK to wireless_access_points |
-| `data_source_id` | INTEGER | FK to data_sources |
-| `signal_strength_dbm` | SMALLINT | Signal strength in dBm (-120 to 30) |
-| `noise_floor_dbm` | SMALLINT | Background noise level |
-| `signal_to_noise_ratio_db` | SMALLINT | SNR calculation |
-| `encryption_type` | ENUM | none, wep, wpa, wpa2_psk, etc. |
-| `channel_number` | SMALLINT | WiFi channel (1-14, 36-165) |
-| `channel_width_mhz` | SMALLINT | 20, 40, 80, 160 MHz |
-| `measurement_timestamp` | TIMESTAMPTZ | When measurement was taken |
-| `data_confidence_score` | NUMERIC(3,2) | Measurement reliability (0.0-1.0) |
+| Column                     | Type         | Description                         |
+| -------------------------- | ------------ | ----------------------------------- |
+| `measurement_id`           | BIGSERIAL    | Primary key                         |
+| `access_point_id`          | BIGINT       | FK to wireless_access_points        |
+| `data_source_id`           | INTEGER      | FK to data_sources                  |
+| `signal_strength_dbm`      | SMALLINT     | Signal strength in dBm (-120 to 30) |
+| `noise_floor_dbm`          | SMALLINT     | Background noise level              |
+| `signal_to_noise_ratio_db` | SMALLINT     | SNR calculation                     |
+| `encryption_type`          | ENUM         | none, wep, wpa, wpa2_psk, etc.      |
+| `channel_number`           | SMALLINT     | WiFi channel (1-14, 36-165)         |
+| `channel_width_mhz`        | SMALLINT     | 20, 40, 80, 160 MHz                 |
+| `measurement_timestamp`    | TIMESTAMPTZ  | When measurement was taken          |
+| `data_confidence_score`    | NUMERIC(3,2) | Measurement reliability (0.0-1.0)   |
 
 **Indexing Strategy**:
+
 - Primary index on `(access_point_id, measurement_timestamp DESC)`
 - Signal strength analysis: `(signal_strength_dbm, measurement_timestamp DESC)`
 - Temporal queries: `(measurement_timestamp DESC)`
 
 **Usage Examples**:
+
 ```sql
 -- Signal strength over time for specific AP
 SELECT measurement_timestamp, signal_strength_dbm, encryption_type
@@ -184,28 +196,31 @@ ORDER BY observation_count DESC;
 ```
 
 #### `position_measurements`
+
 **Purpose**: GPS coordinates and geographic position data
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `position_id` | BIGSERIAL | Primary key |
-| `access_point_id` | BIGINT | FK to wireless_access_points |
-| `latitude_degrees` | NUMERIC(10,7) | Latitude (-90 to 90) |
-| `longitude_degrees` | NUMERIC(11,7) | Longitude (-180 to 180) |
-| `altitude_meters` | NUMERIC(8,2) | Elevation above sea level |
-| `position_accuracy_meters` | NUMERIC(8,2) | GPS accuracy estimate |
-| `position_point` | GEOMETRY | Auto-generated PostGIS point |
-| `measurement_timestamp` | TIMESTAMPTZ | GPS fix timestamp |
-| `position_source` | TEXT | gps, network, manual, estimated |
-| `satellite_count` | SMALLINT | GPS satellites used |
-| `hdop` | NUMERIC(4,2) | Horizontal Dilution of Precision |
+| Column                     | Type          | Description                      |
+| -------------------------- | ------------- | -------------------------------- |
+| `position_id`              | BIGSERIAL     | Primary key                      |
+| `access_point_id`          | BIGINT        | FK to wireless_access_points     |
+| `latitude_degrees`         | NUMERIC(10,7) | Latitude (-90 to 90)             |
+| `longitude_degrees`        | NUMERIC(11,7) | Longitude (-180 to 180)          |
+| `altitude_meters`          | NUMERIC(8,2)  | Elevation above sea level        |
+| `position_accuracy_meters` | NUMERIC(8,2)  | GPS accuracy estimate            |
+| `position_point`           | GEOMETRY      | Auto-generated PostGIS point     |
+| `measurement_timestamp`    | TIMESTAMPTZ   | GPS fix timestamp                |
+| `position_source`          | TEXT          | gps, network, manual, estimated  |
+| `satellite_count`          | SMALLINT      | GPS satellites used              |
+| `hdop`                     | NUMERIC(4,2)  | Horizontal Dilution of Precision |
 
 **Spatial Indexing**:
+
 - GIST index on `position_point` for spatial queries
 - Composite index on `(latitude_degrees, longitude_degrees)`
 - Temporal-spatial index on `(access_point_id, measurement_timestamp DESC)`
 
 **Usage Examples**:
+
 ```sql
 -- Find all measurements within 1km of a location
 SELECT ap.mac_address, pm.measurement_timestamp, pm.position_accuracy_meters
@@ -241,23 +256,25 @@ ORDER BY device_count DESC;
 ### Analytics Tables
 
 #### `location_visits`
+
 **Purpose**: Clustered location visits derived from position measurements
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `visit_id` | BIGSERIAL | Primary key |
-| `user_device_id` | INTEGER | FK to user_devices |
-| `visit_location_name` | TEXT | Human-readable location |
-| `center_latitude_degrees` | NUMERIC(10,7) | Visit center point |
-| `center_longitude_degrees` | NUMERIC(11,7) | Visit center point |
-| `radius_meters` | NUMERIC(8,2) | Visit area radius |
-| `arrival_timestamp` | TIMESTAMPTZ | Visit start time |
-| `departure_timestamp` | TIMESTAMPTZ | Visit end time |
-| `visit_duration_minutes` | NUMERIC(8,2) | Total visit time |
-| `is_frequent_location` | BOOLEAN | Regularly visited place |
-| `privacy_sensitivity` | TEXT | low, normal, high, sensitive |
+| Column                     | Type          | Description                  |
+| -------------------------- | ------------- | ---------------------------- |
+| `visit_id`                 | BIGSERIAL     | Primary key                  |
+| `user_device_id`           | INTEGER       | FK to user_devices           |
+| `visit_location_name`      | TEXT          | Human-readable location      |
+| `center_latitude_degrees`  | NUMERIC(10,7) | Visit center point           |
+| `center_longitude_degrees` | NUMERIC(11,7) | Visit center point           |
+| `radius_meters`            | NUMERIC(8,2)  | Visit area radius            |
+| `arrival_timestamp`        | TIMESTAMPTZ   | Visit start time             |
+| `departure_timestamp`      | TIMESTAMPTZ   | Visit end time               |
+| `visit_duration_minutes`   | NUMERIC(8,2)  | Total visit time             |
+| `is_frequent_location`     | BOOLEAN       | Regularly visited place      |
+| `privacy_sensitivity`      | TEXT          | low, normal, high, sensitive |
 
 **Usage Examples**:
+
 ```sql
 -- Recent location visits for a user
 SELECT visit_location_name, arrival_timestamp, departure_timestamp,
@@ -278,23 +295,25 @@ WHERE ST_DWithin(v1.visit_center_point, v2.visit_center_point, 100)
 ```
 
 #### `security_incidents`
+
 **Purpose**: Automated detection of potential stalking and surveillance threats
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `incident_id` | BIGSERIAL | Primary key |
-| `target_device_id` | INTEGER | FK to user_devices (victim) |
-| `suspicious_access_point_id` | BIGINT | FK to wireless_access_points (stalker) |
-| `incident_type` | TEXT | stalking, tracking, surveillance, anomaly |
-| `threat_level` | ENUM | low, medium, high, critical |
-| `investigation_status` | ENUM | open, investigating, resolved, false_positive |
-| `correlation_coefficient` | NUMERIC(5,4) | Statistical correlation strength |
-| `shared_location_count` | INTEGER | Number of co-locations detected |
-| `first_incident_timestamp` | TIMESTAMPTZ | Pattern start time |
-| `detection_confidence_score` | NUMERIC(3,2) | Algorithm confidence (0.0-1.0) |
-| `analyst_notes` | TEXT | Investigation findings |
+| Column                       | Type         | Description                                   |
+| ---------------------------- | ------------ | --------------------------------------------- |
+| `incident_id`                | BIGSERIAL    | Primary key                                   |
+| `target_device_id`           | INTEGER      | FK to user_devices (victim)                   |
+| `suspicious_access_point_id` | BIGINT       | FK to wireless_access_points (stalker)        |
+| `incident_type`              | TEXT         | stalking, tracking, surveillance, anomaly     |
+| `threat_level`               | ENUM         | low, medium, high, critical                   |
+| `investigation_status`       | ENUM         | open, investigating, resolved, false_positive |
+| `correlation_coefficient`    | NUMERIC(5,4) | Statistical correlation strength              |
+| `shared_location_count`      | INTEGER      | Number of co-locations detected               |
+| `first_incident_timestamp`   | TIMESTAMPTZ  | Pattern start time                            |
+| `detection_confidence_score` | NUMERIC(3,2) | Algorithm confidence (0.0-1.0)                |
+| `analyst_notes`              | TEXT         | Investigation findings                        |
 
 **Usage Examples**:
+
 ```sql
 -- Open high-priority security incidents
 SELECT si.incident_id, ud.device_name, ap.mac_address,
@@ -321,21 +340,23 @@ ORDER BY correlation_coefficient DESC;
 ### Integration Tables
 
 #### `wigle_api_enrichments`
+
 **Purpose**: External enrichment data from WiGLE API integration
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `enrichment_id` | BIGSERIAL | Primary key |
-| `access_point_id` | BIGINT | FK to wireless_access_points |
-| `wigle_netid` | TEXT | WiGLE network identifier |
-| `wigle_trilat` | NUMERIC(10,7) | WiGLE triangulated latitude |
-| `wigle_trilong` | NUMERIC(11,7) | WiGLE triangulated longitude |
-| `wigle_country` | TEXT | Country from WiGLE |
-| `wigle_region` | TEXT | State/region from WiGLE |
-| `wigle_city` | TEXT | City from WiGLE |
-| `match_confidence_score` | NUMERIC(3,2) | Matching confidence |
+| Column                   | Type          | Description                  |
+| ------------------------ | ------------- | ---------------------------- |
+| `enrichment_id`          | BIGSERIAL     | Primary key                  |
+| `access_point_id`        | BIGINT        | FK to wireless_access_points |
+| `wigle_netid`            | TEXT          | WiGLE network identifier     |
+| `wigle_trilat`           | NUMERIC(10,7) | WiGLE triangulated latitude  |
+| `wigle_trilong`          | NUMERIC(11,7) | WiGLE triangulated longitude |
+| `wigle_country`          | TEXT          | Country from WiGLE           |
+| `wigle_region`           | TEXT          | State/region from WiGLE      |
+| `wigle_city`             | TEXT          | City from WiGLE              |
+| `match_confidence_score` | NUMERIC(3,2)  | Matching confidence          |
 
 **Usage Example**:
+
 ```sql
 -- Compare our data with WiGLE enrichment
 SELECT ap.mac_address, ap.network_name,

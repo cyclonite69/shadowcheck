@@ -1,13 +1,13 @@
-import { Router } from "express";
-import { query } from "../db";
+import { Router } from 'express';
+import { query } from '../db';
 
 const router = Router();
 
-router.get("/", async (_req, res) => {
+router.get('/', async (_req, res) => {
   try {
-    const now = await query<{ now: string }>("SELECT now()");
-    const who = await query<{ current_user: string }>("SELECT current_user");
-    const db  = await query<{ current_database: string }>("SELECT current_database()");
+    const now = await query<{ now: string }>('SELECT now()');
+    const who = await query<{ current_user: string }>('SELECT current_user');
+    const db = await query<{ current_database: string }>('SELECT current_database()');
     res.json({
       ok: true,
       time: now.rows[0]?.now,

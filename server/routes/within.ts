@@ -1,5 +1,5 @@
-import { Router } from "express";
-import { query } from "../db";
+import { Router } from 'express';
+import { query } from '../db';
 
 const router = Router();
 
@@ -7,14 +7,37 @@ const router = Router();
  * GET /api/v1/within?lat=..&lon=..&radius_m=200&limit=200
  * Haversine (no PostGIS). Reads from enriched view.
  */
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
   const lat = Number(req.query.lat);
   const lon = Number(req.query.lon);
-  const radius = Number(req.query.radius_m ?? 200); // meters
-  const limit  = Math.min(Number(req.query.limit ?? 200) || 200, 2000);
+  if (req.query.radius_m === undefined) {
+    return res.status(400).json({ ok: false, error: 'radius_m is required' });
+  }
+  const radius = Number(req.query.radius_m);
+  const limit = Math.min(Number(req.query.limit ?? 200) || 200, 2000);
 
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-    return res.status(400).json({ ok: false, error: "lat and lon are required numbers" });
+  if (
+    !Number.isFinite(lat) ||
+    lat < -90 ||
+    lat > 90 ||
+    !Number.isFinite(lon) ||
+    lon < -180 ||
+    lon > 180
+  ) {
+    return res.status(400).json({
+      ok: false,
+      error: 'lat and lon are required numbers and must be within valid geographical ranges',
+    });
+  }
+
+  if (!Number.isFinite(radius) || radius <= 0 || radius > 50000) {
+    return res
+      .status(400)
+      .json({ ok: false, error: 'radius_m must be a number between 1 and 50000' });
+  }
+
+  if (!Number.isFinite(limit) || limit <= 0 || limit > 2000) {
+    return res.status(400).json({ ok: false, error: 'limit must be a number between 1 and 2000' });
   }
 
   const sql = `

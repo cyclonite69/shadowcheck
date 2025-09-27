@@ -5,6 +5,7 @@ A production-ready, fully normalized PostgreSQL database schema for SIGINT/wardr
 ## 🔴 Critical Data Integrity Rules
 
 **NEVER MUTATE SOURCE DATA**
+
 - BSSID/MAC addresses: Store EXACTLY as received - NO hashing, NO normalization
 - Timestamps: Preserve original precision (milliseconds from WiGLE, microseconds from Kismet)
 - Coordinates: Store ALL decimal places (9 decimal precision) - NO rounding
@@ -57,6 +58,7 @@ cd /home/shadowcheck
 ```
 
 The deployment script will:
+
 1. Setup Docker networks and volumes
 2. Start PostgreSQL 17 with PostGIS 3.5
 3. Deploy all 11 schema phases

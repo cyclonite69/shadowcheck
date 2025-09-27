@@ -1,5 +1,15 @@
-import { users, networks, cells, type User, type InsertUser, type Network, type InsertNetwork, type LegacyNetwork, type LegacyLocation } from "@shared/schema";
-import { eq, sql, and, lt, lte, gte } from "drizzle-orm";
+import {
+  users,
+  networks,
+  cells,
+  type User,
+  type InsertUser,
+  type Network,
+  type InsertNetwork,
+  type LegacyNetwork,
+  type LegacyLocation,
+} from '@shared/schema';
+import { eq, sql, and, lt, lte, gte } from 'drizzle-orm';
 
 let db: any = null;
 
@@ -7,10 +17,10 @@ let db: any = null;
 async function getDb() {
   if (!db && process.env.DATABASE_URL) {
     try {
-      const { db: dbInstance } = await import("./db");
+      const { db: dbInstance } = await import('./db');
       db = dbInstance;
     } catch (error) {
-      console.error("Failed to initialize database:", error);
+      console.error('Failed to initialize database:', error);
       db = null;
     }
   }
@@ -24,14 +34,20 @@ export interface IStorage {
   getNetworks(limit?: number): Promise<Network[]>;
   getNetworksWithin(lat: number, lon: number, radius: number, limit?: number): Promise<Network[]>;
   createNetwork(network: InsertNetwork): Promise<Network>;
-  
+  getTotalNetworkCount(): Promise<number>;
+  getRadioStats(): Promise<any>;
+
   // Analytics methods
   getNetworkAnalytics(): Promise<any>;
   getSignalStrengthDistribution(): Promise<any>;
   getSecurityAnalysis(): Promise<any>;
-  
+
   isDatabaseConnected(): Promise<boolean>;
-  getConnectionInfo(): Promise<{ activeConnections: number; maxConnections: number; postgisEnabled: boolean }>;
+  getConnectionInfo(): Promise<{
+    activeConnections: number;
+    maxConnections: number;
+    postgisEnabled: boolean;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -40,7 +56,11 @@ export class DatabaseStorage implements IStorage {
     return dbInstance !== null;
   }
 
-  async getConnectionInfo(): Promise<{ activeConnections: number; maxConnections: number; postgisEnabled: boolean }> {
+  async getConnectionInfo(): Promise<{
+    activeConnections: number;
+    maxConnections: number;
+    postgisEnabled: boolean;
+  }> {
     const dbInstance = await getDb();
     if (!dbInstance) {
       return { activeConnections: 0, maxConnections: 5, postgisEnabled: false };
@@ -53,7 +73,7 @@ export class DatabaseStorage implements IStorage {
         FROM pg_stat_activity 
         WHERE state = 'active'
       `);
-      
+
       let postgisEnabled = false;
       try {
         const postgisResult = await dbInstance.execute(sql`
@@ -70,10 +90,10 @@ export class DatabaseStorage implements IStorage {
       return {
         activeConnections: parseInt(connectionResult[0]?.active_connections) || 0,
         maxConnections: 5,
-        postgisEnabled: postgisEnabled
+        postgisEnabled: postgisEnabled,
       };
     } catch (error) {
-      console.error("Error getting connection info:", error);
+      console.error('Error getting connection info:', error);
       return { activeConnections: 0, maxConnections: 5, postgisEnabled: false };
     }
   }
@@ -86,7 +106,7 @@ export class DatabaseStorage implements IStorage {
       const [user] = await dbInstance.select().from(users).where(eq(users.id, id));
       return user || undefined;
     } catch (error) {
-      console.error("Error getting user:", error);
+      console.error('Error getting user:', error);
       return undefined;
     }
   }
@@ -99,40 +119,48 @@ export class DatabaseStorage implements IStorage {
       const [user] = await dbInstance.select().from(users).where(eq(users.username, username));
       return user || undefined;
     } catch (error) {
-      console.error("Error getting user by username:", error);
+      console.error('Error getting user by username:', error);
       return undefined;
     }
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const dbInstance = await getDb();
-    if (!dbInstance) throw new Error("Database not connected");
+    if (!dbInstance) throw new Error('Database not connected');
 
-    const [user] = await dbInstance
-      .insert(users)
-      .values(insertUser)
-      .returning();
+    const [user] = await dbInstance.insert(users).values(insertUser).returning();
     return user;
   }
 
-  async getNetworks(limit: number = 50): Promise<Network[]> {
+  async getNetworks(limit: number = 0): Promise<Network[]> {
     const dbInstance = await getDb();
     if (!dbInstance) return [];
 
     try {
-      const result = await dbInstance
+      let query = dbInstance
         .select()
         .from(networks)
-        .orderBy(sql`${networks.observed_at} DESC`)
-        .limit(limit);
+        .orderBy(sql`${networks.observed_at} DESC`);
+
+      // Apply limit only if specified (0 means no limit)
+      if (limit > 0) {
+        query = query.limit(limit);
+      }
+
+      const result = await query;
       return result;
     } catch (error) {
-      console.error("Error getting networks:", error);
+      console.error('Error getting networks:', error);
       return [];
     }
   }
 
-  async getNetworksWithin(lat: number, lon: number, radius: number, limit: number = 50): Promise<Network[]> {
+  async getNetworksWithin(
+    lat: number,
+    lon: number,
+    radius: number,
+    limit: number = 50
+  ): Promise<Network[]> {
     const dbInstance = await getDb();
     if (!dbInstance) return [];
 
@@ -150,20 +178,72 @@ export class DatabaseStorage implements IStorage {
       `);
       return result;
     } catch (error) {
-      console.error("Error getting networks within radius:", error);
+      console.error('Error getting networks within radius:', error);
       return [];
     }
   }
 
   async createNetwork(network: InsertNetwork): Promise<Network> {
     const dbInstance = await getDb();
-    if (!dbInstance) throw new Error("Database not connected");
+    if (!dbInstance) throw new Error('Database not connected');
 
-    const [createdNetwork] = await dbInstance
-      .insert(networks)
-      .values(network)
-      .returning();
+    const [createdNetwork] = await dbInstance.insert(networks).values(network).returning();
     return createdNetwork;
+  }
+
+  async getTotalNetworkCount(): Promise<number> {
+    const dbInstance = await getDb();
+    if (!dbInstance) return 0;
+
+    try {
+      const result = await dbInstance.execute(sql`SELECT COUNT(*) as count FROM networks`);
+      return parseInt(result[0]?.count) || 0;
+    } catch (error) {
+      console.error('Error getting total network count:', error);
+      return 0;
+    }
+  }
+
+  // CORRECTED: Uses actual database schema with proper column names and type mappings
+  async getRadioStats(): Promise<any> {
+    const dbInstance = await getDb();
+    if (!dbInstance) return [];
+
+    try {
+      const result = await dbInstance.execute(sql`
+        WITH radio_type_mapping AS (
+          SELECT
+            CASE 
+              WHEN type = 'W' THEN 'wifi'
+              WHEN type = 'B' THEN 'bluetooth'
+              WHEN type IN ('G', 'L', 'N') THEN 'cellular'
+              WHEN type = 'E' THEN 'ethernet'
+              ELSE 'unknown'
+            END as radio_type,
+            COUNT(*) as count,
+            AVG(bestlevel) as avg_signal_strength,
+            MIN(bestlevel) as min_signal_strength,
+            MAX(bestlevel) as max_signal_strength
+          FROM app.networks_legacy
+          WHERE type IS NOT NULL
+          GROUP BY type
+        )
+        SELECT 
+          radio_type,
+          count,
+          avg_signal_strength,
+          min_signal_strength,
+          max_signal_strength
+        FROM radio_type_mapping
+        WHERE radio_type != 'unknown'
+        ORDER BY count DESC
+      `);
+      
+      return result.rows || result;
+    } catch (error) {
+      console.error('Error getting radio stats:', error);
+      return [];
+    }
   }
 
   // Analytics methods
@@ -174,11 +254,11 @@ export class DatabaseStorage implements IStorage {
     try {
       // Get basic analytics using the networks table
       const networks_data = await this.getNetworks(1000);
-      
+
       if (!networks_data || networks_data.length === 0) {
         return {
           success: false,
-          message: "No network data available for analytics"
+          message: 'No network data available for analytics',
         };
       }
 
@@ -188,20 +268,24 @@ export class DatabaseStorage implements IStorage {
         total_observations: networks_data.length,
         distinct_ssids: new Set(networks_data.map(n => n.ssid).filter(Boolean)).size,
         distinct_bssids: new Set(networks_data.map(n => n.bssid)).size,
-        avg_signal_strength: networks_data.filter(n => n.signal_strength).length > 0 
-          ? networks_data.filter(n => n.signal_strength).reduce((sum, n) => sum + (n.signal_strength || 0), 0) / networks_data.filter(n => n.signal_strength).length
-          : null
+        avg_signal_strength:
+          networks_data.filter(n => n.signal_strength).length > 0
+            ? networks_data
+                .filter(n => n.signal_strength)
+                .reduce((sum, n) => sum + (n.signal_strength || 0), 0) /
+              networks_data.filter(n => n.signal_strength).length
+            : null,
       };
 
       return {
         success: true,
-        data: { overview }
+        data: { overview },
       };
     } catch (error) {
-      console.error("Error getting network analytics:", error);
+      console.error('Error getting network analytics:', error);
       return {
         success: false,
-        message: "Failed to get network analytics"
+        message: 'Failed to get network analytics',
       };
     }
   }
@@ -210,7 +294,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Get networks and process signal strength distribution in memory
       const networks_data = await this.getNetworks(1000);
-      
+
       if (!networks_data || networks_data.length === 0) {
         return [];
       }
@@ -221,7 +305,7 @@ export class DatabaseStorage implements IStorage {
         'Fair (-60 to -50 dBm)': [],
         'Weak (-70 to -60 dBm)': [],
         'Very Weak (< -70 dBm)': [],
-        'No Signal Data': []
+        'No Signal Data': [],
       } as Record<string, number[]>;
 
       networks_data.forEach(network => {
@@ -245,12 +329,15 @@ export class DatabaseStorage implements IStorage {
         .map(([range, values]) => ({
           signal_range: range,
           count: values.length,
-          avg_signal_in_range: values.length > 0 ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100 : null
+          avg_signal_in_range:
+            values.length > 0
+              ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100
+              : null,
         }))
         .filter(item => item.count > 0)
         .sort((a, b) => b.count - a.count);
     } catch (error) {
-      console.error("Error getting signal strength distribution:", error);
+      console.error('Error getting signal strength distribution:', error);
       return [];
     }
   }
@@ -259,26 +346,29 @@ export class DatabaseStorage implements IStorage {
     try {
       // Get networks and process security analysis in memory
       const networks_data = await this.getNetworks(1000);
-      
+
       if (!networks_data || networks_data.length === 0) {
         return [];
       }
 
-      const securityCounts = networks_data.reduce((acc, network) => {
-        const security = network.encryption || 'Open Network';
-        if (!acc[security]) {
-          acc[security] = {
-            devices: new Set(),
-            count: 0
-          };
-        }
-        acc[security].devices.add(network.bssid);
-        acc[security].count++;
-        return acc;
-      }, {} as Record<string, { devices: Set<string>; count: number }>);
+      const securityCounts = networks_data.reduce(
+        (acc, network) => {
+          const security = network.encryption || 'Open Network';
+          if (!acc[security]) {
+            acc[security] = {
+              devices: new Set(),
+              count: 0,
+            };
+          }
+          acc[security].devices.add(network.bssid);
+          acc[security].count++;
+          return acc;
+        },
+        {} as Record<string, { devices: Set<string>; count: number }>
+      );
 
       const totalNetworks = networks_data.length;
-      
+
       return Object.entries(securityCounts)
         .map(([security, data]) => {
           let securityLevel = 'Unknown Security';
@@ -297,12 +387,12 @@ export class DatabaseStorage implements IStorage {
             network_count: data.count,
             unique_devices: data.devices.size,
             percentage: Math.round((data.count / totalNetworks) * 100 * 100) / 100,
-            security_level: securityLevel
+            security_level: securityLevel,
           };
         })
         .sort((a, b) => b.network_count - a.network_count);
     } catch (error) {
-      console.error("Error getting security analysis:", error);
+      console.error('Error getting security analysis:', error);
       return [];
     }
   }
@@ -320,7 +410,11 @@ export class MemStorage implements IStorage {
     return false;
   }
 
-  async getConnectionInfo(): Promise<{ activeConnections: number; maxConnections: number; postgisEnabled: boolean }> {
+  async getConnectionInfo(): Promise<{
+    activeConnections: number;
+    maxConnections: number;
+    postgisEnabled: boolean;
+  }> {
     return { activeConnections: 0, maxConnections: 5, postgisEnabled: false };
   }
 
@@ -329,9 +423,7 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    return Array.from(this.users.values()).find(user => user.username === username);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -345,12 +437,25 @@ export class MemStorage implements IStorage {
     return [];
   }
 
-  async getNetworksWithin(lat: number, lon: number, radius: number, limit?: number): Promise<Network[]> {
+  async getNetworksWithin(
+    lat: number,
+    lon: number,
+    radius: number,
+    limit?: number
+  ): Promise<Network[]> {
     return [];
   }
 
   async createNetwork(network: InsertNetwork): Promise<Network> {
-    throw new Error("Database not connected");
+    throw new Error('Database not connected');
+  }
+
+  async getTotalNetworkCount(): Promise<number> {
+    return 0;
+  }
+
+  async getRadioStats(): Promise<any> {
+    return [];
   }
 
   // Analytics methods - fallback

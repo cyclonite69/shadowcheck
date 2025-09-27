@@ -1,25 +1,25 @@
-import express from "express";
-import cors from "cors";
-import { createServer } from "http";
-import pg from "pg";
-import { setupVite, log } from "./vite.js";
+import express from 'express';
+import cors from 'cors';
+import { createServer } from 'http';
+import pg from 'pg';
+import { setupVite, log } from './vite.js';
+import { registerSurveillanceRoutes } from './routes/surveillance.js';
 
 const { Pool } = pg;
 
 const app = express();
-const server = createServer(app);
 
 app.use(cors());
 app.use(express.json());
 
 // Metrics endpoint
-app.get("/api/v1/metrics", async (_req, res) => {
+app.get('/api/v1/metrics', async (_req, res) => {
   try {
-    const count = await pool.query("SELECT COUNT(*) as count FROM app.networks");
+    const count = await pool.query('SELECT COUNT(*) as count FROM app.networks');
     res.json({
       ok: true,
       timestamp: new Date().toISOString(),
-      counts: { networks: parseInt(count.rows[0]?.count || "0") }
+      counts: { networks: parseInt(count.rows[0]?.count || '0') },
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err) });
@@ -29,15 +29,15 @@ app.get("/api/v1/metrics", async (_req, res) => {
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const toInt = (v: unknown, d: number) => {
-  const n = parseInt(String(v ?? ""), 10);
+  const n = parseInt(String(v ?? ''), 10);
   return Number.isFinite(n) ? n : d;
 };
 
 const hasBBox = (q: Record<string, any>) =>
-  ["minLat", "minLon", "maxLat", "maxLon"].every((k) => k in q && q[k] !== "");
+  ['minLat', 'minLon', 'maxLat', 'maxLon'].every(k => k in q && q[k] !== '');
 
 // health
-app.get("/healthz", (_req, res) => res.json({ ok: true }));
+app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
 /**
  * GET /api/v1/networks
@@ -46,8 +46,8 @@ app.get("/healthz", (_req, res) => res.json({ ok: true }));
  * Optional bbox: minLat,maxLat,minLon,maxLon
  * Optional paging: limit, offset
  */
-app.get("/api/v1/networks", async (req, res) => {
-  const distinctLatest = String(req.query.distinct_latest || "") === "1";
+app.get('/api/v1/networks', async (req, res) => {
+  const distinctLatest = String(req.query.distinct_latest || '') === '1';
   const limit = toInt(req.query.limit, 100);
   const offset = toInt(req.query.offset, 0);
 
@@ -83,12 +83,12 @@ app.get("/api/v1/networks", async (req, res) => {
           d.lat, d.lon,
           d."time"
         FROM app.latest_location_per_bssid d
-        ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+        ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
         ORDER BY d."time" DESC
         LIMIT $${params.length - 1} OFFSET $${params.length};
       `;
       const { rows } = await pool.query(sql, params);
-      return res.json({ mode: "distinct_latest", count: rows.length, rows });
+      return res.json({ mode: 'distinct_latest', count: rows.length, rows });
     }
 
     // raw path (updated for new normalized schema)
@@ -125,151 +125,71 @@ app.get("/api/v1/networks", async (req, res) => {
       FROM app.network_observations no
       JOIN app.networks n ON n.id = no.network_id
       JOIN app.locations l ON l.id = no.location_id
-      ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
       ORDER BY no.observed_at DESC NULLS LAST
       LIMIT $${params.length - 1} OFFSET $${params.length};
     `;
     const { rows } = await pool.query(sql, params);
     const total_count = rows.length ? Number(rows[0].total_count) : 0;
 
-    return res.json({ 
-      mode: "raw", 
+    return res.json({
+      mode: 'raw',
       count: rows.length,
       total_count,
       rows: rows.map(row => {
         const { total_count, ...data } = row;
         return data;
-      })
+      }),
     });
   } catch (err: any) {
-    console.error("[/api/v1/networks] error:", err);
+    console.error('[/api/v1/networks] error:', err);
     return res
       .status(500)
-      .json({ error: "networks query failed", detail: String(err?.message || err) });
+      .json({ error: 'networks query failed', detail: String(err?.message || err) });
   }
 });
 
 // Add missing API endpoints
-app.get("/api/v1/health", (_req, res) => res.json({ ok: true, service: "shadowcheck-api", version: "1.0.0" }));
+app.get('/api/v1/health', (_req, res) =>
+  res.json({ ok: true, service: 'shadowcheck-api', version: '1.0.0' })
+);
 
-app.get("/api/v1/status", async (_req, res) => {
+app.get('/api/v1/status', async (_req, res) => {
   try {
-    const result = await pool.query("SELECT 1 as test");
-    const postgisResult = await pool.query("SELECT PostGIS_Version() as version");
+    const result = await pool.query('SELECT 1 as test');
+    const postgisResult = await pool.query('SELECT PostGIS_Version() as version');
     res.json({
       ok: true,
       database: {
         connected: true,
-        postgisEnabled: !!postgisResult.rows[0]?.version
+        postgisEnabled: !!postgisResult.rows[0]?.version,
       },
       memory: {
         used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
-      }
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+      },
     });
   } catch (err) {
     res.status(500).json({
       ok: false,
       database: { connected: false, postgisEnabled: false },
       memory: { used: 0, total: 0 },
-      error: String(err)
+      error: String(err),
     });
   }
 });
 
-app.get("/api/v1/g63/networks", async (req, res) => {
-  const limit = toInt(req.query.limit, 100);
-  try {
-    const result = await pool.query(`
-      SELECT 
-        n.bssid as id,
-        n.current_ssid as ssid,
-        n.bssid,
-        COALESCE(n.current_frequency, 0) as frequency,
-        -- Ensure dBm values pass through with precision
-        CASE 
-          WHEN nls.best_signal_strength IS NOT NULL THEN nls.best_signal_strength
-          ELSE -100
-        END as signal_strength,
-        n.current_capabilities as encryption,
-        COALESCE(nls.last_latitude::numeric(10,8), null) as latitude,
-        COALESCE(nls.last_longitude::numeric(11,8), null) as longitude,
-        -- UTC timestamp with full precision
-        n.last_seen_at AT TIME ZONE 'UTC' as observed_at,
-        n.created_at AT TIME ZONE 'UTC' as created_at,
-        -- Radio type classification for security parsing
-        CASE 
-          WHEN n.bssid ~ '^[0-9]+_[0-9]+_[0-9]+\$' OR n.current_capabilities LIKE 'LTE;%' THEN 'cellular'
-          WHEN (n.current_capabilities = 'Misc') OR
-               (n.current_capabilities = 'Uncategorized') OR
-               (n.current_capabilities LIKE '%Uncategorized;%') OR
-               (n.current_capabilities LIKE '%Laptop;%') OR
-               (n.current_capabilities LIKE '%Smartphone;%') OR
-               (n.current_capabilities LIKE '%Headphones;%') OR
-               (n.current_capabilities LIKE '%Display/Speaker;%') OR
-               (n.current_capabilities LIKE '%Handsfree;%') OR
-               (n.current_capabilities ~ '.*;[0-9]+\$') OR
-               (n.current_frequency = 0 OR n.current_frequency BETWEEN 1 AND 500) THEN 'ble'
-          ELSE 'wifi'
-        END as radio_type
-      FROM app.networks n
-      LEFT JOIN app.networks_latest_state nls ON nls.id = n.id
-      ORDER BY n.last_seen_at DESC NULLS LAST
-      LIMIT $1
-    `, [limit]);
-    
-    res.json({
-      ok: true,
-      data: result.rows,
-      count: result.rows.length,
-      limit: limit
-    });
-  } catch (err) {
-    console.error("[/api/v1/g63/networks] error:", err);
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch networks",
-      detail: String(err)
-    });
-  }
-});
 
-app.get("/api/v1/g63/analytics", async (_req, res) => {
-  try {
-    // Get total sightings from locations table (actual observation records)
-    const totalSightings = await pool.query(`
-      SELECT COUNT(*) as count FROM app.locations
-    `);
-    
-    // Get distinct networks from networks table
-    const distinctNetworks = await pool.query(`
-      SELECT COUNT(*) as count FROM app.networks
-    `);
-    
-    res.json({
-      success: true,
-      data: {
-        overview: {
-          total_observations: parseInt(totalSightings.rows[0]?.count || "0"),
-          distinct_networks: parseInt(distinctNetworks.rows[0]?.count || "0"),
-          last_updated: new Date().toISOString()
-        }
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: String(err) });
-  }
-});
 
 // New endpoint for radio type statistics
-app.get("/api/v1/radio-stats", async (_req, res) => {
+app.get('/api/v1/radio-stats', async (_req, res) => {
   try {
     // Enhanced classification based on real-world patterns:
     // - Cellular: BSSID format "310260_42748_5895425" (MCC_MNC_CID) or LTE encryption
     // - WiFi: Standard WiFi frequencies (2400-2500, 5000-6000 MHz) with WiFi-like SSIDs
     // - Bluetooth: Classic BT devices, often with device names, frequency 2402-2480 MHz
     // - BLE: Low energy devices, often "Misc" encryption, lower power, specific naming patterns
-    
+
     const radioStats = await pool.query(`
       WITH radio_classification AS (
         SELECT 
@@ -344,154 +264,73 @@ app.get("/api/v1/radio-stats", async (_req, res) => {
       LEFT JOIN location_counts lc ON art.radio_type = lc.radio_type
       ORDER BY art.radio_type
     `);
-    
+
     res.json({
       ok: true,
-      data: radioStats.rows
+      data: radioStats.rows,
     });
   } catch (err) {
-    console.error("[/api/v1/radio-stats] error:", err);
+    console.error('[/api/v1/radio-stats] error:', err);
     res.status(500).json({
       ok: false,
-      error: "Failed to fetch radio statistics",
-      detail: String(err)
+      error: 'Failed to fetch radio statistics',
+      detail: String(err),
     });
   }
 });
 
-app.get("/api/v1/g63/security-analysis", async (_req, res) => {
-  try {
-    res.json({
-      success: true,
-      data: []
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: String(err) });
-  }
+
+
+
+// Visualization endpoint for Kepler.gl
+app.get('/api/v1/visualize', async (req, res) => {
+  const limit = Math.min(Number(req.query.limit ?? 500) || 500, 1000);
+
+  // Return mock data for now to confirm endpoint is working
+  res.json({
+    type: 'FeatureCollection',
+    features: Array.from({ length: Math.min(limit, 3) }, (_, i) => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [-74.006 + i * 0.01, 40.7128 + i * 0.01]
+      },
+      properties: {
+        id: `mock-${i}`,
+        bssid: `00:11:22:33:44:5${i}`,
+        level: -50 - i * 10,
+        radio: 'wifi',
+        security: 'WPA2',
+        time: new Date().toISOString(),
+        time_epoch_ms: Date.now(),
+        time_iso: new Date().toISOString(),
+        frequency_at_time: 2412,
+        frequency_mhz: 2412,
+        channel: 1,
+        band: '2.4GHz',
+      },
+    })),
+  });
 });
 
-app.get("/api/v1/g63/signal-strength", async (_req, res) => {
-  try {
-    res.json({
-      success: true,
-      data: []
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: String(err) });
-  }
-});
+// Register surveillance routes
+registerSurveillanceRoutes(app);
 
-// GeoJSON visualization endpoint for map rendering with enhanced data
-app.get("/api/v1/g63/visualize", async (req, res) => {
-  const limit = Math.min(toInt(req.query.limit, 500), 2000);
-  try {
-    const result = await pool.query(`
-      SELECT 
-        n.bssid as id,
-        n.current_ssid as ssid,
-        n.bssid,
-        COALESCE(n.current_frequency, 0) as frequency,
-        CASE 
-          WHEN nls.best_signal_strength IS NOT NULL THEN nls.best_signal_strength
-          ELSE -100
-        END as signal_strength,
-        n.current_capabilities as encryption,
-        nls.last_latitude as latitude,
-        nls.last_longitude as longitude,
-        -- UTC timestamp with full precision for map tooltips
-        n.last_seen_at AT TIME ZONE 'UTC' as observed_at,
-        -- Radio type and security parsing for map styling
-        CASE 
-          WHEN n.bssid ~ '^[0-9]+_[0-9]+_[0-9]+\$' OR n.current_capabilities LIKE 'LTE;%' THEN 'cellular'
-          WHEN (n.current_capabilities = 'Misc') OR
-               (n.current_capabilities = 'Uncategorized') OR
-               (n.current_capabilities LIKE '%Uncategorized;%') OR
-               (n.current_capabilities LIKE '%Laptop;%') OR
-               (n.current_capabilities LIKE '%Smartphone;%') OR
-               (n.current_capabilities LIKE '%Headphones;%') OR
-               (n.current_capabilities LIKE '%Display/Speaker;%') OR
-               (n.current_capabilities LIKE '%Handsfree;%') OR
-               (n.current_capabilities ~ '.*;[0-9]+\$') OR
-               (n.current_frequency = 0 OR n.current_frequency BETWEEN 1 AND 500) THEN 'ble'
-          ELSE 'wifi'
-        END as radio_type,
-        -- Security level classification for map coloring
-        CASE 
-          WHEN n.current_capabilities ILIKE '%SAE%' OR n.current_capabilities ILIKE '%WPA3%' THEN 'high'
-          WHEN n.current_capabilities ILIKE '%WPA2%' OR n.current_capabilities ILIKE '%RSN%' THEN 'high'
-          WHEN n.current_capabilities ILIKE '%WPA-%' THEN 'medium'
-          WHEN n.current_capabilities ILIKE '%WEP%' THEN 'low'
-          WHEN n.current_capabilities ILIKE '%[ESS]%' AND 
-               NOT (n.current_capabilities ILIKE '%WPA%' OR n.current_capabilities ILIKE '%RSN%') THEN 'none'
-          ELSE 'unknown'
-        END as security_level
-      FROM app.networks n
-      LEFT JOIN app.networks_latest_state nls ON nls.id = n.id
-      WHERE nls.last_latitude IS NOT NULL AND nls.last_longitude IS NOT NULL
-      ORDER BY n.last_seen_at DESC NULLS LAST
-      LIMIT $1
-    `, [limit]);
-    
-    // Format as GeoJSON for Mapbox with enhanced properties
-    const geojson = {
-      type: "FeatureCollection",
-      features: result.rows.map(row => ({
-        type: "Feature",
-        geometry: {
-          type: "Point",
-          coordinates: [parseFloat(row.longitude), parseFloat(row.latitude)]
-        },
-        properties: {
-          id: row.id,
-          ssid: row.ssid || "Hidden Network",
-          bssid: row.bssid,
-          frequency: row.frequency,
-          signal_strength: row.signal_strength,
-          encryption: row.encryption,
-          observed_at: row.observed_at,
-          radio_type: row.radio_type,
-          security_level: row.security_level,
-          // Additional properties for tooltip compatibility
-          uid: row.bssid,
-          signal: row.signal_strength,
-          dbm: row.signal_strength,
-          rssi: row.signal_strength,
-          freq: row.frequency,
-          freq_mhz: row.frequency,
-          encryptionValue: row.encryption,
-          // Security info for tooltip parsing
-          security: row.encryption
-        }
-      }))
-    };
-    
-    res.json({
-      ok: true,
-      data: geojson
-    });
-  } catch (err) {
-    console.error("[/api/v1/g63/visualize] error:", err);
-    res.status(500).json({
-      success: false,
-      error: "Failed to get visualization data",
-      detail: String(err)
-    });
-  }
-});
+const server = createServer(app);
 
 const port = Number(process.env.PORT || 5000);
 
 // Setup Vite development server for frontend and start server
 (async () => {
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== 'production') {
     await setupVite(app, server);
   } else {
     // For production, serve the built frontend
-    const { serveStatic } = await import("./vite.js");
+    const { serveStatic } = await import('./vite.js');
     serveStatic(app);
   }
 
-  server.listen(port, "0.0.0.0", () => {
+  server.listen(port, '0.0.0.0', () => {
     log(`serving on port ${port}`);
   });
 })();

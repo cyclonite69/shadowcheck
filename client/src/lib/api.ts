@@ -1,4 +1,4 @@
-import { apiRequest } from "./queryClient";
+import { apiRequest } from './queryClient';
 import { sql } from 'drizzle-orm';
 
 export interface HealthResponse {
@@ -102,60 +102,138 @@ export interface ForensicsLocationsResponse {
   count: number;
 }
 
+export interface SurveillanceAlert {
+  alert_id: number;
+  anomaly_id?: number;
+  alert_level: 'emergency' | 'critical' | 'warning' | 'info';
+  alert_type: string;
+  requires_immediate_attention: boolean;
+  alert_title: string;
+  alert_status: 'pending' | 'investigating' | 'resolved' | 'dismissed';
+  confidence_score: number;
+  record_created_at: string;
+  description?: string;
+  evidence_summary?: any;
+  assigned_to?: string;
+  updated_at?: string;
+}
+
+export interface SurveillanceAlertsResponse {
+  ok: boolean;
+  data: SurveillanceAlert[];
+  count: number;
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface AlertUpdateRequest {
+  alert_status: SurveillanceAlert['alert_status'];
+  assigned_to?: string;
+}
+
 export const api = {
   async getHealth(): Promise<HealthResponse> {
-    const res = await apiRequest("GET", "/api/v1/health");
+    const res = await apiRequest('GET', '/api/v1/health');
     return res.json();
   },
 
   async getVersion(): Promise<VersionResponse> {
-    const res = await apiRequest("GET", "/api/v1/version");
+    const res = await apiRequest('GET', '/api/v1/version');
     return res.json();
   },
 
   async getConfig(): Promise<ConfigResponse> {
-    const res = await apiRequest("GET", "/api/v1/config");
+    const res = await apiRequest('GET', '/api/v1/config');
     return res.json();
   },
 
   async getSystemStatus(): Promise<SystemStatusResponse> {
-    const res = await apiRequest("GET", "/api/v1/status");
+    const res = await apiRequest('GET', '/api/v1/status');
     return res.json();
   },
 
   async getNetworks(limit: number = 50): Promise<NetworksResponse> {
-    const res = await apiRequest("GET", `/api/v1/networks?limit=${limit}`);
+    const res = await apiRequest('GET', `/api/v1/networks?limit=${limit}`);
     return res.json();
   },
 
-  async spatialQuery(lat: number, lon: number, radius: number, limit: number = 50): Promise<SpatialQueryResponse> {
-    const res = await apiRequest("GET", `/api/v1/within?lat=${lat}&lon=${lon}&radius=${radius}&limit=${limit}`);
+  async spatialQuery(
+    lat: number,
+    lon: number,
+    radius: number,
+    limit: number = 50
+  ): Promise<SpatialQueryResponse> {
+    const res = await apiRequest(
+      'GET',
+      `/api/v1/within?lat=${lat}&lon=${lon}&radius=${radius}&limit=${limit}`
+    );
     return res.json();
   },
 
   async getVisualization(): Promise<any> {
-    const res = await apiRequest("GET", "/api/v1/visualize");
+    const res = await apiRequest('GET', '/api/v1/visualize');
     return res.json();
   },
 
   // Analytics API methods
   async getAnalytics(): Promise<any> {
-    const res = await apiRequest("GET", "/api/v1/analytics");
+    const res = await apiRequest('GET', '/api/v1/analytics');
     return res.json();
   },
 
   async getSignalStrengthDistribution(): Promise<any> {
-    const res = await apiRequest("GET", "/api/v1/signal-strength");
+    const res = await apiRequest('GET', '/api/v1/signal-strength');
     return res.json();
   },
 
   async getSecurityAnalysis(): Promise<any> {
-    const res = await apiRequest("GET", "/api/v1/security-analysis");
+    const res = await apiRequest('GET', '/api/v1/security-analysis');
     return res.json();
   },
 
   async getRadioStats(): Promise<any> {
-    const res = await apiRequest("GET", "/api/v1/radio-stats");
+    const res = await apiRequest('GET', '/api/v1/radio-stats');
     return res.json();
-  }
+  },
+
+  // Surveillance Alerts API methods
+  async getSurveillanceAlerts(
+    page: number = 1,
+    limit: number = 50,
+    filters?: {
+      alert_level?: SurveillanceAlert['alert_level'];
+      alert_status?: SurveillanceAlert['alert_status'];
+      requires_immediate_attention?: boolean;
+    }
+  ): Promise<SurveillanceAlertsResponse> {
+    const searchParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const res = await apiRequest('GET', `/api/v1/surveillance/alerts?${searchParams}`);
+    return res.json();
+  },
+
+  async updateSurveillanceAlert(
+    alertId: number,
+    update: AlertUpdateRequest
+  ): Promise<{ ok: boolean; data?: SurveillanceAlert }> {
+    const res = await apiRequest('PATCH', `/api/v1/surveillance/alerts/${alertId}`, update);
+    return res.json();
+  },
+
+  async getSurveillanceAlert(alertId: number): Promise<{ ok: boolean; data?: SurveillanceAlert }> {
+    const res = await apiRequest('GET', `/api/v1/surveillance/alerts/${alertId}`);
+    return res.json();
+  },
 };
