@@ -1,0 +1,2 @@
+import 'dotenv/config';
+import pg from "pg"; const pool = new pg.Pool({host:"localhost", port:5432, database:"shadowcheck", user:"postgres", password:process.env.POSTGRES_PASSWORD}); (async()=>{try{const r = await pool.query("SELECT COUNT(DISTINCT bssid) as wifi_count FROM app.networks_legacy WHERE type = 'W'"); console.log(r.rows[0]); process.exit(0);}catch(e){console.error(e); process.exit(1);}})();

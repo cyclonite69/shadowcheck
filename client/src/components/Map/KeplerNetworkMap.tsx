@@ -119,7 +119,7 @@ export default function KeplerNetworkMap() {
                 columns: {
                   lat: 'coordinates[1]',
                   lng: 'coordinates[0]',
-                  altitude: null,
+                  altitude: '',  // Convert null to empty string for compatibility
                 },
                 isVisible: true,
                 visConfig: {
@@ -235,7 +235,7 @@ export default function KeplerNetworkMap() {
       mapRef.current.props.dispatch(
         addDataToMap({
           datasets,
-          config,
+          config: config as any,  // Type assertion for config compatibility
           options: {
             centerMap: false,
             readOnly: false,
@@ -358,7 +358,7 @@ export default function KeplerNetworkMap() {
                 width={800}
                 height={500}
                 mapboxApiAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
-                onSaveConfig={setKeplerConfig}
+                onSaveConfig={(config: any) => console.log('Config saved:', config)}  // Fix undefined setKeplerConfig
               />
             </div>
           </div>

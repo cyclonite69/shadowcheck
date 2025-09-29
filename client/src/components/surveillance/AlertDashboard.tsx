@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api, type SurveillanceAlert } from '../../lib/api';
 import { AlertCard } from './AlertCard';
@@ -15,6 +15,7 @@ export function AlertDashboard() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<AlertFiltersState>({});
   const [selectedAlert, setSelectedAlert] = useState<SurveillanceAlert | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const {
     data: alertsData,
@@ -40,6 +41,78 @@ export function AlertDashboard() {
     refetch();
     setSelectedAlert(null);
   };
+
+  const handleExportResults = () => {
+    if (!alertsData?.data) return;
+
+    const exportData = {
+      exported_at: new Date().toISOString(),
+      filters_applied: filters,
+      total_alerts: alertsData.total,
+      alerts: alertsData.data.map(alert => ({
+        alert_id: alert.alert_id,
+        alert_level: alert.alert_level,
+        alert_type: alert.alert_type,
+        alert_title: alert.alert_title,
+        alert_status: alert.alert_status,
+        confidence_score: alert.confidence_score,
+        requires_immediate_attention: alert.requires_immediate_attention,
+        record_created_at: alert.record_created_at,
+        assigned_to: alert.assigned_to
+      }))
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `surveillance_alerts_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (selectedAlert) return; // Don't handle when modal is open
+
+      const alerts = alertsData?.data || [];
+      if (alerts.length === 0) return;
+
+      switch (event.key) {
+        case 'j':
+        case 'ArrowDown':
+          event.preventDefault();
+          setSelectedIndex(prev => Math.min(prev + 1, alerts.length - 1));
+          break;
+        case 'k':
+        case 'ArrowUp':
+          event.preventDefault();
+          setSelectedIndex(prev => Math.max(prev - 1, 0));
+          break;
+        case 'Enter':
+          event.preventDefault();
+          if (alerts[selectedIndex]) {
+            handleAlertClick(alerts[selectedIndex]);
+          }
+          break;
+        case 'Escape':
+          event.preventDefault();
+          setSelectedIndex(0);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [alertsData, selectedAlert, selectedIndex]);
+
+  // Reset selected index when data changes
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [alertsData]);
 
   if (error) {
     return (
@@ -107,15 +180,48 @@ export function AlertDashboard() {
             <span className='hero-gradient-text block mb-2'>Alert Management</span>
             <span className='feature-gradient-text block'>Intelligence Dashboard</span>
           </h1>
-          <p className='text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed'>
+          <p className='text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed mb-6'>
             Monitor and triage surveillance alerts from advanced SIGINT analysis and threat
             detection systems
           </p>
+
+          {/* Keyboard shortcuts hint */}
+          <div className='inline-flex items-center gap-4 px-6 py-3 bg-slate-800/30 border border-slate-700/50 rounded-xl text-sm text-slate-400'>
+            <span className='flex items-center gap-2'>
+              <kbd className='px-2 py-1 bg-slate-700/50 rounded text-xs font-mono'>j</kbd>
+              <span>/</span>
+              <kbd className='px-2 py-1 bg-slate-700/50 rounded text-xs font-mono'>k</kbd>
+              <span>Navigate</span>
+            </span>
+            <span className='flex items-center gap-2'>
+              <kbd className='px-2 py-1 bg-slate-700/50 rounded text-xs font-mono'>Enter</kbd>
+              <span>Open</span>
+            </span>
+            <span className='flex items-center gap-2'>
+              <kbd className='px-2 py-1 bg-slate-700/50 rounded text-xs font-mono'>Esc</kbd>
+              <span>Reset</span>
+            </span>
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className='mb-6'>
+        {/* Filters and Actions */}
+        <div className='mb-6 space-y-6'>
           <AlertFilters onFiltersChange={handleFilterChange} />
+
+          {/* Action buttons */}
+          {alertsData && alertsData.data.length > 0 && (
+            <div className='flex justify-end'>
+              <button
+                onClick={handleExportResults}
+                className='flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl transition-all duration-300 cyber-glow'
+              >
+                <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
+                </svg>
+                Export Results
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Stats Bar */}
@@ -277,17 +383,23 @@ export function AlertDashboard() {
                 </button>
               </div>
             ) : (
-              alertsData.data.map(alert => (
-                <AlertCard
+              alertsData.data.map((alert, index) => (
+                <div
                   key={alert.alert_id}
-                  alert={alert}
-                  onClick={() => handleAlertClick(alert)}
-                />
+                  className={`
+                    ${index === selectedIndex ? 'ring-2 ring-blue-500/60 ring-offset-2 ring-offset-slate-900 rounded-xl' : ''}
+                  `}
+                >
+                  <AlertCard
+                    alert={alert}
+                    onClick={() => handleAlertClick(alert)}
+                  />
+                </div>
               ))
             )}
 
             {/* Pagination */}
-            {alertsData.totalPages > 1 && (
+            {(alertsData.totalPages || Math.ceil(alertsData.total / 20)) > 1 && (
               <div className='flex justify-center items-center space-x-4 mt-12'>
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
@@ -313,13 +425,13 @@ export function AlertDashboard() {
                 <div className='premium-card px-6 py-3 cyber-border'>
                   <span className='text-slate-300 cyber-text'>
                     Page <span className='feature-gradient-text font-bold'>{page}</span> of{' '}
-                    <span className='feature-gradient-text font-bold'>{alertsData.totalPages}</span>
+                    <span className='feature-gradient-text font-bold'>{alertsData.totalPages || Math.ceil(alertsData.total / 20)}</span>
                   </span>
                 </div>
 
                 <button
-                  onClick={() => setPage(p => Math.min(alertsData.totalPages, p + 1))}
-                  disabled={page >= alertsData.totalPages}
+                  onClick={() => setPage(p => Math.min(alertsData.totalPages || Math.ceil(alertsData.total / 20), p + 1))}
+                  disabled={page >= (alertsData.totalPages || Math.ceil(alertsData.total / 20))}
                   className='px-6 py-3 premium-card hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 cyber-glow'
                 >
                   Next

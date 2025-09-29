@@ -48,3 +48,8 @@ tsconfig.json
 # Generated schema reports
 schema_report/
 tools/schema_report/
+
+credentials/
+deployment_summary_*.txt
+client/node_modules/
+client/dist/

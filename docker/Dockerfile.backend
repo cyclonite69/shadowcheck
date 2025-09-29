@@ -1,0 +1,15 @@
+FROM node:22
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+RUN npm install -g tsx
+
+COPY server ./server  
+COPY tsconfig.json ./
+
+EXPOSE 5000
+
+CMD ["tsx", "server/index.ts"]

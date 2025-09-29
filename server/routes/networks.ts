@@ -29,89 +29,97 @@ router.get('/', async (req, res) => {
     req.query.distinct_latest === 'yes';
 
   // Build base CTE depending on distinct_latest
-  const whereTime = hasBefore ? 'WHERE d.time < $1' : '';
+  const whereTime = hasBefore ? 'WHERE l.time < $1' : '';
   const paramOffset = hasBefore ? 2 : 1;
 
   const baseCTE = distinctLatest
     ? `
       WITH latest AS (
         SELECT bssid, MAX(time) AS max_time
-        FROM app.location_details_enriched
+        FROM app.locations_legacy
         GROUP BY bssid
       ),
       rows AS (
         SELECT
-          d.id, d.bssid, d.level, d.lat, d.lon, d.altitude, d.accuracy,
-          d.time::text  AS time,
-          d.time        AS time_epoch_ms,
-          to_char( to_timestamp(d.time/1000.0) AT TIME ZONE 'UTC',
+          l.unified_id as id,
+          l.bssid,
+          l.level,
+          l.lat,
+          l.lon,
+          l.altitude,
+          l.accuracy,
+          l.time::text  AS time,
+          l.time        AS time_epoch_ms,
+          to_char( to_timestamp(l.time/1000.0) AT TIME ZONE 'UTC',
                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"' ) AS time_iso,
-          d.ssid_at_time,
-          d.frequency_at_time,
-          d.frequency_mhz,
-          d.channel,
-          d.band,
-          d.radio_short,
-          d.security_short,
-          d.cipher_short,
-          d.flags_short,
+          n.ssid,
+          n.frequency,
+          n.capabilities,
+          n.type,
+          n.bestlevel,
+          n.lasttime,
           -- Cellular identifiers (only when MCC_MNC_CID)
-          CASE WHEN d.radio_short LIKE 'Cell%'
-                 AND d.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'
-               THEN split_part(d.bssid, '_', 1)::int ELSE NULL END AS cell_mcc,
-          CASE WHEN d.radio_short LIKE 'Cell%'
-                 AND d.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'
-               THEN split_part(d.bssid, '_', 2)::int ELSE NULL END AS cell_mnc,
-          CASE WHEN d.radio_short LIKE 'Cell%'
-                 AND d.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'
-               THEN split_part(d.bssid, '_', 3)::bigint ELSE NULL END AS cell_cid,
+          CASE WHEN n.type LIKE 'C%'
+                 AND l.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'
+               THEN split_part(l.bssid, '_', 1)::int ELSE NULL END AS cell_mcc,
+          CASE WHEN n.type LIKE 'C%'
+                 AND l.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'
+               THEN split_part(l.bssid, '_', 2)::int ELSE NULL END AS cell_mnc,
+          CASE WHEN n.type LIKE 'C%'
+                 AND l.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'
+               THEN split_part(l.bssid, '_', 3)::bigint ELSE NULL END AS cell_cid,
           -- BLE service UUIDs for BT
-          CASE WHEN d.radio_short = 'BT' THEN (
+          CASE WHEN n.type = 'BT' THEN (
             SELECT array_agg(DISTINCT m[1])::text[]
-            FROM regexp_matches(coalesce(d.capabilities_at_time,''), '([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', 'gi') m
+            FROM regexp_matches(coalesce(n.capabilities,''), '([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', 'gi') m
           ) ELSE NULL END AS ble_services
-        FROM app.location_details_enriched d
-        JOIN latest x ON x.bssid = d.bssid AND x.max_time = d.time
+        FROM app.locations_legacy l
+        LEFT JOIN app.networks_legacy n ON n.bssid = l.bssid
+        JOIN latest x ON x.bssid = l.bssid AND x.max_time = l.time
         ${whereTime}
-        ORDER BY d.time DESC
+        ORDER BY l.time DESC
         LIMIT $${paramOffset}
       )
     `
     : `
       WITH rows AS (
         SELECT
-          d.id, d.bssid, d.level, d.lat, d.lon, d.altitude, d.accuracy,
-          d.time::text  AS time,
-          d.time        AS time_epoch_ms,
-          to_char( to_timestamp(d.time/1000.0) AT TIME ZONE 'UTC',
+          l.unified_id as id,
+          l.bssid,
+          l.level,
+          l.lat,
+          l.lon,
+          l.altitude,
+          l.accuracy,
+          l.time::text  AS time,
+          l.time        AS time_epoch_ms,
+          to_char( to_timestamp(l.time/1000.0) AT TIME ZONE 'UTC',
                    'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"' ) AS time_iso,
-          d.ssid_at_time,
-          d.frequency_at_time,
-          d.frequency_mhz,
-          d.channel,
-          d.band,
-          d.radio_short,
-          d.security_short,
-          d.cipher_short,
-          d.flags_short,
+          n.ssid,
+          n.frequency,
+          n.capabilities,
+          n.type,
+          n.bestlevel,
+          n.lasttime,
           -- Cellular identifiers (only when MCC_MNC_CID)
-          CASE WHEN d.radio_short LIKE 'Cell%'
-                 AND d.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'
-               THEN split_part(d.bssid, '_', 1)::int ELSE NULL END AS cell_mcc,
-          CASE WHEN d.radio_short LIKE 'Cell%'
-                 AND d.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'
-               THEN split_part(d.bssid, '_', 2)::int ELSE NULL END AS cell_mnc,
-          CASE WHEN d.radio_short LIKE 'Cell%'
-                 AND d.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'
-               THEN split_part(d.bssid, '_', 3)::bigint ELSE NULL END AS cell_cid,
+          CASE WHEN n.type LIKE 'C%'
+                 AND l.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'
+               THEN split_part(l.bssid, '_', 1)::int ELSE NULL END AS cell_mcc,
+          CASE WHEN n.type LIKE 'C%'
+                 AND l.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'
+               THEN split_part(l.bssid, '_', 2)::int ELSE NULL END AS cell_mnc,
+          CASE WHEN n.type LIKE 'C%'
+                 AND l.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'
+               THEN split_part(l.bssid, '_', 3)::bigint ELSE NULL END AS cell_cid,
           -- BLE service UUIDs for BT
-          CASE WHEN d.radio_short = 'BT' THEN (
+          CASE WHEN n.type = 'BT' THEN (
             SELECT array_agg(DISTINCT m[1])::text[]
-            FROM regexp_matches(coalesce(d.capabilities_at_time,''), '([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', 'gi') m
+            FROM regexp_matches(coalesce(n.capabilities,''), '([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', 'gi') m
           ) ELSE NULL END AS ble_services
-        FROM app.location_details_enriched d
+        FROM app.locations_legacy l
+        LEFT JOIN app.networks_legacy n ON n.bssid = l.bssid
         ${whereTime}
-        ORDER BY d.time DESC
+        ORDER BY l.time DESC
         LIMIT $${paramOffset}
       )
     `;
@@ -125,13 +133,35 @@ router.get('/', async (req, res) => {
   try {
     const params: any[] = hasBefore ? [before, limit] : [limit];
     const { rows } = await query(finalSql, params);
+
+    // Transform data to match frontend expectations
+    const transformedData = rows.map(row => ({
+      id: row.id,
+      ssid: row.ssid,
+      bssid: row.bssid,
+      frequency: row.frequency,
+      channel: null, // Not available in this schema
+      signal_strength: row.level,
+      encryption: row.capabilities || 'Open',
+      latitude: row.lat?.toString(),
+      longitude: row.lon?.toString(),
+      observed_at: row.time_iso,
+      created_at: row.time_iso,
+      // Additional properties for compatibility
+      capabilities: row.capabilities,
+      bestlevel: row.bestlevel,
+      lasttime: row.time_iso,
+      radio_type: row.type
+    }));
+
     res.json({
       ok: true,
-      count: rows.length,
+      data: transformedData,
+      count: transformedData.length,
+      limit: limit,
       cursor: {
         next_before_time_ms: rows.length ? rows[rows.length - 1].time_epoch_ms : null,
       },
-      rows,
     });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message ?? String(err) });

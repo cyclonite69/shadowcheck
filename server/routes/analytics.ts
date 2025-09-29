@@ -1,64 +1,72 @@
 import { Router } from 'express';
-import { query } from '../db';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
+const execAsync = promisify(exec);
 const router = Router();
 
 /**
- * GET /api/v1/analytics?recent_limit=20&before_time_ms=...
- * Counts + recent list (cursor pagination). Uses enriched view.
+ * GET /api/v1/analytics
+ * Returns comprehensive analytics including network counts by type
  */
 router.get('/', async (req, res) => {
-  const recentLimit = Math.min(Number(req.query.recent_limit ?? 20) || 20, 200);
-  const before = Number(req.query.before_time_ms);
-  const hasBefore = Number.isFinite(before);
-
   try {
-    const countsSql = `
-      SELECT
-        (SELECT COUNT(*) FROM app.locations) AS location_rows,
-        (SELECT COUNT(*) FROM app.networks)  AS network_rows
+    // Use docker exec for fast, reliable connection - get comprehensive stats
+    const analyticsQuery = `
+      docker exec shadowcheck_postgres psql -U postgres -d shadowcheck -t -c "
+        WITH stats AS (
+          SELECT
+            COUNT(*) as total_observations,
+            COUNT(DISTINCT bssid) as distinct_networks,
+            COUNT(DISTINCT CASE WHEN type = 'W' THEN bssid END) as wifi_networks,
+            COUNT(DISTINCT CASE WHEN type = 'E' THEN bssid END) as ble_devices,
+            COUNT(DISTINCT CASE WHEN type = 'B' THEN bssid END) as bluetooth_classic,
+            COUNT(DISTINCT CASE WHEN type IN ('G', 'L', 'N', 'C') THEN bssid END) as cellular_towers
+          FROM app.networks_legacy
+        ),
+        location_stats AS (
+          SELECT COUNT(*) as location_data_points
+          FROM app.locations_legacy
+        )
+        SELECT
+          s.total_observations,
+          s.distinct_networks,
+          s.wifi_networks,
+          s.ble_devices,
+          s.bluetooth_classic,
+          s.cellular_towers,
+          l.location_data_points
+        FROM stats s
+        CROSS JOIN location_stats l;"
     `;
-    const counts = await query(countsSql);
 
-    const where = hasBefore
-      ? 'WHERE d.lat IS NOT NULL AND d.lon IS NOT NULL AND d.time < $1'
-      : 'WHERE d.lat IS NOT NULL AND d.lon IS NOT NULL';
-    const limPos = hasBefore ? 2 : 1;
+    const result = await execAsync(analyticsQuery);
 
-    const recentSql = `
-      SELECT
-        d.id, d.bssid, d.lat, d.lon, d.level,
-        d.time::text  AS time,
-        d.time        AS time_epoch_ms,
-        to_char( to_timestamp(d.time/1000.0) AT TIME ZONE 'UTC',
-                 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"' ) AS time_iso,
-        d.radio_short, d.security_short,
-        d.frequency_at_time, d.frequency_mhz, d.channel, d.band
-      FROM app.locations_details_enriched d
-      ${where}
-      ORDER BY d.time DESC
-      LIMIT $${limPos}
-    `;
-    const recent = await query(recentSql, hasBefore ? [before, recentLimit] : [recentLimit]);
+    // Parse the PostgreSQL output
+    const lines = result.stdout.trim().split('\n').filter(line => line.trim());
+    if (lines.length === 0) {
+      throw new Error('No data returned from analytics query');
+    }
 
-    const countsData = counts.rows[0] ?? {};
+    const parts = lines[0].split('|').map(part => part.trim());
+    const data = {
+      overview: {
+        total_observations: parseInt(parts[0]) || 0,
+        distinct_networks: parseInt(parts[1]) || 0,
+        wifi_networks: parseInt(parts[2]) || 0,
+        ble_devices: parseInt(parts[3]) || 0,
+        bluetooth_classic: parseInt(parts[4]) || 0,
+        cellular_towers: parseInt(parts[5]) || 0,
+        location_data_points: parseInt(parts[6]) || 0,
+      }
+    };
+
     res.json({
       ok: true,
-      data: {
-        overview: {
-          total_observations: Number(countsData.location_rows) || 0,
-          distinct_networks: Number(countsData.network_rows) || 0,
-        },
-      },
-      counts: countsData,
-      cursor: {
-        next_before_time_ms: recent.rows.length
-          ? recent.rows[recent.rows.length - 1].time_epoch_ms
-          : null,
-      },
-      recent: recent.rows,
+      data: data,
     });
   } catch (err: any) {
+    console.error('Analytics error:', err);
     res.status(500).json({ ok: false, error: err?.message ?? String(err) });
   }
 });

@@ -46,6 +46,7 @@ interface NetworkEntry {
   created_at?: string;
   type?: string; // Radio type field
   radio_type?: string; // Alternative radio type field
+  network_count?: number;
 }
 
 type SortField = 'bssid' | 'ssid' | 'signal_strength' | 'security' | 'frequency' | 'last_seen';
@@ -416,9 +417,9 @@ export default function NetworksPage() {
                         {/* Frequency */}
                         <div className='w-16 text-right'>
                           <p className='text-xs text-muted-foreground'>
-                            {network.frequency > 5000
+                            {(network.frequency || 0) > 5000
                               ? '5G'
-                              : network.frequency > 2000
+                              : (network.frequency || 0) > 2000
                                 ? '2.4G'
                                 : '?'}
                           </p>

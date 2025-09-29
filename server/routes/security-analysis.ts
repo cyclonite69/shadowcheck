@@ -1,50 +1,66 @@
 import { Router } from 'express';
-import { query } from '../db';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
+const execAsync = promisify(exec);
 const router = Router();
 
 /**
  * GET /api/v1/security-analysis
- * Returns security analysis of detected networks (WPA, WEP, Open, etc.)
+ * Returns security analysis of detected WiFi networks (WPA, WEP, Open, etc.)
  */
 router.get('/', async (req, res) => {
   try {
-    // Query security analysis from the database
-    const securityAnalysisSql = `
-      WITH security_stats AS (
+    // Use docker exec for fast, reliable connection - only analyze WiFi networks
+    const securityAnalysisQuery = `
+      docker exec shadowcheck_postgres psql -U postgres -d shadowcheck -t -c "
+        WITH security_stats AS (
+          SELECT
+            COALESCE(capabilities, '[Open]') as security,
+            CASE
+              WHEN capabilities LIKE '%WPA3%' OR capabilities LIKE '%SAE%' THEN 'WPA3 Secure'
+              WHEN capabilities LIKE '%WPA2%' AND capabilities LIKE '%EAP%' THEN 'WPA2 Enterprise'
+              WHEN capabilities LIKE '%WPA2%' THEN 'WPA2 Protected'
+              WHEN capabilities LIKE '%WPA%' THEN 'WPA Protected'
+              WHEN capabilities LIKE '%WEP%' THEN 'WEP Vulnerable'
+              WHEN capabilities = '[ESS]' OR capabilities = '' OR capabilities IS NULL THEN 'Open Networks'
+              ELSE 'Other Security'
+            END as security_level,
+            COUNT(DISTINCT bssid) as network_count
+          FROM app.networks_legacy
+          WHERE type = 'W'
+          GROUP BY capabilities
+        ),
+        total_networks AS (
+          SELECT SUM(network_count) as total_count FROM security_stats
+        )
         SELECT
-          COALESCE(d.security_short, '[Open]') as security,
-          CASE
-            WHEN d.security_short ILIKE '%WPA3%' THEN 'WPA3 Secure'
-            WHEN d.security_short ILIKE '%WPA2%' THEN 'WPA2 Protected'
-            WHEN d.security_short ILIKE '%WPA%' THEN 'WPA Protected'
-            WHEN d.security_short ILIKE '%WEP%' THEN 'WEP Vulnerable'
-            WHEN d.security_short IS NULL OR d.security_short = '' OR d.security_short = '[ESS]' THEN 'Open Networks'
-            ELSE 'Other Security'
-          END as security_level,
-          COUNT(DISTINCT d.bssid) as network_count
-        FROM app.locations_details_enriched d
-        WHERE d.radio_short = 'wifi'
-        GROUP BY d.security_short
-      ),
-      total_networks AS (
-        SELECT SUM(network_count) as total_count FROM security_stats
-      )
-      SELECT
-        s.security,
-        s.security_level,
-        s.network_count,
-        ROUND((s.network_count * 100.0 / t.total_count), 1) as percentage
-      FROM security_stats s
-      CROSS JOIN total_networks t
-      ORDER BY s.network_count DESC
+          s.security,
+          s.security_level,
+          s.network_count,
+          ROUND((s.network_count * 100.0 / t.total_count), 1) as percentage
+        FROM security_stats s
+        CROSS JOIN total_networks t
+        ORDER BY s.network_count DESC;"
     `;
 
-    const result = await query(securityAnalysisSql);
+    const result = await execAsync(securityAnalysisQuery);
+
+    // Parse the PostgreSQL output
+    const lines = result.stdout.trim().split('\n').filter(line => line.trim());
+    const data = lines.map(line => {
+      const parts = line.split('|').map(part => part.trim());
+      return {
+        security: parts[0] || '',
+        security_level: parts[1] || '',
+        network_count: parseInt(parts[2]) || 0,
+        percentage: parseFloat(parts[3]) || 0
+      };
+    });
 
     res.json({
       ok: true,
-      data: result.rows,
+      data: data,
     });
   } catch (err: any) {
     console.error('Security analysis error:', err);

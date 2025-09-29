@@ -37,6 +37,12 @@ export default function Dashboard() {
     refetchInterval: 30000,
   });
 
+  const { data: stats } = useQuery({
+    queryKey: ['/api/v1/stats'],
+    queryFn: () => api.getStats(),
+    refetchInterval: 30000,
+  });
+
   const { data: radioStats, isLoading: radioStatsLoading } = useQuery({
     queryKey: ['/api/v1/radio-stats'],
     queryFn: () => api.getRadioStats(),
@@ -67,6 +73,10 @@ export default function Dashboard() {
     };
   };
 
+  const wifiNetworkCount = stats?.data?.wifi_networks || 0;
+  const cellularTowerCount = stats?.data?.cellular_towers || 0;
+  const bluetoothClassicCount = stats?.data?.bluetooth_classic || 0;
+  const bleDeviceCount = stats?.data?.ble_devices || 0;
   const wifiStats = getRadioStats('wifi');
   const cellularStats = getRadioStats('cellular');
   const bluetoothStats = getRadioStats('bluetooth');
@@ -89,7 +99,7 @@ export default function Dashboard() {
             className={`premium-card cursor-pointer ${selectedCard === 'wifi' ? 'selected' : ''}`}
             onClick={() => setSelectedCard(selectedCard === 'wifi' ? null : 'wifi')}
             aria-pressed={selectedCard === 'wifi'}
-            aria-label={`WiFi observations: ${wifiStats.observations.toLocaleString()} total, ${wifiStats.networks.toLocaleString()} networks. ${selectedCard === 'wifi' ? 'Currently selected' : 'Click to select'}`}
+            aria-label={`WiFi networks: ${wifiNetworkCount.toLocaleString()} total, ${wifiStats.networks.toLocaleString()} observations. ${selectedCard === 'wifi' ? 'Currently selected' : 'Click to select'}`}
             data-testid='card-wifi'
           >
             <CardContent className='relative p-8'>
@@ -98,12 +108,12 @@ export default function Dashboard() {
                   <Wifi className='h-8 w-8 text-blue-300' />
                 </div>
                 <div>
-                  <p className='text-3xl metric-value mb-2' data-testid='metric-wifi-observations'>
-                    {wifiStats.observations.toLocaleString()}
+                  <p className='text-3xl metric-value mb-2' data-testid='metric-wifi-networks'>
+                    {wifiNetworkCount.toLocaleString()}
                   </p>
-                  <p className='text-base font-semibold text-blue-300 mb-1'>WiFi Observations</p>
+                  <p className='text-base font-semibold text-blue-300 mb-1'>WiFi Networks/Radios</p>
                   <p className='text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full'>
-                    {wifiStats.networks.toLocaleString()} networks
+                    {wifiStats.observations.toLocaleString()} observations
                   </p>
                 </div>
               </div>
@@ -117,7 +127,7 @@ export default function Dashboard() {
             }`}
             onClick={() => setSelectedCard(selectedCard === 'cellular' ? null : 'cellular')}
             aria-pressed={selectedCard === 'cellular'}
-            aria-label={`Cellular observations: ${cellularStats.observations.toLocaleString()} total, ${cellularStats.networks.toLocaleString()} towers. ${selectedCard === 'cellular' ? 'Currently selected' : 'Click to select'}`}
+            aria-label={`Cellular towers: ${cellularTowerCount.toLocaleString()} total, ${cellularStats.networks.toLocaleString()} infrastructure. ${selectedCard === 'cellular' ? 'Currently selected' : 'Click to select'}`}
             data-testid='card-cellular'
           >
             <CardContent className='relative p-8'>
@@ -128,15 +138,15 @@ export default function Dashboard() {
                 <div>
                   <p
                     className='text-3xl metric-value mb-2'
-                    data-testid='metric-cellular-observations'
+                    data-testid='metric-cellular-towers'
                   >
-                    {cellularStats.observations.toLocaleString()}
+                    {cellularTowerCount.toLocaleString()}
                   </p>
                   <p className='text-base font-semibold text-green-300 mb-1'>
-                    Cellular Observations
+                    Cellular Towers
                   </p>
                   <p className='text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full'>
-                    {cellularStats.networks.toLocaleString()} towers
+                    GSM/LTE/5G NR infrastructure
                   </p>
                 </div>
               </div>
@@ -150,7 +160,7 @@ export default function Dashboard() {
             }`}
             onClick={() => setSelectedCard(selectedCard === 'bluetooth' ? null : 'bluetooth')}
             aria-pressed={selectedCard === 'bluetooth'}
-            aria-label={`Bluetooth observations: ${bluetoothStats.observations.toLocaleString()} total, ${bluetoothStats.networks.toLocaleString()} devices. ${selectedCard === 'bluetooth' ? 'Currently selected' : 'Click to select'}`}
+            aria-label={`Bluetooth Classic devices: ${bluetoothClassicCount.toLocaleString()} total devices. ${selectedCard === 'bluetooth' ? 'Currently selected' : 'Click to select'}`}
             data-testid='card-bluetooth'
           >
             <CardContent className='relative p-8'>
@@ -161,15 +171,15 @@ export default function Dashboard() {
                 <div>
                   <p
                     className='text-3xl metric-value mb-2'
-                    data-testid='metric-bluetooth-observations'
+                    data-testid='metric-bluetooth-classic'
                   >
-                    {bluetoothStats.observations.toLocaleString()}
+                    {bluetoothClassicCount.toLocaleString()}
                   </p>
                   <p className='text-base font-semibold text-purple-300 mb-1'>
-                    Bluetooth Observations
+                    Bluetooth Classic
                   </p>
                   <p className='text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full'>
-                    {bluetoothStats.networks.toLocaleString()} devices
+                    Headphones, speakers, cars
                   </p>
                 </div>
               </div>
@@ -181,7 +191,7 @@ export default function Dashboard() {
             className={`premium-card cursor-pointer ${selectedCard === 'ble' ? 'selected' : ''}`}
             onClick={() => setSelectedCard(selectedCard === 'ble' ? null : 'ble')}
             aria-pressed={selectedCard === 'ble'}
-            aria-label={`BLE observations: ${bleStats.observations.toLocaleString()} total, ${bleStats.networks.toLocaleString()} devices. ${selectedCard === 'ble' ? 'Currently selected' : 'Click to select'}`}
+            aria-label={`BLE devices: ${bleDeviceCount.toLocaleString()} total devices including beacons and IoT. ${selectedCard === 'ble' ? 'Currently selected' : 'Click to select'}`}
             data-testid='card-ble'
           >
             <CardContent className='relative p-8'>
@@ -190,12 +200,12 @@ export default function Dashboard() {
                   <Radio className='h-8 w-8 text-orange-300' />
                 </div>
                 <div>
-                  <p className='text-3xl metric-value mb-2' data-testid='metric-ble-observations'>
-                    {bleStats.observations.toLocaleString()}
+                  <p className='text-3xl metric-value mb-2' data-testid='metric-ble-devices'>
+                    {bleDeviceCount.toLocaleString()}
                   </p>
-                  <p className='text-base font-semibold text-orange-300 mb-1'>BLE Observations</p>
+                  <p className='text-base font-semibold text-orange-300 mb-1'>BLE Devices</p>
                   <p className='text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full'>
-                    {bleStats.networks.toLocaleString()} devices
+                    Phones, beacons, IoT devices
                   </p>
                 </div>
               </div>
@@ -571,10 +581,10 @@ export default function Dashboard() {
                     </div>
                     <div className='text-right'>
                       <Badge variant='outline' className='text-xs'>
-                        {network.bestlevel} dBm
+                        {network.bestlevel || network.signal_strength || 'N/A'} dBm
                       </Badge>
                       <p className='text-xs text-muted-foreground mt-1'>
-                        {new Date(Number(network.lasttime)).toLocaleTimeString()}
+                        {new Date(Number(network.lasttime) || Date.now()).toLocaleTimeString()}
                       </p>
                     </div>
                   </div>

@@ -2,8 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import pg from 'pg';
-import { setupVite, log } from './vite.js';
+import { setupVite } from './vite.js';
 import { registerSurveillanceRoutes } from './routes/surveillance.js';
+import analyticsRouter from './routes/analytics.js';
+import networksRouter from './routes/networks-working.js';
+import securityRouter from './routes/security-analysis.js';
+import signalRouter from './routes/signal-strength.js';
+import statsRouter from './routes/stats.js';
+import alertsRouter from './routes/alerts.js';
 
 const { Pool } = pg;
 
@@ -11,6 +17,11 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/api/v1/analytics", analyticsRouter);
+app.use("/api/v1/networks", networksRouter);
+app.use("/api/v1/security-analysis", securityRouter);
+app.use("/api/v1/signal-strength", signalRouter);
+app.use("/api/v1/stats", statsRouter);
 
 // Metrics endpoint
 app.get('/api/v1/metrics', async (_req, res) => {
@@ -26,7 +37,17 @@ app.get('/api/v1/metrics', async (_req, res) => {
   }
 });
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({
+    ssl: { rejectUnauthorized: false },
+    ssl: { rejectUnauthorized: false },
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  host: process.env.PGHOST || "127.0.0.1",
+  port: parseInt(process.env.PGPORT || "5432"),
+  database: process.env.PGDATABASE || "shadowcheck",
+  user: process.env.PGUSER || "postgres",
+  password: process.env.PGPASSWORD || "admin"
+});
 
 const toInt = (v: unknown, d: number) => {
   const n = parseInt(String(v ?? ''), 10);
@@ -113,10 +134,10 @@ app.get('/api/v1/networks', async (req, res) => {
     const sql = `
       SELECT
         n.bssid,
-        n.current_ssid,
+        n.ssid,
         'W' as type,
-        n.current_frequency,
-        n.current_capabilities,
+        n.frequency,
+        n.capabilities,
         EXTRACT(epoch FROM no.observed_at) * 1000 as lasttime,
         l.latitude as lastlat,
         l.longitude as lastlon,
@@ -191,78 +212,9 @@ app.get('/api/v1/radio-stats', async (_req, res) => {
     // - BLE: Low energy devices, often "Misc" encryption, lower power, specific naming patterns
 
     const radioStats = await pool.query(`
-      WITH radio_classification AS (
-        SELECT 
-          n.bssid,
-          n.current_ssid as ssid,
-          n.current_frequency as frequency,
-          n.current_capabilities as encryption,
-          CASE 
-            -- Cellular towers: MCC_MNC_CID format or LTE encryption
-            WHEN n.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$' OR n.current_capabilities LIKE 'LTE;%' THEN 'cellular'
-            
-            -- Bluetooth Classic: Device names suggesting BT, specific frequency ranges, or BT-like patterns
-            WHEN (n.current_ssid ILIKE '%bluetooth%' OR n.current_ssid ILIKE '%bt%' OR 
-                  n.current_ssid ILIKE '%headphone%' OR n.current_ssid ILIKE '%speaker%' OR
-                  n.current_ssid ILIKE '%mouse%' OR n.current_ssid ILIKE '%keyboard%' OR
-                  n.current_capabilities LIKE '%BT%' OR n.current_capabilities LIKE '%Bluetooth%') THEN 'bluetooth'
-            
-            -- BLE devices: Enhanced detection with capability patterns and UUIDs
-            WHEN (n.current_capabilities = 'Misc') OR
-                 (n.current_capabilities = 'Uncategorized') OR
-                 (n.current_capabilities LIKE '%Uncategorized;%') OR
-                 (n.current_capabilities LIKE '%Laptop;%') OR
-                 (n.current_capabilities LIKE '%Smartphone;%') OR
-                 (n.current_capabilities LIKE '%Headphones;%') OR
-                 (n.current_capabilities LIKE '%Display/Speaker;%') OR
-                 (n.current_capabilities LIKE '%Handsfree;%') OR
-                 (n.current_capabilities ~ '.*;[0-9]+$') OR  -- Pattern like "Type;10"
-                 (n.current_ssid ILIKE '%ble%' OR n.current_ssid ILIKE '%fitbit%' OR 
-                  n.current_ssid ILIKE '%tile%' OR n.current_ssid ILIKE '%beacon%' OR
-                  n.current_ssid ILIKE '%echo%' OR n.current_ssid ILIKE '%dot%' OR
-                  n.current_ssid ILIKE '%dell%' OR n.current_ssid ILIKE '%laptop%' OR
-                  n.current_ssid ILIKE '%jlab%' OR n.current_ssid ILIKE '%airpods%' OR
-                  n.current_ssid ILIKE '%microsoft%') OR
-                 (n.current_frequency = 0 OR n.current_frequency BETWEEN 1 AND 500) THEN 'ble'
-            
-            -- WiFi: Standard WiFi frequencies and patterns
-            WHEN (n.current_frequency BETWEEN 2400 AND 2500 OR n.current_frequency BETWEEN 5000 AND 6000) AND
-                 (n.current_capabilities LIKE '%WPA%' OR n.current_capabilities LIKE '%WEP%' OR 
-                  n.current_capabilities LIKE '%ESS%') THEN 'wifi'
-            
-            -- Default WiFi for MAC addresses with typical WiFi indicators
-            WHEN n.bssid ~ '^[0-9a-fA-F:]+$' AND n.current_capabilities NOT LIKE 'Misc' THEN 'wifi'
-            
-            -- Anything else with very low/zero frequency likely BLE
-            WHEN n.current_frequency <= 500 THEN 'ble'
-            
-            -- Default to wifi for unclassified MAC addresses
-            ELSE 'wifi'
-          END as radio_type
-        FROM app.networks n
-      ),
-      all_radio_types AS (
-        SELECT 'wifi' as radio_type
-        UNION ALL SELECT 'cellular'
-        UNION ALL SELECT 'bluetooth' 
-        UNION ALL SELECT 'ble'
-      ),
-      location_counts AS (
-        SELECT 
-          rc.radio_type,
-          COUNT(DISTINCT rc.bssid) as total_observations,
-          COUNT(DISTINCT rc.bssid) as distinct_networks
-        FROM radio_classification rc
-        WHERE rc.bssid IS NOT NULL
-        GROUP BY rc.radio_type
-      )
-      SELECT 
-        art.radio_type,
-        COALESCE(lc.total_observations, 0) as total_observations,
-        COALESCE(lc.distinct_networks, 0) as distinct_networks
-      FROM all_radio_types art
-      LEFT JOIN location_counts lc ON art.radio_type = lc.radio_type
-      ORDER BY art.radio_type
+      SELECT COUNT(DISTINCT bssid) as wifi_count 
+      FROM app.networks_legacy 
+      WHERE type = 'W'
     `);
 
     res.json({
@@ -331,6 +283,6 @@ const port = Number(process.env.PORT || 5000);
   }
 
   server.listen(port, '0.0.0.0', () => {
-    log(`serving on port ${port}`);
+    console.log(`serving on port ${port}`);
   });
 })();

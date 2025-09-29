@@ -9,6 +9,7 @@ import Dashboard from '@/pages/dashboard';
 import VisualizationPage from '@/pages/visualization';
 import NetworksPage from '@/pages/networks';
 import AlertsPage from '@/pages/alerts';
+import { HealthTest } from '@/pages/health-test';
 import { AdminPanel } from '@/components/admin-panel';
 import { MobileShell } from '@/components/MobileShell';
 import { DesktopShell } from '@/components/DesktopShell';
@@ -46,6 +47,7 @@ function Router() {
                 />
                 <Route path='/visualization' component={VisualizationPage} />
                 <Route path='/alerts' component={AlertsPage} />
+                <Route path='/health-test' component={HealthTest} />
                 <Route
                   path='/admin'
                   component={() => (
@@ -71,6 +73,7 @@ function Router() {
                 />
                 <Route path='/visualization' component={VisualizationPage} />
                 <Route path='/alerts' component={AlertsPage} />
+                <Route path='/health-test' component={HealthTest} />
                 <Route
                   path='/admin'
                   component={() => (

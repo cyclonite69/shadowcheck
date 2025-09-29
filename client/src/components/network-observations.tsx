@@ -131,7 +131,16 @@ export function NetworkObservations() {
   };
 
   function getRadioType(network: any): 'wifi' | 'cell' | 'bluetooth' | 'ble' {
-    // Enhanced classification based on real data patterns
+    // Use the radio_type field from the database if available
+    if (network.radio_type) {
+      const radioType = network.radio_type.toLowerCase();
+      if (radioType.includes('cell')) return 'cell';
+      if (radioType === 'bt' || radioType.includes('bluetooth')) return 'bluetooth';
+      if (radioType.includes('ble')) return 'ble';
+      if (radioType.includes('wifi') || radioType === 'w') return 'wifi';
+    }
+
+    // Fallback to enhanced classification based on real data patterns
     const { bssid, ssid, frequency, encryption } = network;
 
     // Cellular towers: MCC_MNC_CID format or LTE encryption

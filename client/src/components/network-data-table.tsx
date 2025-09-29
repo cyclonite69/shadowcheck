@@ -48,9 +48,9 @@ export function NetworkDataTable({
 
     const filtered = networks.data.filter(
       network =>
-        network.ssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (network.ssid || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         network.bssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        network.capabilities.toLowerCase().includes(searchTerm.toLowerCase())
+        (network.capabilities || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return filtered.sort((a, b) => {
@@ -62,8 +62,8 @@ export function NetworkDataTable({
         bVal = Number(bVal);
       }
 
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      if ((aVal || 0) < (bVal || 0)) return sortDirection === 'asc' ? -1 : 1;
+      if ((aVal || 0) > (bVal || 0)) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
   }, [networks?.data, searchTerm, sortField, sortDirection]);
@@ -212,10 +212,10 @@ export function NetworkDataTable({
             ) : (
               sortedAndFilteredNetworks.map(network => {
                 const color = generateColorFromBSSID(network.bssid);
-                const signalInfo = getSignalStrengthCategory(network.bestlevel);
-                const securityInfo = getSecurityStyling(network.capabilities);
+                const signalInfo = getSignalStrengthCategory(network.bestlevel || network.signal_strength || -100);
+                const securityInfo = getSecurityStyling(network.capabilities || network.encryption || '');
                 const isVisible = visibleNetworks.has(network.bssid);
-                const lastSeen = new Date(Number(network.lasttime));
+                const lastSeen = new Date(Number(network.lasttime) || Date.now());
 
                 return (
                   <div
@@ -261,7 +261,7 @@ export function NetworkDataTable({
                         className='text-xs'
                         style={{ color: signalInfo.color, borderColor: signalInfo.color }}
                       >
-                        {network.bestlevel} dBm
+                        {network.bestlevel || network.signal_strength || 'N/A'} dBm
                       </Badge>
                     </div>
 

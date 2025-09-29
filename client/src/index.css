@@ -585,6 +585,15 @@ html {
   }
 }
 
+/* Alert Dashboard specific styles */
+.cyber-glow-subtle {
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.1);
+}
+
+.cyber-glow-subtle:focus {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
 /* Accessibility: Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   .cyber-scan-line::before,

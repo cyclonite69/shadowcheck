@@ -17,7 +17,13 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "typecheck": "concurrently \"npm:typecheck:*\"",
     "typecheck:client": "tsc --noEmit -p client/tsconfig.json",
-    "typecheck:server": "tsc --noEmit -p server/tsconfig.json"
+    "typecheck:server": "tsc --noEmit -p server/tsconfig.json",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose restart",
+    "docker:reset": "docker-compose down -v && docker-compose up -d"
   },
   "keywords": [
     "surveillance",
@@ -31,7 +37,6 @@
   "dependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.3",
-    "@types/pg": "^8.10.9",
     "@vitejs/plugin-react": "^5.0.3",
     "autoprefixer": "^10.4.21",
     "cors": "^2.8.5",
@@ -49,6 +54,7 @@
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.36.0",
     "@types/node": "^24.5.2",
+    "@types/pg": "^8.15.5",
     "@typescript-eslint/eslint-plugin": "^8.44.1",
     "@typescript-eslint/parser": "^8.44.1",
     "concurrently": "^9.2.1",

@@ -76,13 +76,25 @@ export function AlertCard({ alert, onClick }: AlertCardProps) {
         ? 'text-yellow-400'
         : 'text-red-400';
 
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     <div
       onClick={onClick}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={`${alert.alert_level} alert: ${alert.alert_title}. Status: ${alert.alert_status}. Confidence: ${Math.round(alert.confidence_score * 100)}%. ${alert.requires_immediate_attention ? 'Requires immediate attention.' : ''} Press Enter to view details.`}
       className={`
         premium-card p-6 cursor-pointer group
         ${config.glowColor} ${config.borderGlow}
-        hover:scale-[1.02] transition-all duration-300
+        hover:scale-[1.02] focus:scale-[1.02] transition-all duration-300
+        focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-slate-900
         ${config.pulse ? 'animate-pulse' : ''}
         ${alert.requires_immediate_attention ? 'cyber-border data-stream' : ''}
         relative overflow-hidden

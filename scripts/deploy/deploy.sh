@@ -14,7 +14,11 @@ NC='\033[0m' # No Color
 # Configuration
 DB_NAME="shadowcheck"
 DB_USER="shadowcheck"
-DB_PASSWORD="your_secure_password_here"
+if [ -z "$POSTGRES_PASSWORD" ]; then
+  echo "ERROR: POSTGRES_PASSWORD environment variable is not set."
+  exit 1
+fi
+DB_PASSWORD="$POSTGRES_PASSWORD"
 DB_HOST="127.0.0.1"
 DB_PORT="5432"
 

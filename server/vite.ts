@@ -1,82 +1,63 @@
-import express, { type Express } from 'express';
-import fs from 'fs';
+import express from 'express';
+import { createServer as createViteServer } from 'vite';
 import path from 'path';
-import { createServer as createViteServer, createLogger } from 'vite';
-import { type Server } from 'http';
-import viteConfig from '../vite.config';
-import { nanoid } from 'nanoid';
+import { fileURLToPath } from 'url';
 
-const viteLogger = createLogger();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-export function log(message: string, source = 'express') {
-  const formattedTime = new Date().toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true,
-  });
+export async function setupVite(app: express.Application, isProduction: boolean) {
+  if (!isProduction) {
+    // Development mode with Vite dev server
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+      root: path.resolve(__dirname, '../client'),
+      configFile: path.resolve(__dirname, '../client/vite.config.ts'),
+    });
 
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
+    app.use(vite.ssrFixStacktrace);
+    app.use(vite.middlewares);
+    
+    // Handle SPA routing - only catch non-API routes
+    app.get(/^\/(?!api).*/, async (req, res, next) => {
+      const url = req.originalUrl;
 
-export async function setupVite(app: Express, server: Server) {
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server },
-    allowedHosts: true as const,
-  };
+      try {
+        // Always serve the index.html for SPA routes
+        const template = await vite.transformIndexHtml(url, `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ShadowCheck</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+        `);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      } catch (e) {
+        if (e instanceof Error) {
+          vite?.ssrFixStacktrace(e);
+          console.error(e.stack);
+          res.status(500).end(e.message);
+        }
+      }
+    });
+  } else {
+    // Production mode
+    const distPath = path.resolve(__dirname, '../client/dist');
+    
+    app.use(express.static(distPath));
 
-  const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      },
-    },
-    server: serverOptions,
-    appType: 'custom',
-  });
-
-  app.use(vite.middlewares);
-  app.use('*', async (req, res, next) => {
-    const url = req.originalUrl;
-
-    try {
-      const clientTemplate = path.resolve(
-        path.dirname(new URL(import.meta.url).pathname),
-        '..',
-        'client',
-        'index.html'
-      );
-
-      // always reload the index.html file from disk incase it changes
-      let template = await fs.promises.readFile(clientTemplate, 'utf-8');
-      template = template.replace('src="/src/main.tsx"', `src="/src/main.tsx?v=${nanoid()}"`);
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ 'Content-Type': 'text/html' }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
-      next(e);
-    }
-  });
-}
-
-export function serveStatic(app: Express) {
-  const distPath = path.resolve(path.dirname(new URL(import.meta.url).pathname), 'public');
-
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
-    );
+    // Handle SPA routing in production - only catch non-API routes
+    app.get(/^\/(?!api).*/, (_req, res) => {
+      res.sendFile(path.resolve(distPath, 'index.html'));
+    });
   }
-
-  app.use(express.static(distPath));
-
-  // fall through to index.html if the file doesn't exist
-  app.use('*', (_req, res) => {
-    res.sendFile(path.resolve(distPath, 'index.html'));
-  });
 }
