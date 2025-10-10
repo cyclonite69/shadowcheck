@@ -1,0 +1,50 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+*.log
+
+# Docker
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+dist/
+build/
+*.tgz
+
+# Backups
+*.bak
+*.backup
+*.old
+*~
+
+# Test
+coverage/
+.nyc_output/
+
+# Misc
+secrets/
+*.tar.gz
+postgres_backup_*.tar.gz

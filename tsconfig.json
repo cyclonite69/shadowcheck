@@ -1,0 +1,9 @@
+{
+  "extends": "./client/tsconfig.json",
+  "include": [
+    "vite.config.ts",
+    "tailwind.config.ts",
+    "postcss.config.js",
+    ".eslintrc.json"
+  ]
+}
