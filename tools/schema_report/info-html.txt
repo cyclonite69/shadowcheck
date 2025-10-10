@@ -1,0 +1,5 @@
+date=2025-09-26 17:11:20-0400
+os=Linux 6.12.32-amd64
+schemaspy-version=6.2.0
+schemaspy-build=6.2.0.41 2023-03-21 00:14:56
+renderer=Viz.js 1.7.1 (Graphviz 2.40.1, Expat 2.1.0, Emscripten 1.37.9)

@@ -1,0 +1,86 @@
+"use strict";
+
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.renameEntry = exports.registerEntry = exports.deleteEntry = void 0;
+var _toolkit = require("@reduxjs/toolkit");
+var _actionTypes = _interopRequireDefault(require("./action-types"));
+// SPDX-License-Identifier: MIT
+// Copyright contributors to the kepler.gl project
+
+/**
+ *
+ * Add a new kepler.gl instance in `keplerGlReducer`. This action is called under-the-hood when a `KeplerGl` component is **mounted** to the dom.
+ * Note that if you dispatch actions such as adding data to a kepler.gl instance before the React component is mounted, the action will not be
+ * performed. Instance reducer can only handle actions when it is instantiated.
+ * @memberof rootActions
+ * @param payload
+ * @param payload.id - ***required** The id of the instance
+ * @param payload.mint - Whether to use a fresh empty state, when `mint: true` it will *always* load a fresh state when the component is re-mounted.
+ * When `mint: false` it will register with existing instance state under the same `id`, when the component is unmounted then mounted again. Default: `true`
+ * @param payload.mapboxApiAccessToken - mapboxApiAccessToken to be saved in `map-style` reducer.
+ * @param payload.mapboxApiUrl - mapboxApiUrl to be saved in `map-style` reducer.
+ * @param payload.mapStylesReplaceDefault - mapStylesReplaceDefault to be saved in `map-style` reducer.
+ * @param payload.initialUiState - initial ui state
+ * @public
+ */
+var registerEntry = exports.registerEntry = (0, _toolkit.createAction)(_actionTypes["default"].REGISTER_ENTRY, function (payload) {
+  return {
+    payload: payload
+  };
+});
+
+/**
+ *
+ * Delete an instance from `keplerGlReducer`. This action is called under-the-hood when a `KeplerGl` component is **un-mounted** to the dom.
+ * If `mint` is set to be `true` in the component prop, the instance state will be deleted from the root reducer. Otherwise, the root reducer will keep
+ * the instance state and later transfer it to a newly mounted component with the same `id`
+ * @memberof rootActions
+ * @param {string} id - the id of the instance to be deleted
+ * @public
+ */
+var deleteEntry = exports.deleteEntry = (0, _toolkit.createAction)(_actionTypes["default"].DELETE_ENTRY, function (id) {
+  return {
+    payload: {
+      id: id
+    }
+  };
+});
+
+/**
+ *
+ * Rename an instance in the root reducer, keep its entire state
+ *
+ * @memberof rootActions
+ * @param {string} oldId - ***required** old id
+ * @param {string} newId - ***required** new id
+ * @public
+ */
+var renameEntry = exports.renameEntry = (0, _toolkit.createAction)(_actionTypes["default"].RENAME_ENTRY, function (oldId, newId) {
+  return {
+    payload: {
+      oldId: oldId,
+      newId: newId
+    }
+  };
+});
+
+/**
+ * This declaration is needed to group actions in docs
+ */
+/**
+ * Root actions managers adding and removing instances in root reducer.
+ * Under-the-hood, when a `KeplerGl` component is mounted or unmounted,
+ * it will automatically calls these actions to add itself to the root reducer.
+ * However, sometimes the data is ready before the component is registered in the reducer,
+ * in this case, you can manually call these actions or the corresponding updater to add it to the reducer.
+ *
+ * @public
+ */
+/* eslint-disable  @typescript-eslint/no-unused-vars */
+// @ts-ignore
+var rootActions = null;
+/* eslint-enable  @typescript-eslint/no-unused-vars */
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJfdG9vbGtpdCIsInJlcXVpcmUiLCJfYWN0aW9uVHlwZXMiLCJfaW50ZXJvcFJlcXVpcmVEZWZhdWx0IiwicmVnaXN0ZXJFbnRyeSIsImV4cG9ydHMiLCJjcmVhdGVBY3Rpb24iLCJBY3Rpb25UeXBlcyIsIlJFR0lTVEVSX0VOVFJZIiwicGF5bG9hZCIsImRlbGV0ZUVudHJ5IiwiREVMRVRFX0VOVFJZIiwiaWQiLCJyZW5hbWVFbnRyeSIsIlJFTkFNRV9FTlRSWSIsIm9sZElkIiwibmV3SWQiLCJyb290QWN0aW9ucyJdLCJzb3VyY2VzIjpbIi4uLy4uL3NyYy9hY3Rpb25zL3NyYy9pZGVudGl0eS1hY3Rpb25zLnRzIl0sInNvdXJjZXNDb250ZW50IjpbIi8vIFNQRFgtTGljZW5zZS1JZGVudGlmaWVyOiBNSVRcbi8vIENvcHlyaWdodCBjb250cmlidXRvcnMgdG8gdGhlIGtlcGxlci5nbCBwcm9qZWN0XG5cbmltcG9ydCB7Y3JlYXRlQWN0aW9ufSBmcm9tICdAcmVkdXhqcy90b29sa2l0JztcbmltcG9ydCB7ZGVmYXVsdCBhcyBBY3Rpb25UeXBlc30gZnJvbSAnLi9hY3Rpb24tdHlwZXMnO1xuaW1wb3J0IHtVaVN0YXRlfSBmcm9tICdAa2VwbGVyLmdsL3R5cGVzJztcblxuZXhwb3J0IHR5cGUgUmVnaXN0ZXJFbnRyeVVwZGF0ZXJBY3Rpb24gPSB7XG4gIHBheWxvYWQ6IHtcbiAgICBpZDogc3RyaW5nO1xuICAgIG1pbnQ/OiBib29sZWFuO1xuICAgIG1hcGJveEFwaUFjY2Vzc1Rva2VuPzogc3RyaW5nO1xuICAgIG1hcGJveEFwaVVybD86IHN0cmluZztcbiAgICBtYXBTdHlsZXNSZXBsYWNlRGVmYXVsdD86IGJvb2xlYW47XG4gICAgaW5pdGlhbFVpU3RhdGU/OiBQYXJ0aWFsPFVpU3RhdGU+O1xuICB9O1xufTtcblxuZXhwb3J0IHR5cGUgUmVuYW1lRW50cnlVcGRhdGVyQWN0aW9uID0ge1xuICBwYXlsb2FkOiB7XG4gICAgb2xkSWQ6IHN0cmluZztcbiAgICBuZXdJZDogc3RyaW5nO1xuICB9O1xufTtcbi8qKlxuICpcbiAqIEFkZCBhIG5ldyBrZXBsZXIuZ2wgaW5zdGFuY2UgaW4gYGtlcGxlckdsUmVkdWNlcmAuIFRoaXMgYWN0aW9uIGlzIGNhbGxlZCB1bmRlci10aGUtaG9vZCB3aGVuIGEgYEtlcGxlckdsYCBjb21wb25lbnQgaXMgKiptb3VudGVkKiogdG8gdGhlIGRvbS5cbiAqIE5vdGUgdGhhdCBpZiB5b3UgZGlzcGF0Y2ggYWN0aW9ucyBzdWNoIGFzIGFkZGluZyBkYXRhIHRvIGEga2VwbGVyLmdsIGluc3RhbmNlIGJlZm9yZSB0aGUgUmVhY3QgY29tcG9uZW50IGlzIG1vdW50ZWQsIHRoZSBhY3Rpb24gd2lsbCBub3QgYmVcbiAqIHBlcmZvcm1lZC4gSW5zdGFuY2UgcmVkdWNlciBjYW4gb25seSBoYW5kbGUgYWN0aW9ucyB3aGVuIGl0IGlzIGluc3RhbnRpYXRlZC5cbiAqIEBtZW1iZXJvZiByb290QWN0aW9uc1xuICogQHBhcmFtIHBheWxvYWRcbiAqIEBwYXJhbSBwYXlsb2FkLmlkIC0gKioqcmVxdWlyZWQqKiBUaGUgaWQgb2YgdGhlIGluc3RhbmNlXG4gKiBAcGFyYW0gcGF5bG9hZC5taW50IC0gV2hldGhlciB0byB1c2UgYSBmcmVzaCBlbXB0eSBzdGF0ZSwgd2hlbiBgbWludDogdHJ1ZWAgaXQgd2lsbCAqYWx3YXlzKiBsb2FkIGEgZnJlc2ggc3RhdGUgd2hlbiB0aGUgY29tcG9uZW50IGlzIHJlLW1vdW50ZWQuXG4gKiBXaGVuIGBtaW50OiBmYWxzZWAgaXQgd2lsbCByZWdpc3RlciB3aXRoIGV4aXN0aW5nIGluc3RhbmNlIHN0YXRlIHVuZGVyIHRoZSBzYW1lIGBpZGAsIHdoZW4gdGhlIGNvbXBvbmVudCBpcyB1bm1vdW50ZWQgdGhlbiBtb3VudGVkIGFnYWluLiBEZWZhdWx0OiBgdHJ1ZWBcbiAqIEBwYXJhbSBwYXlsb2FkLm1hcGJveEFwaUFjY2Vzc1Rva2VuIC0gbWFwYm94QXBpQWNjZXNzVG9rZW4gdG8gYmUgc2F2ZWQgaW4gYG1hcC1zdHlsZWAgcmVkdWNlci5cbiAqIEBwYXJhbSBwYXlsb2FkLm1hcGJveEFwaVVybCAtIG1hcGJveEFwaVVybCB0byBiZSBzYXZlZCBpbiBgbWFwLXN0eWxlYCByZWR1Y2VyLlxuICogQHBhcmFtIHBheWxvYWQubWFwU3R5bGVzUmVwbGFjZURlZmF1bHQgLSBtYXBTdHlsZXNSZXBsYWNlRGVmYXVsdCB0byBiZSBzYXZlZCBpbiBgbWFwLXN0eWxlYCByZWR1Y2VyLlxuICogQHBhcmFtIHBheWxvYWQuaW5pdGlhbFVpU3RhdGUgLSBpbml0aWFsIHVpIHN0YXRlXG4gKiBAcHVibGljXG4gKi9cbmV4cG9ydCBjb25zdCByZWdpc3RlckVudHJ5OiAoZW50cnk6IFJlZ2lzdGVyRW50cnlVcGRhdGVyQWN0aW9uWydwYXlsb2FkJ10pID0+IHtcbiAgdHlwZTogdHlwZW9mIEFjdGlvblR5cGVzLlJFR0lTVEVSX0VOVFJZO1xuICBwYXlsb2FkOiBSZWdpc3RlckVudHJ5VXBkYXRlckFjdGlvblsncGF5bG9hZCddO1xufSA9IGNyZWF0ZUFjdGlvbihBY3Rpb25UeXBlcy5SRUdJU1RFUl9FTlRSWSwgKHBheWxvYWQ6IFJlZ2lzdGVyRW50cnlVcGRhdGVyQWN0aW9uWydwYXlsb2FkJ10pID0+ICh7XG4gIHBheWxvYWRcbn0pKTtcblxuLyoqXG4gKlxuICogRGVsZXRlIGFuIGluc3RhbmNlIGZyb20gYGtlcGxlckdsUmVkdWNlcmAuIFRoaXMgYWN0aW9uIGlzIGNhbGxlZCB1bmRlci10aGUtaG9vZCB3aGVuIGEgYEtlcGxlckdsYCBjb21wb25lbnQgaXMgKip1bi1tb3VudGVkKiogdG8gdGhlIGRvbS5cbiAqIElmIGBtaW50YCBpcyBzZXQgdG8gYmUgYHRydWVgIGluIHRoZSBjb21wb25lbnQgcHJvcCwgdGhlIGluc3RhbmNlIHN0YXRlIHdpbGwgYmUgZGVsZXRlZCBmcm9tIHRoZSByb290IHJlZHVjZXIuIE90aGVyd2lzZSwgdGhlIHJvb3QgcmVkdWNlciB3aWxsIGtlZXBcbiAqIHRoZSBpbnN0YW5jZSBzdGF0ZSBhbmQgbGF0ZXIgdHJhbnNmZXIgaXQgdG8gYSBuZXdseSBtb3VudGVkIGNvbXBvbmVudCB3aXRoIHRoZSBzYW1lIGBpZGBcbiAqIEBtZW1iZXJvZiByb290QWN0aW9uc1xuICogQHBhcmFtIHtzdHJpbmd9IGlkIC0gdGhlIGlkIG9mIHRoZSBpbnN0YW5jZSB0byBiZSBkZWxldGVkXG4gKiBAcHVibGljXG4gKi9cbmV4cG9ydCBjb25zdCBkZWxldGVFbnRyeTogKGlkOiBzdHJpbmcpID0+IHtcbiAgdHlwZTogdHlwZW9mIEFjdGlvblR5cGVzLkRFTEVURV9FTlRSWTtcbiAgcGF5bG9hZDoge2lkOiBzdHJpbmd9O1xufSA9IGNyZWF0ZUFjdGlvbihBY3Rpb25UeXBlcy5ERUxFVEVfRU5UUlksIChpZDogc3RyaW5nKSA9PiAoe3BheWxvYWQ6IHtpZDogaWR9fSkpO1xuXG4vKipcbiAqXG4gKiBSZW5hbWUgYW4gaW5zdGFuY2UgaW4gdGhlIHJvb3QgcmVkdWNlciwga2VlcCBpdHMgZW50aXJlIHN0YXRlXG4gKlxuICogQG1lbWJlcm9mIHJvb3RBY3Rpb25zXG4gKiBAcGFyYW0ge3N0cmluZ30gb2xkSWQgLSAqKipyZXF1aXJlZCoqIG9sZCBpZFxuICogQHBhcmFtIHtzdHJpbmd9IG5ld0lkIC0gKioqcmVxdWlyZWQqKiBuZXcgaWRcbiAqIEBwdWJsaWNcbiAqL1xuZXhwb3J0IGNvbnN0IHJlbmFtZUVudHJ5OiAoXG4gIG9sZElkOiBzdHJpbmcsXG4gIG5ld0lkOiBzdHJpbmdcbikgPT4ge1xuICB0eXBlOiB0eXBlb2YgQWN0aW9uVHlwZXMuUkVOQU1FX0VOVFJZO1xuICBwYXlsb2FkOiBSZW5hbWVFbnRyeVVwZGF0ZXJBY3Rpb25bJ3BheWxvYWQnXTtcbn0gPSBjcmVhdGVBY3Rpb24oQWN0aW9uVHlwZXMuUkVOQU1FX0VOVFJZLCAob2xkSWQ6IHN0cmluZywgbmV3SWQ6IHN0cmluZykgPT4gKHtcbiAgcGF5bG9hZDoge1xuICAgIG9sZElkLFxuICAgIG5ld0lkXG4gIH1cbn0pKTtcblxuLyoqXG4gKiBUaGlzIGRlY2xhcmF0aW9uIGlzIG5lZWRlZCB0byBncm91cCBhY3Rpb25zIGluIGRvY3NcbiAqL1xuLyoqXG4gKiBSb290IGFjdGlvbnMgbWFuYWdlcnMgYWRkaW5nIGFuZCByZW1vdmluZyBpbnN0YW5jZXMgaW4gcm9vdCByZWR1Y2VyLlxuICogVW5kZXItdGhlLWhvb2QsIHdoZW4gYSBgS2VwbGVyR2xgIGNvbXBvbmVudCBpcyBtb3VudGVkIG9yIHVubW91bnRlZCxcbiAqIGl0IHdpbGwgYXV0b21hdGljYWxseSBjYWxscyB0aGVzZSBhY3Rpb25zIHRvIGFkZCBpdHNlbGYgdG8gdGhlIHJvb3QgcmVkdWNlci5cbiAqIEhvd2V2ZXIsIHNvbWV0aW1lcyB0aGUgZGF0YSBpcyByZWFkeSBiZWZvcmUgdGhlIGNvbXBvbmVudCBpcyByZWdpc3RlcmVkIGluIHRoZSByZWR1Y2VyLFxuICogaW4gdGhpcyBjYXNlLCB5b3UgY2FuIG1hbnVhbGx5IGNhbGwgdGhlc2UgYWN0aW9ucyBvciB0aGUgY29ycmVzcG9uZGluZyB1cGRhdGVyIHRvIGFkZCBpdCB0byB0aGUgcmVkdWNlci5cbiAqXG4gKiBAcHVibGljXG4gKi9cbi8qIGVzbGludC1kaXNhYmxlICBAdHlwZXNjcmlwdC1lc2xpbnQvbm8tdW51c2VkLXZhcnMgKi9cbi8vIEB0cy1pZ25vcmVcbmNvbnN0IHJvb3RBY3Rpb25zID0gbnVsbDtcbi8qIGVzbGludC1lbmFibGUgIEB0eXBlc2NyaXB0LWVzbGludC9uby11bnVzZWQtdmFycyAqL1xuIl0sIm1hcHBpbmdzIjoiOzs7Ozs7O0FBR0EsSUFBQUEsUUFBQSxHQUFBQyxPQUFBO0FBQ0EsSUFBQUMsWUFBQSxHQUFBQyxzQkFBQSxDQUFBRixPQUFBO0FBSkE7QUFDQTs7QUF1QkE7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDTyxJQUFNRyxhQUdaLEdBQUFDLE9BQUEsQ0FBQUQsYUFBQSxHQUFHLElBQUFFLHFCQUFZLEVBQUNDLHVCQUFXLENBQUNDLGNBQWMsRUFBRSxVQUFDQyxPQUE4QztFQUFBLE9BQU07SUFDaEdBLE9BQU8sRUFBUEE7RUFDRixDQUFDO0FBQUEsQ0FBQyxDQUFDOztBQUVIO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNPLElBQU1DLFdBR1osR0FBQUwsT0FBQSxDQUFBSyxXQUFBLEdBQUcsSUFBQUoscUJBQVksRUFBQ0MsdUJBQVcsQ0FBQ0ksWUFBWSxFQUFFLFVBQUNDLEVBQVU7RUFBQSxPQUFNO0lBQUNILE9BQU8sRUFBRTtNQUFDRyxFQUFFLEVBQUVBO0lBQUU7RUFBQyxDQUFDO0FBQUEsQ0FBQyxDQUFDOztBQUVqRjtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDTyxJQUFNQyxXQU1aLEdBQUFSLE9BQUEsQ0FBQVEsV0FBQSxHQUFHLElBQUFQLHFCQUFZLEVBQUNDLHVCQUFXLENBQUNPLFlBQVksRUFBRSxVQUFDQyxLQUFhLEVBQUVDLEtBQWE7RUFBQSxPQUFNO0lBQzVFUCxPQUFPLEVBQUU7TUFDUE0sS0FBSyxFQUFMQSxLQUFLO01BQ0xDLEtBQUssRUFBTEE7SUFDRjtFQUNGLENBQUM7QUFBQSxDQUFDLENBQUM7O0FBRUg7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBLElBQU1DLFdBQVcsR0FBRyxJQUFJO0FBQ3hCIiwiaWdub3JlTGlzdCI6W119

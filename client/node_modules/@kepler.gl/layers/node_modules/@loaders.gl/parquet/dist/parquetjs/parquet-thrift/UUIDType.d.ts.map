@@ -1,0 +1,1 @@
+{"version":3,"file":"UUIDType.d.ts","sourceRoot":"","sources":["../../../src/parquetjs/parquet-thrift/UUIDType.ts"],"names":[],"mappings":"AAMA,OAAO,KAAK,MAAM,MAAM,QAAQ,CAAC;AACjC,MAAM,WAAW,aAAa;CAAG;AACjC,qBAAa,QAAQ;;IAEZ,KAAK,CAAC,MAAM,EAAE,MAAM,CAAC,SAAS,GAAG,IAAI;WAM9B,IAAI,CAAC,KAAK,EAAE,MAAM,CAAC,SAAS,GAAG,QAAQ;CAmBtD"}

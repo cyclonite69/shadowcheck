@@ -1,0 +1,15 @@
+import { Vector } from "apache-arrow";
+import { Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon } from "./type";
+export type PointVector = Vector<Point>;
+export type LineStringVector = Vector<LineString>;
+export type PolygonVector = Vector<Polygon>;
+export type MultiPointVector = Vector<MultiPoint>;
+export type MultiLineStringVector = Vector<MultiLineString>;
+export type MultiPolygonVector = Vector<MultiPolygon>;
+export type GeoArrowVector = PointVector | LineStringVector | PolygonVector | MultiPointVector | MultiLineStringVector | MultiPolygonVector;
+export declare function isPointVector(vector: Vector): vector is PointVector;
+export declare function isLineStringVector(vector: Vector): vector is LineStringVector;
+export declare function isPolygonVector(vector: Vector): vector is PolygonVector;
+export declare function isMultiPointVector(vector: Vector): vector is MultiPointVector;
+export declare function isMultiLineStringVector(vector: Vector): vector is MultiLineStringVector;
+export declare function isMultiPolygonVector(vector: Vector): vector is MultiPolygonVector;

@@ -1,0 +1,16 @@
+"use strict";
+
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = void 0;
+var _modal = _interopRequireDefault(require("../common/modal"));
+// SPDX-License-Identifier: MIT
+// Copyright contributors to the kepler.gl project
+
+var ModalDialogFactory = function ModalDialogFactory() {
+  return _modal["default"];
+};
+var _default = exports["default"] = ModalDialogFactory;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJfbW9kYWwiLCJfaW50ZXJvcFJlcXVpcmVEZWZhdWx0IiwicmVxdWlyZSIsIk1vZGFsRGlhbG9nRmFjdG9yeSIsIk1vZGFsIiwiX2RlZmF1bHQiLCJleHBvcnRzIl0sInNvdXJjZXMiOlsiLi4vLi4vLi4vc3JjL2NvbXBvbmVudHMvc3JjL21vZGFscy9tb2RhbC1kaWFsb2cudHN4Il0sInNvdXJjZXNDb250ZW50IjpbIi8vIFNQRFgtTGljZW5zZS1JZGVudGlmaWVyOiBNSVRcbi8vIENvcHlyaWdodCBjb250cmlidXRvcnMgdG8gdGhlIGtlcGxlci5nbCBwcm9qZWN0XG5cbmltcG9ydCBNb2RhbCBmcm9tICcuLi9jb21tb24vbW9kYWwnO1xuXG5jb25zdCBNb2RhbERpYWxvZ0ZhY3RvcnkgPSAoKSA9PiBNb2RhbDtcblxuZXhwb3J0IGRlZmF1bHQgTW9kYWxEaWFsb2dGYWN0b3J5O1xuIl0sIm1hcHBpbmdzIjoiOzs7Ozs7O0FBR0EsSUFBQUEsTUFBQSxHQUFBQyxzQkFBQSxDQUFBQyxPQUFBO0FBSEE7QUFDQTs7QUFJQSxJQUFNQyxrQkFBa0IsR0FBRyxTQUFyQkEsa0JBQWtCQSxDQUFBO0VBQUEsT0FBU0MsaUJBQUs7QUFBQTtBQUFDLElBQUFDLFFBQUEsR0FBQUMsT0FBQSxjQUV4Qkgsa0JBQWtCIiwiaWdub3JlTGlzdCI6W119

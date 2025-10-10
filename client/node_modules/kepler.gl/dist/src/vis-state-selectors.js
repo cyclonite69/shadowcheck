@@ -1,0 +1,30 @@
+"use strict";
+
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.getFileFormatNames = exports.getFileExtensions = void 0;
+var _toConsumableArray2 = _interopRequireDefault(require("@babel/runtime/helpers/toConsumableArray"));
+var _reselect = require("reselect");
+// SPDX-License-Identifier: MIT
+// Copyright contributors to the kepler.gl project
+
+// NOTE: default formats must match file-handler-test.js
+var DEFAULT_FILE_EXTENSIONS = ['csv', 'json', 'geojson', 'arrow', 'parquet'];
+var DEFAULT_FILE_FORMATS = ['CSV', 'Json', 'GeoJSON', 'Arrow', 'Parquet'];
+var getFileFormatNames = exports.getFileFormatNames = (0, _reselect.createSelector)(function (state) {
+  return state.loaders;
+}, function (loaders) {
+  return [].concat(DEFAULT_FILE_FORMATS, (0, _toConsumableArray2["default"])(loaders.map(function (loader) {
+    return loader.name;
+  })));
+});
+var getFileExtensions = exports.getFileExtensions = (0, _reselect.createSelector)(function (state) {
+  return state.loaders;
+}, function (loaders) {
+  return [].concat(DEFAULT_FILE_EXTENSIONS, (0, _toConsumableArray2["default"])(loaders.flatMap(function (loader) {
+    return loader.extensions;
+  })));
+});
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJfcmVzZWxlY3QiLCJyZXF1aXJlIiwiREVGQVVMVF9GSUxFX0VYVEVOU0lPTlMiLCJERUZBVUxUX0ZJTEVfRk9STUFUUyIsImdldEZpbGVGb3JtYXROYW1lcyIsImV4cG9ydHMiLCJjcmVhdGVTZWxlY3RvciIsInN0YXRlIiwibG9hZGVycyIsImNvbmNhdCIsIl90b0NvbnN1bWFibGVBcnJheTIiLCJtYXAiLCJsb2FkZXIiLCJuYW1lIiwiZ2V0RmlsZUV4dGVuc2lvbnMiLCJmbGF0TWFwIiwiZXh0ZW5zaW9ucyJdLCJzb3VyY2VzIjpbIi4uLy4uL3NyYy9yZWR1Y2Vycy9zcmMvdmlzLXN0YXRlLXNlbGVjdG9ycy50cyJdLCJzb3VyY2VzQ29udGVudCI6WyIvLyBTUERYLUxpY2Vuc2UtSWRlbnRpZmllcjogTUlUXG4vLyBDb3B5cmlnaHQgY29udHJpYnV0b3JzIHRvIHRoZSBrZXBsZXIuZ2wgcHJvamVjdFxuXG5pbXBvcnQge2NyZWF0ZVNlbGVjdG9yfSBmcm9tICdyZXNlbGVjdCc7XG5cbi8vIE5PVEU6IGRlZmF1bHQgZm9ybWF0cyBtdXN0IG1hdGNoIGZpbGUtaGFuZGxlci10ZXN0LmpzXG5jb25zdCBERUZBVUxUX0ZJTEVfRVhURU5TSU9OUyA9IFsnY3N2JywgJ2pzb24nLCAnZ2VvanNvbicsICdhcnJvdycsICdwYXJxdWV0J107XG5jb25zdCBERUZBVUxUX0ZJTEVfRk9STUFUUyA9IFsnQ1NWJywgJ0pzb24nLCAnR2VvSlNPTicsICdBcnJvdycsICdQYXJxdWV0J107XG5cbmV4cG9ydCBjb25zdCBnZXRGaWxlRm9ybWF0TmFtZXMgPSBjcmVhdGVTZWxlY3RvcihcbiAgc3RhdGUgPT4gc3RhdGUubG9hZGVycyxcbiAgbG9hZGVycyA9PiBbLi4uREVGQVVMVF9GSUxFX0ZPUk1BVFMsIC4uLmxvYWRlcnMubWFwKGxvYWRlciA9PiBsb2FkZXIubmFtZSldXG4pO1xuXG5leHBvcnQgY29uc3QgZ2V0RmlsZUV4dGVuc2lvbnMgPSBjcmVhdGVTZWxlY3RvcihcbiAgc3RhdGUgPT4gc3RhdGUubG9hZGVycyxcbiAgbG9hZGVycyA9PiBbLi4uREVGQVVMVF9GSUxFX0VYVEVOU0lPTlMsIC4uLmxvYWRlcnMuZmxhdE1hcChsb2FkZXIgPT4gbG9hZGVyLmV4dGVuc2lvbnMpXVxuKTtcbiJdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7QUFHQSxJQUFBQSxTQUFBLEdBQUFDLE9BQUE7QUFIQTtBQUNBOztBQUlBO0FBQ0EsSUFBTUMsdUJBQXVCLEdBQUcsQ0FBQyxLQUFLLEVBQUUsTUFBTSxFQUFFLFNBQVMsRUFBRSxPQUFPLEVBQUUsU0FBUyxDQUFDO0FBQzlFLElBQU1DLG9CQUFvQixHQUFHLENBQUMsS0FBSyxFQUFFLE1BQU0sRUFBRSxTQUFTLEVBQUUsT0FBTyxFQUFFLFNBQVMsQ0FBQztBQUVwRSxJQUFNQyxrQkFBa0IsR0FBQUMsT0FBQSxDQUFBRCxrQkFBQSxHQUFHLElBQUFFLHdCQUFjLEVBQzlDLFVBQUFDLEtBQUs7RUFBQSxPQUFJQSxLQUFLLENBQUNDLE9BQU87QUFBQSxHQUN0QixVQUFBQSxPQUFPO0VBQUEsVUFBQUMsTUFBQSxDQUFRTixvQkFBb0IsTUFBQU8sbUJBQUEsYUFBS0YsT0FBTyxDQUFDRyxHQUFHLENBQUMsVUFBQUMsTUFBTTtJQUFBLE9BQUlBLE1BQU0sQ0FBQ0MsSUFBSTtFQUFBLEVBQUM7QUFBQSxDQUM1RSxDQUFDO0FBRU0sSUFBTUMsaUJBQWlCLEdBQUFULE9BQUEsQ0FBQVMsaUJBQUEsR0FBRyxJQUFBUix3QkFBYyxFQUM3QyxVQUFBQyxLQUFLO0VBQUEsT0FBSUEsS0FBSyxDQUFDQyxPQUFPO0FBQUEsR0FDdEIsVUFBQUEsT0FBTztFQUFBLFVBQUFDLE1BQUEsQ0FBUVAsdUJBQXVCLE1BQUFRLG1CQUFBLGFBQUtGLE9BQU8sQ0FBQ08sT0FBTyxDQUFDLFVBQUFILE1BQU07SUFBQSxPQUFJQSxNQUFNLENBQUNJLFVBQVU7RUFBQSxFQUFDO0FBQUEsQ0FDekYsQ0FBQyIsImlnbm9yZUxpc3QiOltdfQ==
