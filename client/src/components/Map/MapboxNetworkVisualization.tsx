@@ -19,9 +19,9 @@ export function MapboxNetworkVisualization() {
 
   // Fetch network data
   const { data: networks, isLoading } = useQuery({
-    queryKey: ['/api/v1/g63/visualize'],
+    queryKey: ['/api/v1/visualize'],
     queryFn: async () => {
-      const res = await fetch('/api/v1/g63/visualize?limit=500');
+      const res = await fetch('/api/v1/visualize?limit=500');
       const json = await res.json();
       console.log('📍 Mapbox: API response:', json);
       return json.ok ? json.data.features : [];

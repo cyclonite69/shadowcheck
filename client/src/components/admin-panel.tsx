@@ -43,9 +43,9 @@ export function AdminPanel() {
     { path: "GET /api/v1/status", active: systemStatus?.database.connected || false },
     { path: "GET /api/v1/networks", active: systemStatus?.database.connected || false },
     { path: "GET /api/v1/within", active: systemStatus?.database.connected || false },
-    { path: "GET /api/v1/g63/networks", active: systemStatus?.database.connected || false },
-    { path: "GET /api/v1/g63/locations", active: systemStatus?.database.connected || false },
-    { path: "GET /api/v1/g63/visualize", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/networks", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/locations", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/visualize", active: systemStatus?.database.connected || false },
   ];
 
   return (
