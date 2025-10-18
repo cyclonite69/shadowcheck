@@ -27,17 +27,14 @@ export function ApiTestPanel() {
           case "health":
             result = await api.getHealth();
             break;
-          case "version":
-            result = await api.getVersion();
+          case "status":
+            result = await api.getSystemStatus();
             break;
-          case "config":
-            result = await api.getConfig();
+          case "metrics":
+            result = await fetch('/api/v1/metrics').then(r => r.json());
             break;
           case "networks":
             result = await api.getNetworks({ limit: 10 });
-            break;
-          case "status":
-            result = await api.getSystemStatus();
             break;
           case "within":
             result = await api.spatialQuery(43.0234, -83.6968, 5000, 10);
@@ -131,26 +128,18 @@ export function ApiTestPanel() {
     },
     {
       method: "GET",
-      path: "/api/v1/version",
-      endpoint: "version",
-      available: true,
-      description: "Get API version information",
-      category: "System",
-    },
-    {
-      method: "GET",
-      path: "/api/v1/config",
-      endpoint: "config",
-      available: true,
-      description: "Get application configuration",
-      category: "System",
-    },
-    {
-      method: "GET",
       path: "/api/v1/status",
       endpoint: "status",
       available: true,
       description: "Get detailed system status and metrics",
+      category: "System",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/metrics",
+      endpoint: "metrics",
+      available: systemStatus?.database.connected || false,
+      description: "Get network count metrics",
       category: "System",
     },
 
