@@ -6,6 +6,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { NetworkMapboxViewer } from './NetworkMapboxViewer';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 
 export function MapboxNetworkVisualization() {
   // Fetch Mapbox token from config
@@ -107,50 +109,93 @@ export function MapboxNetworkVisualization() {
       {/* Map Container with Legend */}
       <div className="relative rounded-lg border border-slate-700/50 overflow-hidden shadow-2xl shadow-black/50">
         {/* Map Legend */}
-        <div className="absolute bottom-6 right-6 z-10 bg-slate-900/95 backdrop-blur-sm rounded-lg border border-slate-700/50 shadow-lg p-4 min-w-[200px]">
-          <div className="space-y-3">
-            {/* Cluster Legend */}
-            <div>
-              <div className="text-xs font-semibold text-slate-300 mb-2">Network Clusters</div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                  <span className="text-xs text-slate-400">&lt; 10 networks</span>
+        <TooltipProvider>
+          <div className="absolute bottom-6 right-6 z-10 bg-slate-900/95 backdrop-blur-sm rounded-lg border border-slate-700/50 shadow-lg p-4 min-w-[220px]">
+            <div className="space-y-3">
+              {/* Cluster Legend */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="text-xs font-semibold text-slate-300">Network Clusters</div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-[250px]">
+                      <p className="text-xs">Clusters group nearby networks. Click to zoom in and expand.</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-purple-500"></div>
-                  <span className="text-xs text-slate-400">10-50 networks</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                  <span className="text-xs text-slate-400">&gt; 50 networks</span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                    <span className="text-xs text-slate-400">&lt; 10 networks</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full bg-purple-500"></div>
+                    <span className="text-xs text-slate-400">10-50 networks</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full bg-red-500"></div>
+                    <span className="text-xs text-slate-400">&gt; 50 networks</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Divider */}
-            <div className="border-t border-slate-700/50"></div>
+              {/* Divider */}
+              <div className="border-t border-slate-700/50"></div>
 
-            {/* Signal Strength Legend */}
-            <div>
-              <div className="text-xs font-semibold text-slate-300 mb-2">Signal Strength</div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full border-2 border-green-500 bg-green-500/20"></div>
-                  <span className="text-xs text-slate-400">Strong (&gt; -50 dBm)</span>
+              {/* Point Colors */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="text-xs font-semibold text-slate-300">Point Colors</div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-[250px]">
+                      <p className="text-xs">Colors are derived from BSSID. Similar BSSIDs (same vendor/OUI) get similar colors for pattern recognition.</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full border-2 border-yellow-500 bg-yellow-500/20"></div>
-                  <span className="text-xs text-slate-400">Medium (-50 to -70)</span>
+                <div className="text-xs text-slate-400">
+                  Based on BSSID/MAC address
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full border-2 border-red-500 bg-red-500/20"></div>
-                  <span className="text-xs text-slate-400">Weak (&lt; -70 dBm)</span>
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-slate-700/50"></div>
+
+              {/* Signal Strength Legend */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="text-xs font-semibold text-slate-300">Signal Strength</div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-slate-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-[250px]">
+                      <p className="text-xs">Hover over points to see estimated signal range circle. Stronger signals have larger coverage areas.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border-2 border-green-500 bg-green-500/20"></div>
+                    <span className="text-xs text-slate-400">Strong (&gt; -50 dBm)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border-2 border-yellow-500 bg-yellow-500/20"></div>
+                    <span className="text-xs text-slate-400">Medium (-50 to -70)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border-2 border-red-500 bg-red-500/20"></div>
+                    <span className="text-xs text-slate-400">Weak (&lt; -70 dBm)</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </TooltipProvider>
 
         {/* Map */}
         <div className="h-[700px]">
