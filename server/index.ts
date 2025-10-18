@@ -485,6 +485,126 @@ app.get("/api/v1/status", async (_req, res) => {
   }
 });
 
+// Version endpoint - API version information
+app.get("/api/v1/version", async (_req, res) => {
+  res.json({
+    name: "shadowcheck",
+    version: "1.0.0",
+    description: "SIGINT Forensics API with PostGIS spatial capabilities"
+  });
+});
+
+// Config endpoint - frontend configuration
+app.get("/api/v1/config", async (_req, res) => {
+  res.json({
+    ok: true,
+    mapboxToken: process.env.MAPBOX_TOKEN || null
+  });
+});
+
+// Spatial query endpoint - networks within radius
+app.get("/api/v1/within", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT 1 as test");
+    const isConnected = result.rows.length > 0;
+
+    if (!isConnected) {
+      return res.status(501).json({
+        ok: false,
+        error: "Database not connected",
+        code: "DB_NOT_CONNECTED"
+      });
+    }
+  } catch {
+    return res.status(501).json({
+      ok: false,
+      error: "Database not connected",
+      code: "DB_NOT_CONNECTED"
+    });
+  }
+
+  const { lat, lon, radius, limit } = req.query;
+
+  if (!lat || !lon || !radius) {
+    return res.status(400).json({
+      ok: false,
+      error: "Missing required parameters: lat, lon, radius"
+    });
+  }
+
+  const latitude = parseFloat(lat as string);
+  const longitude = parseFloat(lon as string);
+  const radiusMeters = parseFloat(radius as string);
+  const maxResults = Math.min(parseInt(limit as string) || 50, 100);
+
+  if (isNaN(latitude) || latitude < -90 || latitude > 90) {
+    return res.status(400).json({
+      ok: false,
+      error: "Invalid latitude. Must be between -90 and 90."
+    });
+  }
+
+  if (isNaN(longitude) || longitude < -180 || longitude > 180) {
+    return res.status(400).json({
+      ok: false,
+      error: "Invalid longitude. Must be between -180 and 180."
+    });
+  }
+
+  if (isNaN(radiusMeters) || radiusMeters <= 0 || radiusMeters > 50000) {
+    return res.status(400).json({
+      ok: false,
+      error: "Invalid radius. Must be between 1 and 50000 meters."
+    });
+  }
+
+  try {
+    const result = await pool.query(`
+      SELECT
+        bssid,
+        ssid,
+        frequency,
+        channel,
+        signal_strength,
+        encryption,
+        ST_Y(location::geometry) as latitude,
+        ST_X(location::geometry) as longitude,
+        observed_at,
+        observation_count,
+        type
+      FROM app.latest_location_per_bssid
+      WHERE ST_DWithin(
+        location::geography,
+        ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+        $3
+      )
+      ORDER BY ST_Distance(
+        location::geography,
+        ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+      ) ASC
+      LIMIT $4
+    `, [longitude, latitude, radiusMeters, maxResults]);
+
+    res.json({
+      ok: true,
+      data: result.rows,
+      count: result.rows.length,
+      query: {
+        latitude,
+        longitude,
+        radius: radiusMeters,
+        limit: maxResults
+      }
+    });
+  } catch (error) {
+    console.error("Error executing spatial query:", error);
+    res.status(500).json({
+      ok: false,
+      error: "Failed to execute spatial query. Ensure PostGIS extension is installed."
+    });
+  }
+});
+
 // Radio type statistics endpoint
 app.get("/api/v1/radio-stats", async (_req, res) => {
   try {
