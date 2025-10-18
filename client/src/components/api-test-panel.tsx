@@ -43,7 +43,7 @@ export function ApiTestPanel() {
             result = await api.getNetworks({ limit: 10 });
             break;
           case "within":
-            result = await api.spatialQuery(43.0234, -83.6968, 5000, 10);
+            result = await api.spatialQuery(43.02342188, -83.6968461, 500, 50);
             break;
           case "visualize":
             result = await api.getVisualization();
@@ -176,10 +176,10 @@ export function ApiTestPanel() {
     },
     {
       method: "GET",
-      path: "/api/v1/within?lat=43.02&lon=-83.69&radius=5000",
+      path: "/api/v1/within?lat=43.0234&lon=-83.6968&radius=500",
       endpoint: "within",
       available: systemStatus?.database.connected || false,
-      description: "Spatial query: networks within radius",
+      description: "Spatial query: networks within 500m of HOME",
       category: "Data",
     },
     {
