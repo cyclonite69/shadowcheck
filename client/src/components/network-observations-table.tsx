@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -76,6 +76,7 @@ export function NetworkObservationsTable() {
   const [sortField, setSortField] = useState<SortField>('observed_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [displayLimit, setDisplayLimit] = useState(100);
+  const loadMoreButtonRef = useRef<HTMLButtonElement>(null);
 
   const { data: systemStatus } = useQuery({
     queryKey: ["/api/v1/status"],
@@ -292,7 +293,21 @@ export function NetworkObservationsTable() {
   const hasMore = displayLimit < filteredAndSortedNetworks.length;
 
   const loadMore = useCallback(() => {
+    // Store the current button position before state update
+    const buttonElement = loadMoreButtonRef.current;
+    const scrollContainer = buttonElement?.closest('.overflow-y-auto');
+    const currentScrollTop = scrollContainer?.scrollTop || window.scrollY;
+
     setDisplayLimit(prev => prev + 100);
+
+    // Restore scroll position after render
+    requestAnimationFrame(() => {
+      if (scrollContainer) {
+        scrollContainer.scrollTop = currentScrollTop;
+      } else {
+        window.scrollTo(0, currentScrollTop);
+      }
+    });
   }, []);
 
   return (
@@ -966,6 +981,7 @@ export function NetworkObservationsTable() {
                     <div className="flex items-center gap-2">
                       {hasMore && (
                         <Button
+                          ref={loadMoreButtonRef}
                           variant="outline"
                           size="sm"
                           onClick={loadMore}
