@@ -18,6 +18,7 @@ import {
   formatDisplayTime,
   wifiIcon
 } from '@/lib/mapUtils';
+import { wireTooltipNetwork } from './wireTooltipNetwork';
 
 interface NetworkFeature {
   type: 'Feature';
@@ -280,93 +281,6 @@ export function NetworkMapboxViewer({
       });
     };
 
-    // Click handler for unclustered points - show tooltip
-    const pointClickHandler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
-      if (!e.features || e.features.length === 0) return;
-
-      const feature = e.features[0];
-      const p = feature.properties;
-      const c = (feature.geometry as any).coordinates;
-
-      if (!p) return;
-
-      // Build tooltip HTML
-      let html = `<div class="tooltip-content" style="background: #1e293b; border: 1px solid #475569; border-radius: 8px; padding: 12px; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; min-width: 200px;">`;
-      html += `<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 16px; font-weight: 600;">`;
-      html += `<span style="color:${p.colour}">${p.ssid || '(hidden)'}</span>`;
-      html += wifiIcon(p.colour);
-      html += `</div>`;
-
-      if (p.mac && typeof p.mac === 'string' && p.mac.trim()) {
-        html += `<div style="display: flex; justify-content: space-between; margin: 4px 0; font-size: 13px;"><span style="color: #94a3b8;">MAC:</span><span style="font-family: monospace; color: #e2e8f0;">${p.mac}</span></div>`;
-      }
-
-      if (p.freq && typeof p.freq === 'string' && p.freq.trim()) {
-        html += `<div style="display: flex; justify-content: space-between; margin: 4px 0; font-size: 13px;"><span style="color: #94a3b8;">Frequency:</span><span style="color: #60a5fa;">${p.freq}</span></div>`;
-      }
-
-      if (typeof p.signal === 'number' && !isNaN(p.signal)) {
-        const sigClass = signalClass(p.signal);
-        const sigColor = sigClass === 'signal-strong' ? '#22c55e' : sigClass === 'signal-medium' ? '#eab308' : '#ef4444';
-        html += `<div style="display: flex; justify-content: space-between; margin: 4px 0; font-size: 13px;"><span style="color: #94a3b8;">Signal:</span><span style="color: ${sigColor}; font-weight: 600;">${p.signal} dBm</span></div>`;
-      }
-
-      if (p.encryption && typeof p.encryption === 'string' && p.encryption.trim() && p.encryption !== 'Unknown') {
-        html += `<div style="display: flex; justify-content: space-between; margin: 4px 0; font-size: 13px;"><span style="color: #94a3b8;">Encryption:</span><span style="color: #e2e8f0;">${p.encryption.toUpperCase()}</span></div>`;
-      }
-
-      if ((typeof p.latitude === 'number' && isFinite(p.latitude)) || (typeof p.longitude === 'number' && isFinite(p.longitude))) {
-        html += `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #475569; font-size: 12px;">`;
-        if (typeof p.latitude === 'number' && isFinite(p.latitude)) {
-          html += `<div style="margin: 2px 0; color: #94a3b8;"><span>Lat:</span> <span style="color: #e2e8f0;">${toDMS(p.latitude, true)}</span></div>`;
-        }
-        if (typeof p.longitude === 'number' && isFinite(p.longitude)) {
-          html += `<div style="margin: 2px 0; color: #94a3b8;"><span>Lon:</span> <span style="color: #e2e8f0;">${toDMS(p.longitude, false)}</span></div>`;
-        }
-        html += `</div>`;
-      }
-
-      const seenTime = p.observed_at;
-      if (seenTime) {
-        const formattedTime = formatDisplayTime(seenTime);
-        if (formattedTime) {
-          html += `<div style="margin-top: 8px; font-size: 11px; color: #94a3b8;"><span>Seen:</span> <span style="color: #e2e8f0;">${formattedTime}</span></div>`;
-        }
-      }
-
-      html += `</div>`;
-
-      new mapboxgl.Popup({
-        closeButton: false,
-        maxWidth: '350px'
-      })
-        .setLngLat(c)
-        .setHTML(html)
-        .addTo(currentMap);
-
-      currentMap.setFilter('hover', ['==', 'bssid', p.bssid]);
-
-      if (onNetworkClick) {
-        onNetworkClick(feature as any);
-      }
-    };
-
-    // Hover handlers for circle
-    const mousemoveHandler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
-      if (!e.features || e.features.length === 0) return;
-      const feature = e.features[0];
-      const props = feature.properties;
-      if (props && props.bssid) {
-        currentMap.setFilter('hover', ['==', 'bssid', props.bssid]);
-        currentMap.getCanvas().style.cursor = 'pointer';
-      }
-    };
-
-    const mouseleaveHandler = () => {
-      currentMap.setFilter('hover', ['==', 'bssid', '']);
-      currentMap.getCanvas().style.cursor = '';
-    };
-
     // Add event listeners for clusters
     currentMap.on('click', 'clusters', clusterClickHandler);
     currentMap.on('mouseenter', 'clusters', () => {
@@ -376,10 +290,8 @@ export function NetworkMapboxViewer({
       currentMap.getCanvas().style.cursor = '';
     });
 
-    // Add event listeners for unclustered points
-    currentMap.on('click', 'pts', pointClickHandler);
-    currentMap.on('mousemove', 'pts', mousemoveHandler);
-    currentMap.on('mouseleave', 'pts', mouseleaveHandler);
+    // Wire up professional tooltips using project's existing system
+    const cleanupTooltip = wireTooltipNetwork(currentMap, 'pts', { env: 'urban', min: 8, max: 250 });
 
     // Fit bounds to data
     if (processedFeatures.length > 0) {
@@ -405,10 +317,8 @@ export function NetworkMapboxViewer({
       currentMap.off('mouseenter', 'clusters');
       currentMap.off('mouseleave', 'clusters');
 
-      // Clean up point event listeners
-      currentMap.off('click', 'pts', pointClickHandler);
-      currentMap.off('mousemove', 'pts', mousemoveHandler);
-      currentMap.off('mouseleave', 'pts', mouseleaveHandler);
+      // Clean up tooltip system
+      if (cleanupTooltip) cleanupTooltip();
     };
   }, [networks, mapLoaded, onNetworkClick]);
 
