@@ -37,7 +37,7 @@ export function MobileShell({ children }: MobileShellProps) {
         </div>
         <button
           onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-          className="p-2 hover:bg-muted rounded-md transition-colors"
+          className="p-2 hover:bg-muted rounded-md transition-colors cursor-pointer"
           data-testid="mobile-menu-toggle"
         >
           {isDrawerOpen ? <X size={20} /> : <Menu size={20} />}

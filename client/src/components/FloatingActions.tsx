@@ -12,7 +12,7 @@ export function FloatingActions({ onRefresh, onExport }: FloatingActionsProps) {
         <div className="flex gap-2">
           <button
             onClick={onRefresh}
-            className="w-12 h-12 bg-primary/20 hover:bg-primary/30 rounded-full flex items-center justify-center transition-colors"
+            className="w-12 h-12 bg-primary/20 hover:bg-primary/30 rounded-full flex items-center justify-center transition-colors cursor-pointer"
             data-testid="fab-refresh"
             title="Refresh Data"
           >
@@ -20,7 +20,7 @@ export function FloatingActions({ onRefresh, onExport }: FloatingActionsProps) {
           </button>
           <button
             onClick={onExport}
-            className="w-12 h-12 bg-primary/20 hover:bg-primary/30 rounded-full flex items-center justify-center transition-colors"
+            className="w-12 h-12 bg-primary/20 hover:bg-primary/30 rounded-full flex items-center justify-center transition-colors cursor-pointer"
             data-testid="fab-export"
             title="Export Data"
           >
