@@ -232,7 +232,7 @@ export function NetworkMapboxViewer({
         id: 'hover',
         type: 'circle',
         source: 'wifi',
-        filter: ['all', ['!', ['has', 'point_count']], ['==', 'uid', '']],
+        filter: ['all', ['!has', 'point_count'], ['==', 'uid', '']],
         paint: {
           'circle-radius': ['case', ['!=', ['get', 'signal'], null], ['get', 'calculatedRadius'], 20],
           'circle-color': ['get', 'colour'],
