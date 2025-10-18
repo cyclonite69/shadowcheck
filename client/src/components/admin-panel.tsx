@@ -19,6 +19,11 @@ export function AdminPanel() {
   const [showApiKey, setShowApiKey] = useState(false);
   const { toast } = useToast();
 
+  const handleOpenTool = (toolName: string, url: string) => {
+    console.log(`🚀 Opening ${toolName}...`, url);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   const { data: systemStatus } = useQuery({
     queryKey: ["/api/v1/status"],
     queryFn: () => api.getSystemStatus(),
@@ -201,15 +206,13 @@ export function AdminPanel() {
                     <p className="text-sm text-slate-400 mt-0.5">Metrics visualization and monitoring</p>
                   </div>
                 </div>
-                <a
-                  href="http://localhost:3000"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => handleOpenTool('Grafana', 'http://localhost:3000')}
                   className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-md hover:from-orange-600 hover:to-red-700 transition-all shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 flex items-center gap-2 cursor-pointer hover:scale-105"
                 >
                   <ExternalLink className="h-4 w-4" />
                   Open Grafana
-                </a>
+                </button>
               </div>
             </div>
             <div className="p-6 space-y-4">
@@ -273,15 +276,13 @@ export function AdminPanel() {
                     <p className="text-sm text-slate-400 mt-0.5">Time-series metrics collection</p>
                   </div>
                 </div>
-                <a
-                  href="http://localhost:9091"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => handleOpenTool('Prometheus', 'http://localhost:9091')}
                   className="px-4 py-2 bg-gradient-to-r from-red-500 to-orange-600 text-white rounded-md hover:from-red-600 hover:to-orange-700 transition-all shadow-lg shadow-red-500/20 hover:shadow-red-500/30 flex items-center gap-2 cursor-pointer hover:scale-105"
                 >
                   <ExternalLink className="h-4 w-4" />
                   Open Prometheus
-                </a>
+                </button>
               </div>
             </div>
             <div className="p-6 space-y-4">
@@ -315,15 +316,13 @@ export function AdminPanel() {
                     <p className="text-sm text-slate-400 mt-0.5">PostgreSQL administration interface</p>
                   </div>
                 </div>
-                <a
-                  href="http://localhost:8080"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => handleOpenTool('pgAdmin', 'http://localhost:8080')}
                   className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-md hover:from-blue-600 hover:to-cyan-700 transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 flex items-center gap-2 cursor-pointer hover:scale-105"
                 >
                   <ExternalLink className="h-4 w-4" />
                   Open pgAdmin
-                </a>
+                </button>
               </div>
             </div>
             <div className="p-6 space-y-4">
@@ -379,15 +378,13 @@ export function AdminPanel() {
                     <p className="text-sm text-slate-400 mt-0.5">Centralized log management with Promtail</p>
                   </div>
                 </div>
-                <a
-                  href="http://localhost:3000/explore"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => handleOpenTool('Loki Logs', 'http://localhost:3000/explore')}
                   className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-md hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/20 hover:shadow-green-500/30 flex items-center gap-2 cursor-pointer hover:scale-105"
                 >
                   <ExternalLink className="h-4 w-4" />
                   View in Grafana
-                </a>
+                </button>
               </div>
             </div>
             <div className="p-6 space-y-4">

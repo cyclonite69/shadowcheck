@@ -23,6 +23,7 @@ export function MapboxNetworkVisualization() {
     queryFn: async () => {
       const res = await fetch('/api/v1/g63/visualize?limit=500');
       const json = await res.json();
+      console.log('📍 Mapbox: API response:', json);
       return json.ok ? json.data.features : [];
     },
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -30,6 +31,13 @@ export function MapboxNetworkVisualization() {
   });
 
   const mapboxToken = config?.mapboxToken || import.meta.env.VITE_MAPBOX_TOKEN || '';
+
+  console.log('🗺️ Mapbox state:', {
+    isLoading,
+    hasToken: !!mapboxToken,
+    networkCount: networks?.length || 0,
+    configData: config
+  });
 
   if (isLoading) {
     return (

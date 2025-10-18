@@ -56,9 +56,16 @@ export function NetworkMapboxViewer({
 
   // Initialize map
   useEffect(() => {
+    console.log('🗺️ NetworkMapboxViewer: Initializing...', {
+      hasContainer: !!mapContainer.current,
+      hasToken: !!mapboxToken,
+      alreadyInitialized: !!map.current
+    });
+
     if (!mapContainer.current || !mapboxToken) return;
     if (map.current) return; // Already initialized
 
+    console.log('🗺️ Creating Mapbox map instance...');
     mapboxgl.accessToken = mapboxToken;
 
     map.current = new mapboxgl.Map({
@@ -70,10 +77,11 @@ export function NetworkMapboxViewer({
     });
 
     map.current.on('error', (e) => {
-      console.error('Mapbox Error:', e.error.message);
+      console.error('❌ Mapbox Error:', e.error.message);
     });
 
     map.current.on('style.load', () => {
+      console.log('✅ Mapbox: Style loaded');
       if (!map.current) return;
 
       // Set 3D globe projection
@@ -83,6 +91,7 @@ export function NetworkMapboxViewer({
       // Set light preset for day mode
       map.current.setConfigProperty('basemap', 'lightPreset', 'day');
 
+      console.log('✅ Mapbox: Map fully configured');
       setMapLoaded(true);
     });
 
@@ -108,8 +117,22 @@ export function NetworkMapboxViewer({
 
   // Add layers and data
   useEffect(() => {
-    if (!map.current || !mapLoaded || !networks.length) return;
+    console.log('🗺️ Adding layers:', {
+      hasMap: !!map.current,
+      mapLoaded,
+      networkCount: networks.length
+    });
 
+    if (!map.current || !mapLoaded || !networks.length) {
+      console.log('⚠️ Skipping layer addition:', {
+        hasMap: !!map.current,
+        mapLoaded,
+        networkCount: networks.length
+      });
+      return;
+    }
+
+    console.log('✅ Adding network data to map:', networks.length, 'features');
     const currentMap = map.current;
 
     // Process features with calculated radius and color
