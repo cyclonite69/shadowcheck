@@ -278,7 +278,7 @@ export function AdminPanel() {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleOpenTool('Prometheus', 'http://localhost:9090')}
+                  onClick={() => handleOpenTool('Prometheus', 'http://localhost:9091')}
                   className="px-4 py-2 bg-gradient-to-r from-red-500 to-orange-600 text-white rounded-md hover:from-red-600 hover:to-orange-700 transition-all shadow-lg shadow-red-500/20 hover:shadow-red-500/30 flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
                   style={{ cursor: 'pointer' }}
                 >
@@ -291,7 +291,7 @@ export function AdminPanel() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50">
                   <p className="text-sm text-slate-400 mb-1">Metrics Port</p>
-                  <p className="text-slate-100 font-mono">:9090</p>
+                  <p className="text-slate-100 font-mono">:9091</p>
                 </div>
                 <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50">
                   <p className="text-sm text-slate-400 mb-1">Retention</p>
@@ -510,7 +510,7 @@ export function AdminPanel() {
 
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
                 <p className="text-sm text-blue-400">
-                  <strong>View Active Alerts:</strong> Check Grafana dashboard or Prometheus at <a href="http://localhost:9090/alerts" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer hover:text-blue-300">localhost:9090/alerts</a>
+                  <strong>View Active Alerts:</strong> Check Grafana dashboard or Prometheus at <a href="http://localhost:9091/alerts" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer hover:text-blue-300">localhost:9091/alerts</a>
                 </p>
               </div>
             </div>
