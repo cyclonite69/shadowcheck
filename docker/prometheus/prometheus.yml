@@ -1,0 +1,82 @@
+# ==============================================================================
+# PROMETHEUS CONFIGURATION FOR SHADOWCHECK
+# ==============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'shadowcheck'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+          # - 'alertmanager:9093'  # Uncomment if using Alertmanager
+
+# Load alert rules
+rule_files:
+  - '/etc/prometheus/rules/*.yml'
+
+# Scrape configurations
+scrape_configs:
+  # ===========================================================================
+  # BACKEND API METRICS
+  # ===========================================================================
+  - job_name: 'shadowcheck-backend'
+    static_configs:
+      - targets: ['backend:5000']
+        labels:
+          service: 'backend'
+          layer: 'api'
+
+    metrics_path: '/api/v1/health/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # ===========================================================================
+  # POSTGRESQL DATABASE METRICS
+  # ===========================================================================
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+        labels:
+          service: 'postgres'
+          layer: 'database'
+
+    # Note: PostgreSQL exporter would need to be added to docker-compose
+    # For now, metrics are collected via backend health checks
+
+  # ===========================================================================
+  # PROMETHEUS SELF-MONITORING
+  # ===========================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          layer: 'monitoring'
+
+  # ===========================================================================
+  # DOCKER CONTAINER METRICS (cAdvisor)
+  # ===========================================================================
+  # Uncomment if cAdvisor is added to docker-compose
+  # - job_name: 'cadvisor'
+  #   static_configs:
+  #     - targets: ['cadvisor:8080']
+  #       labels:
+  #         service: 'cadvisor'
+  #         layer: 'monitoring'
+
+  # ===========================================================================
+  # NODE EXPORTER (Host Metrics)
+  # ===========================================================================
+  # Uncomment if node-exporter is added to docker-compose
+  # - job_name: 'node-exporter'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         service: 'node-exporter'
+  #         layer: 'monitoring'

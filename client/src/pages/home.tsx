@@ -277,8 +277,8 @@ export default function HomePage() {
             </div>
             <div className="premium-card text-center p-8 hover:scale-105">
               <div className="text-4xl font-bold text-purple-300 mb-2">99.9%</div>
-              <div className="text-slate-300 gold-accent px-4 py-2 rounded-full inline-block">
-                <span className="text-xs font-semibold text-slate-800">Platform Reliability</span>
+              <div className="text-slate-300 silver-accent px-4 py-2 rounded-full inline-block">
+                <span className="text-xs font-semibold text-slate-700">Platform Reliability</span>
               </div>
             </div>
           </div>
@@ -299,39 +299,45 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="text-center group">
-              <div className="premium-card hover:scale-105 p-8">
-                <div className="icon-container mx-auto mb-6">
-                  <Eye className="h-8 w-8 text-blue-300" />
+            <div className="flex">
+              <div className="text-center group flex-1">
+                <div className="premium-card hover:scale-105 p-8 h-full flex flex-col">
+                  <div className="icon-container mx-auto mb-6">
+                    <Eye className="h-8 w-8 text-blue-300" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-slate-200 mb-4">Real-time Monitoring</h3>
+                  <p className="text-slate-300 flex-1">
+                    Monitor wireless networks and cellular signals in real-time with advanced filtering and alerting.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-slate-200 mb-4">Real-time Monitoring</h3>
-                <p className="text-slate-300">
-                  Monitor wireless networks and cellular signals in real-time with advanced filtering and alerting.
-                </p>
               </div>
             </div>
 
-            <div className="text-center group">
-              <div className="premium-card hover:scale-105 p-8">
-                <div className="icon-container mx-auto mb-6">
-                  <Radio className="h-8 w-8 text-green-300" />
+            <div className="flex">
+              <div className="text-center group flex-1">
+                <div className="premium-card hover:scale-105 p-8 h-full flex flex-col">
+                  <div className="icon-container mx-auto mb-6">
+                    <Radio className="h-8 w-8 text-green-300" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-slate-200 mb-4">Signal Intelligence</h3>
+                  <p className="text-slate-300 flex-1">
+                    Comprehensive SIGINT analysis including WiFi, Bluetooth, BLE, and cellular data collection.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-slate-200 mb-4">Signal Intelligence</h3>
-                <p className="text-slate-300">
-                  Comprehensive SIGINT analysis including WiFi, Bluetooth, BLE, and cellular data collection.
-                </p>
               </div>
             </div>
 
-            <div className="text-center group">
-              <div className="premium-card hover:scale-105 p-8">
-                <div className="icon-container mx-auto mb-6">
-                  <Lock className="h-8 w-8 text-purple-300" />
+            <div className="flex">
+              <div className="text-center group flex-1">
+                <div className="premium-card hover:scale-105 p-8 h-full flex flex-col">
+                  <div className="icon-container mx-auto mb-6">
+                    <Lock className="h-8 w-8 text-purple-300" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-slate-200 mb-4">Security & Privacy</h3>
+                  <p className="text-slate-300 flex-1">
+                    Your intelligence data is secure and private by default with enterprise-grade encryption.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-slate-200 mb-4">Security & Privacy</h3>
-                <p className="text-slate-300">
-                  Your intelligence data is secure and private by default with enterprise-grade encryption.
-                </p>
               </div>
             </div>
           </div>

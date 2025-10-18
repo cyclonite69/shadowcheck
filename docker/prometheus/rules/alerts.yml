@@ -1,0 +1,124 @@
+# ==============================================================================
+# PROMETHEUS ALERT RULES FOR SHADOWCHECK
+# ==============================================================================
+
+groups:
+  # ==========================================================================
+  # SERVICE AVAILABILITY ALERTS
+  # ==========================================================================
+  - name: service_availability
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+          layer: infrastructure
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has been down for more than 2 minutes."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          layer: api
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors/sec for {{ $labels.job }}."
+
+  # ==========================================================================
+  # DATABASE HEALTH ALERTS
+  # ==========================================================================
+  - name: database_health
+    interval: 30s
+    rules:
+      - alert: DatabaseConnectionPoolExhausted
+        expr: shadowcheck_db_pool_waiting > 10
+        for: 1m
+        labels:
+          severity: critical
+          layer: database
+        annotations:
+          summary: "Database connection pool exhausted"
+          description: "{{ $value }} clients are waiting for database connections."
+
+      - alert: DatabaseConnectionPoolLow
+        expr: (shadowcheck_db_pool_idle / shadowcheck_db_pool_total) < 0.2
+        for: 5m
+        labels:
+          severity: warning
+          layer: database
+        annotations:
+          summary: "Database connection pool running low"
+          description: "Only {{ $value | humanizePercentage }} of connections are idle."
+
+  # ==========================================================================
+  # MEMORY USAGE ALERTS
+  # ==========================================================================
+  - name: memory_alerts
+    interval: 30s
+    rules:
+      - alert: HighMemoryUsage
+        expr: (shadowcheck_memory_heap_used_bytes / shadowcheck_memory_heap_total_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          layer: application
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is at {{ $value | humanizePercentage }} for {{ $labels.job }}."
+
+      - alert: CriticalMemoryUsage
+        expr: (shadowcheck_memory_heap_used_bytes / shadowcheck_memory_heap_total_bytes) > 0.95
+        for: 2m
+        labels:
+          severity: critical
+          layer: application
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Memory usage is at {{ $value | humanizePercentage }} for {{ $labels.job }}. Immediate action required."
+
+  # ==========================================================================
+  # APPLICATION UPTIME ALERTS
+  # ==========================================================================
+  - name: uptime_alerts
+    interval: 1m
+    rules:
+      - alert: ServiceRestarted
+        expr: shadowcheck_uptime_seconds < 60
+        for: 1m
+        labels:
+          severity: info
+          layer: application
+        annotations:
+          summary: "Service recently restarted"
+          description: "{{ $labels.job }} has been up for only {{ $value }}s. Check logs for crash or restart."
+
+  # ==========================================================================
+  # PROMETHEUS SELF-MONITORING
+  # ==========================================================================
+  - name: prometheus_health
+    interval: 1m
+    rules:
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 5m
+        labels:
+          severity: warning
+          layer: monitoring
+        annotations:
+          summary: "Prometheus configuration reload failed"
+          description: "Prometheus configuration reload has been failing."
+
+      - alert: PrometheusTooManyRestarts
+        expr: changes(process_start_time_seconds{job="prometheus"}[15m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+          layer: monitoring
+        annotations:
+          summary: "Prometheus has restarted multiple times"
+          description: "Prometheus has restarted {{ $value }} times in the last 15 minutes."

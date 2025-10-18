@@ -8,8 +8,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Security middleware
   app.use(helmet({
     contentSecurityPolicy: false, // Disable for development
-    crossOriginEmbedderPolicy: false
   }));
+  
   
   app.use(cors({
     origin: true,
@@ -300,6 +300,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/v1/timeline", async (req, res) => {
+    const isConnected = await storage.isDatabaseConnected();
+    if (!isConnected) {
+      return res.status(501).json({
+        ok: false,
+        error: "Database not connected. Analytics unavailable in resource-constrained environment.",
+        code: "DB_NOT_CONNECTED"
+      });
+    }
+
+    try {
+      const timeline = await storage.getTimelineData();
+      res.json(timeline);
+    } catch (error) {
+      console.error("Error fetching timeline data:", error);
+      res.status(500).json({ error: "Failed to fetch timeline data" });
+    }
+  });
+
+  // Surveillance Intelligence API endpoints
+  app.get("/api/v1/surveillance/stats", async (req, res) => {
+    const isConnected = await storage.isDatabaseConnected();
+    if (!isConnected) {
+      return res.status(501).json({
+        ok: false,
+        error: "Database not connected",
+        code: "DB_NOT_CONNECTED"
+      });
+    }
+
+    try {
+      const stats = await storage.getSurveillanceStats();
+      res.json({ ok: true, data: stats });
+    } catch (error) {
+      console.error("Error fetching surveillance stats:", error);
+      res.status(500).json({ ok: false, error: "Failed to fetch surveillance statistics" });
+    }
+  });
+
+  app.get("/api/v1/surveillance/location-visits", async (req, res) => {
+    const isConnected = await storage.isDatabaseConnected();
+    if (!isConnected) {
+      return res.status(501).json({
+        ok: false,
+        error: "Database not connected",
+        code: "DB_NOT_CONNECTED"
+      });
+    }
+
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const locations = await storage.getLocationVisits(limit);
+      res.json({ ok: true, data: locations, count: locations.length });
+    } catch (error) {
+      console.error("Error fetching location visits:", error);
+      res.status(500).json({ ok: false, error: "Failed to fetch location visits" });
+    }
+  });
+
+  app.get("/api/v1/surveillance/network-patterns", async (req, res) => {
+    const isConnected = await storage.isDatabaseConnected();
+    if (!isConnected) {
+      return res.status(501).json({
+        ok: false,
+        error: "Database not connected",
+        code: "DB_NOT_CONNECTED"
+      });
+    }
+
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const patterns = await storage.getNetworkPatterns(limit);
+      res.json({ ok: true, data: patterns, count: patterns.length });
+    } catch (error) {
+      console.error("Error fetching network patterns:", error);
+      res.status(500).json({ ok: false, error: "Failed to fetch network patterns" });
+    }
+  });
+
+  app.get("/api/v1/surveillance/home-following", async (req, res) => {
+    const isConnected = await storage.isDatabaseConnected();
+    if (!isConnected) {
+      return res.status(501).json({
+        ok: false,
+        error: "Database not connected",
+        code: "DB_NOT_CONNECTED"
+      });
+    }
+
+    try {
+      const homeRadius = parseInt(req.query.home_radius as string) || 100;
+      const minDistance = parseInt(req.query.min_distance as string) || 500;
+      const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
+
+      const threats = await storage.getHomeFollowingThreats(homeRadius, minDistance, limit);
+      res.json({ ok: true, data: threats, count: threats.length });
+    } catch (error) {
+      console.error("Error fetching home-following threats:", error);
+      res.status(500).json({ ok: false, error: "Failed to fetch surveillance threats" });
+    }
+  });
+
+  app.get("/api/v1/surveillance/network-timeline/:bssid", async (req, res) => {
+    const isConnected = await storage.isDatabaseConnected();
+    if (!isConnected) {
+      return res.status(501).json({
+        ok: false,
+        error: "Database not connected",
+        code: "DB_NOT_CONNECTED"
+      });
+    }
+
+    try {
+      const { bssid } = req.params;
+      const timeline = await storage.getNetworkTimeline(bssid);
+      res.json({ ok: true, data: timeline.observations, stats: timeline.stats, count: timeline.observations.length });
+    } catch (error) {
+      console.error("Error fetching network timeline:", error);
+      res.status(500).json({ ok: false, error: "Failed to fetch network timeline" });
+    }
+  });
 
   // Graceful shutdown handling
   process.on('SIGTERM', async () => {

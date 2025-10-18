@@ -185,10 +185,10 @@ export function AnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-bold">
-              {overview.mostActiveBand || '2.4 GHz'}
+              {overview.mostActiveBand || '—'}
             </div>
             <div className="text-xs text-muted-foreground">
-              {overview.bandActivity || '65% of networks'}
+              {overview.bandActivity || 'Data not available'}
             </div>
           </CardContent>
         </Card>
@@ -202,7 +202,7 @@ export function AnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-bold">
-              {overview.detectionRate || '42'}/min
+              {overview.detectionRate ? `${overview.detectionRate}/min` : '—'}
             </div>
             <div className="text-xs text-muted-foreground">
               New network observations
@@ -219,7 +219,7 @@ export function AnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-bold">
-              {overview.coverageArea || '2.3'} km²
+              {overview.coverageArea ? `${overview.coverageArea} km²` : '—'}
             </div>
             <div className="text-xs text-muted-foreground">
               Estimated surveillance range

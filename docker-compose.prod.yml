@@ -1,0 +1,267 @@
+
+# ==============================================================================
+# SHADOWCHECK - PRODUCTION DOCKER COMPOSE CONFIGURATION
+# Counter-Surveillance SIGINT Platform with PostGIS Temporal/Spatial Analysis
+# ==============================================================================
+#
+# RESILIENCE FEATURES:
+# - Health checks with service_healthy dependencies
+# - Docker secrets for credential management
+# - Internal bridge networking with DNS resolution
+# - Centralized logging (Loki)
+# - Monitoring (Prometheus + Grafana)
+# - Graceful shutdown support
+# - Automatic restart policies
+#
+# ==============================================================================
+
+services:
+  # ============================================================================
+  # DATABASE: PostGIS for Temporal/Spatial SIGINT Data
+  # PostgreSQL 18 with latest PostGIS for enhanced spatial performance
+  # ============================================================================
+  postgres:
+    image: postgis/postgis:18-3.6
+    container_name: shadowcheck_postgres_18
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - shadowcheck-prod_postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+      - ./docker/postgres/conf/postgresql-18.conf:/etc/postgresql/postgresql.conf:ro
+    environment:
+      POSTGRES_DB: shadowcheck
+      POSTGRES_USER: shadowcheck_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_SHARED_BUFFERS: 512MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+      POSTGRES_WORK_MEM: 16MB
+      POSTGRES_MAINTENANCE_WORK_MEM: 128MB
+      POSTGRES_EXTENSIONS: postgis,postgis_topology,postgis_raster
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    secrets:
+      - db_password
+    networks:
+      - shadowcheck_internal_prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shadowcheck_user -d shadowcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=postgres,app=shadowcheck,layer=database"
+
+  # ============================================================================
+  # BACKEND API: Node.js Express with PostGIS Integration
+  # ============================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: ./docker/backend/Dockerfile
+      target: production
+      args:
+        NODE_VERSION: 22-alpine
+
+    container_name: shadowcheck_backend
+    restart: unless-stopped
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # CRITICAL: Wait for database to be healthy before starting
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    # Environment configuration
+    environment:
+      # Application settings
+      NODE_ENV: production
+      PORT: 5000
+      LOG_LEVEL: info
+
+      # Database connection (using service name for Docker DNS)
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: shadowcheck
+      DB_USER: shadowcheck_user
+      DB_PASSWORD_FILE: /run/secrets/db_password
+
+      # Connection pool settings for high-frequency SIGINT data
+      DB_POOL_MIN: 5
+      DB_POOL_MAX: 20
+      DB_IDLE_TIMEOUT: 30000
+      DB_CONNECTION_TIMEOUT: 10000
+
+      # Retry configuration
+      DB_RETRY_ATTEMPTS: 5
+      DB_RETRY_DELAY: 2000
+      DB_RETRY_BACKOFF: exponential
+
+      # SIGINT data ingestion settings
+      SIGNAL_BATCH_SIZE: 1000
+      SIGNAL_FLUSH_INTERVAL: 5000
+
+      # Security
+      API_KEY_FILE: /run/secrets/api_key
+      JWT_SECRET_FILE: /run/secrets/jwt_secret
+
+      # Monitoring
+      PROMETHEUS_ENABLED: true
+      PROMETHEUS_PORT: 9090
+
+    # Secrets mounting
+    secrets:
+      - db_password
+      - api_key
+      - jwt_secret
+
+    # Networking
+    networks:
+      - shadowcheck_internal_prod
+
+    # Port exposure
+    ports:
+      - "5000:5000"
+      - "9090:9090"  # Prometheus metrics
+
+    # Volumes for logs and temporary data
+    volumes:
+      - backend_logs:/app/logs
+      - signal_cache:/app/cache
+
+    # CRITICAL: Health check endpoint
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+        labels: "service=backend,app=shadowcheck,layer=api"
+
+  # ============================================================================
+  # FRONTEND: Vite + React + Tailwind with Mapbox GL JS
+  # ============================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/frontend/Dockerfile
+      target: production
+      args:
+        NODE_VERSION: 22-alpine
+
+    container_name: shadowcheck_frontend
+    restart: unless-stopped
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+    # Wait for backend to be healthy
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    # Environment configuration
+    environment:
+      NODE_ENV: production
+      # Backend API endpoint (using service name)
+      VITE_API_URL: http://backend:5000/api/v1
+      # Public URL for browser access
+      VITE_PUBLIC_API_URL: http://localhost:5000/api/v1
+      # Mapbox GL JS configuration
+      VITE_MAPBOX_TOKEN: ""  # Set your Mapbox access token here
+      VITE_MAP_STYLE: mapbox://styles/mapbox/dark-v11
+
+    # Networking
+    networks:
+      - shadowcheck_internal_prod
+
+    # Port exposure
+    ports:
+      - "5173:80"
+
+    # Health check for nginx serving static files
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+        labels: "service=frontend,app=shadowcheck,layer=web"
+
+
+
+# ==============================================================================
+# NETWORKS
+# ==============================================================================
+networks:
+  shadowcheck_internal_prod:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/16
+
+# ==============================================================================
+# VOLUMES
+# ==============================================================================
+volumes:
+  shadowcheck-prod_postgres_data:
+    external: true
+  # Backend
+  backend_logs:
+    driver: local
+  signal_cache:
+    driver: local
+
+  # Monitoring
+
+# ==============================================================================
+# SECRETS
+# ==============================================================================
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  api_key:
+    file: ./secrets/api_key.txt
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt
+  grafana_password:
+    file: ./secrets/grafana_password.txt

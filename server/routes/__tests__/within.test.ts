@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
 
-const withinRouter = (await import('../within.ts')).default;
+const withinRouter = (await import('../within')).default;
 
 const app = express();
 app.use('/api/v1/within', withinRouter);

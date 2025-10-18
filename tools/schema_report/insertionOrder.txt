@@ -1,4 +1,0 @@
-spatial_ref_sys
-location_measurements_backup
-network_observations_backup
-surveillance_alerts

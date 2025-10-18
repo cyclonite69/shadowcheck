@@ -1,5 +1,0 @@
-date=2025-09-26 17:00:04-0400
-os=Linux 6.12.32-amd64
-schemaspy-version=6.2.0
-schemaspy-build=6.2.0.41 2023-03-21 00:14:56
-renderer=Graphviz dot 2.43.0 

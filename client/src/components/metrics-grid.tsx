@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { Activity, Database, MemoryStick, MapPin } from 'lucide-react';
 
 export function MetricsGrid() {
   const { data: systemStatus, isLoading } = useQuery({
@@ -18,32 +19,34 @@ export function MetricsGrid() {
     {
       title: "API Health",
       value: health?.ok ? "Online" : "Offline",
-      icon: "fas fa-heartbeat",
-      color: health?.ok ? "text-accent" : "text-destructive",
-      bgColor: health?.ok ? "bg-accent/10" : "bg-destructive/10",
+      icon: Activity,
+      gradient: health?.ok ? "from-green-500 to-emerald-600" : "from-red-500 to-rose-600",
+      shadowColor: health?.ok ? "shadow-green-500/30" : "shadow-red-500/30",
+      status: health?.ok,
     },
     {
-      title: "DB Connections",
-      value: systemStatus 
-        ? `${systemStatus.database.activeConnections}/${systemStatus.database.maxConnections}`
-        : "0/5",
-      icon: "fas fa-database",
-      color: systemStatus?.database.connected ? "text-accent" : "text-destructive",
-      bgColor: systemStatus?.database.connected ? "bg-accent/10" : "bg-destructive/10",
+      title: "Database Status",
+      value: systemStatus?.database.connected ? "Connected" : "Disconnected",
+      icon: Database,
+      gradient: systemStatus?.database.connected ? "from-blue-500 to-cyan-600" : "from-gray-500 to-slate-600",
+      shadowColor: systemStatus?.database.connected ? "shadow-blue-500/30" : "shadow-gray-500/30",
+      status: systemStatus?.database.connected,
     },
     {
       title: "Memory Usage",
       value: systemStatus ? `${systemStatus.memory.used}MB` : "0MB",
-      icon: "fas fa-memory",
-      color: "text-primary",
-      bgColor: "bg-primary/10",
+      icon: MemoryStick,
+      gradient: "from-purple-500 to-pink-600",
+      shadowColor: "shadow-purple-500/30",
+      status: true,
     },
     {
-      title: "Active Queries",
-      value: "0",
-      icon: "fas fa-search",
-      color: "text-muted-foreground",
-      bgColor: "bg-secondary",
+      title: "PostGIS Enabled",
+      value: systemStatus?.database.postgisEnabled ? "Yes" : "No",
+      icon: MapPin,
+      gradient: systemStatus?.database.postgisEnabled ? "from-amber-500 to-orange-600" : "from-gray-500 to-slate-600",
+      shadowColor: systemStatus?.database.postgisEnabled ? "shadow-amber-500/30" : "shadow-gray-500/30",
+      status: systemStatus?.database.postgisEnabled,
     },
   ];
 
@@ -51,13 +54,13 @@ export function MetricsGrid() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-card rounded-lg border border-border p-6 animate-pulse">
+          <div key={i} className="premium-card p-6 animate-pulse loading-shimmer">
             <div className="flex items-center justify-between">
               <div>
-                <div className="h-4 bg-muted rounded w-20 mb-2"></div>
-                <div className="h-8 bg-muted rounded w-16"></div>
+                <div className="h-4 bg-slate-700 rounded w-20 mb-2"></div>
+                <div className="h-8 bg-slate-700 rounded w-16"></div>
               </div>
-              <div className="w-12 h-12 bg-muted rounded-lg"></div>
+              <div className="w-12 h-12 bg-slate-700 rounded-lg"></div>
             </div>
           </div>
         ))}
@@ -67,19 +70,22 @@ export function MetricsGrid() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {metrics.map((metric, index) => (
-        <div key={index} className="bg-card rounded-lg border border-border p-6" data-testid={`metric-card-${metric.title.toLowerCase().replace(' ', '-')}`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">{metric.title}</p>
-              <p className={`text-2xl font-bold ${metric.color}`}>{metric.value}</p>
-            </div>
-            <div className={`w-12 h-12 ${metric.bgColor} rounded-lg flex items-center justify-center`}>
-              <i className={`${metric.icon} ${metric.color} text-xl`}></i>
+      {metrics.map((metric, index) => {
+        const Icon = metric.icon;
+        return (
+          <div key={index} className="premium-card p-6" data-testid={`metric-card-${metric.title.toLowerCase().replace(' ', '-')}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-400 mb-2">{metric.title}</p>
+                <p className={`text-2xl font-bold ${metric.status ? 'text-slate-100' : 'text-slate-400'}`}>{metric.value}</p>
+              </div>
+              <div className={`icon-container w-12 h-12 bg-gradient-to-br ${metric.gradient} shadow-lg ${metric.shadowColor}`}>
+                <Icon className="h-6 w-6 text-white" />
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
