@@ -564,22 +564,21 @@ app.get("/api/v1/within", async (req, res) => {
         bssid,
         ssid,
         frequency,
-        channel,
-        signal_strength,
-        encryption,
-        ST_Y(location::geometry) as latitude,
-        ST_X(location::geometry) as longitude,
+        capabilities as encryption,
+        lat as latitude,
+        lon as longitude,
         observed_at,
-        observation_count,
-        type
-      FROM app.latest_location_per_bssid
-      WHERE ST_DWithin(
-        location::geography,
-        ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-        $3
-      )
+        NULL::integer as observation_count,
+        'W' as type
+      FROM app.networks_latest_by_bssid
+      WHERE geog IS NOT NULL
+        AND ST_DWithin(
+          geog,
+          ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+          $3
+        )
       ORDER BY ST_Distance(
-        location::geography,
+        geog,
         ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
       ) ASC
       LIMIT $4
