@@ -82,22 +82,87 @@ export function MapboxNetworkVisualization() {
   }
 
   return (
-    <div className="w-full" style={{ height: '600px' }}>
-      <div className="mb-4 flex items-center justify-between">
+    <div className="w-full space-y-4">
+      {/* Map Info Header */}
+      <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-slate-300">Network Map</h3>
           <p className="text-sm text-slate-400">
-            {networks.length} network{networks.length !== 1 ? 's' : ''} | Click for details | Hover for signal range
+            Showing {networks.length} network observation{networks.length !== 1 ? 's' : ''}
           </p>
         </div>
+        <div className="text-xs text-slate-500">
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+            Click markers for details
+          </span>
+          <span className="mx-2">•</span>
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+            Hover for signal range
+          </span>
+        </div>
       </div>
-      <NetworkMapboxViewer
-        networks={networks}
-        mapboxToken={mapboxToken}
-        onNetworkClick={(network) => {
-          console.log('Network clicked:', network);
-        }}
-      />
+
+      {/* Map Container with Legend */}
+      <div className="relative rounded-lg border border-slate-700/50 overflow-hidden shadow-2xl shadow-black/50">
+        {/* Map Legend */}
+        <div className="absolute bottom-6 right-6 z-10 bg-slate-900/95 backdrop-blur-sm rounded-lg border border-slate-700/50 shadow-lg p-4 min-w-[200px]">
+          <div className="space-y-3">
+            {/* Cluster Legend */}
+            <div>
+              <div className="text-xs font-semibold text-slate-300 mb-2">Network Clusters</div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                  <span className="text-xs text-slate-400">&lt; 10 networks</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-purple-500"></div>
+                  <span className="text-xs text-slate-400">10-50 networks</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-red-500"></div>
+                  <span className="text-xs text-slate-400">&gt; 50 networks</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-slate-700/50"></div>
+
+            {/* Signal Strength Legend */}
+            <div>
+              <div className="text-xs font-semibold text-slate-300 mb-2">Signal Strength</div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full border-2 border-green-500 bg-green-500/20"></div>
+                  <span className="text-xs text-slate-400">Strong (&gt; -50 dBm)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full border-2 border-yellow-500 bg-yellow-500/20"></div>
+                  <span className="text-xs text-slate-400">Medium (-50 to -70)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full border-2 border-red-500 bg-red-500/20"></div>
+                  <span className="text-xs text-slate-400">Weak (&lt; -70 dBm)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Map */}
+        <div className="h-[700px]">
+          <NetworkMapboxViewer
+            networks={networks}
+            mapboxToken={mapboxToken}
+            onNetworkClick={(network) => {
+              console.log('Network clicked:', network);
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
