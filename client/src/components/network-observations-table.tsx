@@ -287,18 +287,28 @@ export function NetworkObservationsTable() {
 
   // Virtualization: Only render visible rows
   const displayedNetworks = useMemo(() => {
-    return filteredAndSortedNetworks.slice(0, displayLimit);
+    const sliced = filteredAndSortedNetworks.slice(0, displayLimit);
+    console.log(`📊 Displaying ${sliced.length} of ${filteredAndSortedNetworks.length} networks (limit: ${displayLimit})`);
+    return sliced;
   }, [filteredAndSortedNetworks, displayLimit]);
 
   const hasMore = displayLimit < filteredAndSortedNetworks.length;
 
   const loadMore = useCallback(() => {
+    console.log('🔍 Load More clicked');
+    console.log('Current displayLimit:', displayLimit);
+    console.log('Total filtered rows:', filteredAndSortedNetworks.length);
+
     // Store the current button position before state update
     const buttonElement = loadMoreButtonRef.current;
     const scrollContainer = buttonElement?.closest('.overflow-y-auto');
     const currentScrollTop = scrollContainer?.scrollTop || window.scrollY;
 
-    setDisplayLimit(prev => prev + 100);
+    setDisplayLimit(prev => {
+      const newLimit = prev + 100;
+      console.log('New displayLimit:', newLimit);
+      return newLimit;
+    });
 
     // Restore scroll position after render
     requestAnimationFrame(() => {
@@ -307,8 +317,9 @@ export function NetworkObservationsTable() {
       } else {
         window.scrollTo(0, currentScrollTop);
       }
+      console.log('✅ Display limit updated, scroll preserved');
     });
-  }, []);
+  }, [displayLimit, filteredAndSortedNetworks]);
 
   return (
     <div className="premium-card">
