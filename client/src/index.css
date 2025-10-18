@@ -368,6 +368,7 @@ html:not(.dark) .premium-card {
   mask-composite: xor;
   opacity: 0;
   transition: opacity 0.3s ease;
+  pointer-events: none; /* Allow clicks to pass through to buttons */
 }
 
 .premium-card:hover::before {
