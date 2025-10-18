@@ -1,0 +1,412 @@
+
+> shadowcheck@1.0.0 dev:server
+> tsx watch server/index.ts
+
+2:19:27 PM [express] serving on port 5000
+2:19:27 PM [express] Environment: development
+2:19:27 PM [express] Health endpoints available at:
+2:19:27 PM [express]   - GET /api/v1/health (liveness)
+2:19:27 PM [express]   - GET /api/v1/health/ready (readiness)
+2:19:27 PM [express]   - GET /api/v1/health/detailed (full diagnostics)
+2:19:27 PM [express]   - GET /api/v1/health/metrics (prometheus metrics)
+2:19:41 PM [vite] Internal server error: [postcss] /home/nunya/shadowcheck/client/src/index.css:3:1: The `bg-background` class does not exist. If `bg-background` is a custom class, make sure it is defined within a `@layer` directive.
+  Plugin: vite:css
+  File: /home/nunya/shadowcheck/client/src/index.css:3:0
+  1  |  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;5...
+  2  |  @import 'mapbox-gl/dist/mapbox-gl.css';
+  3  |  @tailwind base;
+     |  ^
+  4  |  @tailwind components;
+  5  |  @tailwind utilities;
+      at Input.error (/home/nunya/shadowcheck/node_modules/postcss/lib/input.js:135:16)
+      at AtRule.error (/home/nunya/shadowcheck/node_modules/postcss/lib/node.js:146:32)
+      at processApply (/home/nunya/shadowcheck/node_modules/tailwindcss/lib/lib/expandApplyAtRules.js:380:29)
+      at /home/nunya/shadowcheck/node_modules/tailwindcss/lib/lib/expandApplyAtRules.js:551:9
+      at /home/nunya/shadowcheck/node_modules/tailwindcss/lib/processTailwindFeatures.js:55:50
+      at async plugins (/home/nunya/shadowcheck/node_modules/tailwindcss/lib/plugin.js:38:17)
+      at async LazyResult.runAsync (/home/nunya/shadowcheck/node_modules/postcss/lib/lazy-result.js:293:11)
+      at async runPostCSS (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:32051:19)
+      at async compilePostCSS (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:32035:6)
+      at async compileCSS (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:31965:26)
+      at async TransformPluginContext.handler (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:31498:54)
+      at async EnvironmentPluginContainer.transform (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:30904:14)
+      at async loadAndTransform (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:26042:26)
+2:19:41 PM [vite] (client) Pre-transform error: [postcss] /home/nunya/shadowcheck/client/src/index.css:3:1: The `bg-background` class does not exist. If `bg-background` is a custom class, make sure it is defined within a `@layer` directive.
+  Plugin: vite:css
+  File: /home/nunya/shadowcheck/client/src/index.css:3:0
+  1  |  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;5...
+  2  |  @import 'mapbox-gl/dist/mapbox-gl.css';
+  3  |  @tailwind base;
+     |  ^
+  4  |  @tailwind components;
+  5  |  @tailwind utilities;
+[/api/v1/networks] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:136:22) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[/api/v1/timeline] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:348:20) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[/api/v1/security-analysis] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:293:20) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[/api/v1/signal-strength] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:237:20) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[/api/v1/networks] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:136:22) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[/api/v1/analytics] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:182:20) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[/api/v1/radio-stats] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:399:24) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+2:32:08 PM [tsx] change in ./server/db.ts Restarting...
+[Shutdown] SIGTERM signal received - starting graceful shutdown
+[Shutdown] Stopping HTTP server (no new connections accepted)
+2:32:08 PM [vite] http proxy error: /api/v1/g63/visualize?limit=500
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+2:32:08 PM [vite] http proxy error: /api/v1/config
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7)
+2:32:13 PM [tsx] Process didn't exit in 5s. Force killing...
+c2:32:14 PM [express] serving on port 5000
+2:32:14 PM [express] Environment: development
+2:32:14 PM [express] Health endpoints available at:
+2:32:14 PM [express]   - GET /api/v1/health (liveness)
+2:32:14 PM [express]   - GET /api/v1/health/ready (readiness)
+2:32:14 PM [express]   - GET /api/v1/health/detailed (full diagnostics)
+2:32:14 PM [express]   - GET /api/v1/health/metrics (prometheus metrics)
+2:32:59 PM [vite] Internal server error: [postcss] /home/nunya/shadowcheck/client/src/index.css:3:1: The `bg-background` class does not exist. If `bg-background` is a custom class, make sure it is defined within a `@layer` directive.
+  Plugin: vite:css
+  File: /home/nunya/shadowcheck/client/src/index.css:3:0
+  1  |  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;5...
+  2  |  @import 'mapbox-gl/dist/mapbox-gl.css';
+  3  |  @tailwind base;
+     |  ^
+  4  |  @tailwind components;
+  5  |  @tailwind utilities;
+      at Input.error (/home/nunya/shadowcheck/node_modules/postcss/lib/input.js:135:16)
+      at AtRule.error (/home/nunya/shadowcheck/node_modules/postcss/lib/node.js:146:32)
+      at processApply (/home/nunya/shadowcheck/node_modules/tailwindcss/lib/lib/expandApplyAtRules.js:380:29)
+      at /home/nunya/shadowcheck/node_modules/tailwindcss/lib/lib/expandApplyAtRules.js:551:9
+      at /home/nunya/shadowcheck/node_modules/tailwindcss/lib/processTailwindFeatures.js:55:50
+      at async plugins (/home/nunya/shadowcheck/node_modules/tailwindcss/lib/plugin.js:38:17)
+      at async LazyResult.runAsync (/home/nunya/shadowcheck/node_modules/postcss/lib/lazy-result.js:293:11)
+      at async runPostCSS (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:32051:19)
+      at async compilePostCSS (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:32035:6)
+      at async compileCSS (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:31965:26)
+      at async TransformPluginContext.handler (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:31498:54)
+      at async EnvironmentPluginContainer.transform (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:30904:14)
+      at async loadAndTransform (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:26042:26)
+2:32:59 PM [vite] (client) Pre-transform error: [postcss] /home/nunya/shadowcheck/client/src/index.css:3:1: The `bg-background` class does not exist. If `bg-background` is a custom class, make sure it is defined within a `@layer` directive.
+  Plugin: vite:css
+  File: /home/nunya/shadowcheck/client/src/index.css:3:0
+  1  |  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;5...
+  2  |  @import 'mapbox-gl/dist/mapbox-gl.css';
+  3  |  @tailwind base;
+     |  ^
+  4  |  @tailwind components;
+  5  |  @tailwind utilities;
+[/api/v1/networks] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:136:22) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[/api/v1/networks] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:136:22) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+2:53:47 PM [vite] Internal server error: [postcss] /home/nunya/shadowcheck/client/src/index.css:3:1: The `bg-background` class does not exist. If `bg-background` is a custom class, make sure it is defined within a `@layer` directive.
+  Plugin: vite:css
+  File: /home/nunya/shadowcheck/client/src/index.css:3:0
+  1  |  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;5...
+  2  |  @import 'mapbox-gl/dist/mapbox-gl.css';
+  3  |  @tailwind base;
+     |  ^
+  4  |  @tailwind components;
+  5  |  @tailwind utilities;
+      at Input.error (/home/nunya/shadowcheck/node_modules/postcss/lib/input.js:135:16)
+      at AtRule.error (/home/nunya/shadowcheck/node_modules/postcss/lib/node.js:146:32)
+      at processApply (/home/nunya/shadowcheck/node_modules/tailwindcss/lib/lib/expandApplyAtRules.js:380:29)
+      at /home/nunya/shadowcheck/node_modules/tailwindcss/lib/lib/expandApplyAtRules.js:551:9
+      at /home/nunya/shadowcheck/node_modules/tailwindcss/lib/processTailwindFeatures.js:55:50
+      at async plugins (/home/nunya/shadowcheck/node_modules/tailwindcss/lib/plugin.js:38:17)
+      at async LazyResult.runAsync (/home/nunya/shadowcheck/node_modules/postcss/lib/lazy-result.js:293:11)
+      at async runPostCSS (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:32051:19)
+      at async compilePostCSS (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:32035:6)
+      at async compileCSS (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:31965:26)
+      at async TransformPluginContext.handler (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:31498:54)
+      at async EnvironmentPluginContainer.transform (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:30904:14)
+      at async loadAndTransform (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:26042:26)
+      at async viteTransformMiddleware (/home/nunya/shadowcheck/node_modules/vite/dist/node/chunks/dep-B0GuR2De.js:27117:20)
+[/api/v1/networks] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:136:22) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[/api/v1/security-analysis] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:293:20) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[/api/v1/radio-stats] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:399:24) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[/api/v1/signal-strength] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:237:20) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[/api/v1/analytics] error: Error: read ECONNRESET
+    at /home/nunya/shadowcheck/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/home/nunya/shadowcheck/server/index.ts:182:20) {
+  errno: -104,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+3:27:43 PM [vite] http proxy error: /api/v1/surveillance/network-patterns?limit=50
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at internalConnectMultiple (node:net:1210:5)
+    at afterConnectMultiple (node:net:1715:7)
+3:27:43 PM [vite] http proxy error: /api/v1/config
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at internalConnectMultiple (node:net:1210:5)
+    at afterConnectMultiple (node:net:1715:7)
+3:28:22 PM [vite] http proxy error: /api/v1/surveillance/stats
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at internalConnectMultiple (node:net:1210:5)
+    at afterConnectMultiple (node:net:1715:7)
+3:28:22 PM [vite] http proxy error: /api/v1/surveillance/home-following?home_radius=100&min_distance=500&limit=20
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at internalConnectMultiple (node:net:1210:5)
+    at afterConnectMultiple (node:net:1715:7)
+3:29:17 PM [vite] http proxy error: /api/v1/surveillance/location-visits?limit=50
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at internalConnectMultiple (node:net:1210:5)
+    at afterConnectMultiple (node:net:1715:7)
+3:30:17 PM [vite] http proxy error: /api/v1/g63/visualize?limit=500
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at internalConnectMultiple (node:net:1210:5)
+    at afterConnectMultiple (node:net:1715:7)
+3:41:34 PM [tsx] change in ./server/index.ts Restarting...
+[Shutdown] SIGTERM signal received - starting graceful shutdown
+[Shutdown] Stopping HTTP server (no new connections accepted)
+[Shutdown] HTTP server closed successfully
+[Shutdown] Closing database connection pool
+[DB] Initiating graceful shutdown...
+[Shutdown] Database connections closed successfully
+[Shutdown] Graceful shutdown completed successfully
+c[Fatal] Uncaught exception: Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+3:42:59 PM [tsx] change in ./server/index.ts Rerunning...
+c3:42:59 PM [tsx] change in ./server/index.ts Restarting...
+c[Fatal] Uncaught exception: Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+3:51:59 PM [tsx] change in ./server/index.ts Rerunning...
+c3:52:01 PM [express] serving on port 5000
+3:52:01 PM [express] Environment: development
+3:52:01 PM [express] Health endpoints available at:
+3:52:01 PM [express]   - GET /api/v1/health (liveness)
+3:52:01 PM [express]   - GET /api/v1/health/ready (readiness)
+3:52:01 PM [express]   - GET /api/v1/health/detailed (full diagnostics)
+3:52:01 PM [express]   - GET /api/v1/health/metrics (prometheus metrics)
+3:52:12 PM [tsx] change in ./server/index.ts Restarting...
+[Shutdown] SIGTERM signal received - starting graceful shutdown
+[Shutdown] Stopping HTTP server (no new connections accepted)
+[Shutdown] HTTP server closed successfully
+[Shutdown] Closing database connection pool
+[DB] Initiating graceful shutdown...
+[Shutdown] Database connections closed successfully
+[Shutdown] Graceful shutdown completed successfully
+c[Fatal] Uncaught exception: Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+1:42:39 AM [tsx] change in ./server/index.ts Rerunning...
+c1:42:39 AM [tsx] change in ./server/index.ts Restarting...
+c1:42:41 AM [express] serving on port 5000
+1:42:41 AM [express] Environment: development
+1:42:41 AM [express] Health endpoints available at:
+1:42:41 AM [express]   - GET /api/v1/health (liveness)
+1:42:41 AM [express]   - GET /api/v1/health/ready (readiness)
+1:42:41 AM [express]   - GET /api/v1/health/detailed (full diagnostics)
+1:42:41 AM [express]   - GET /api/v1/health/metrics (prometheus metrics)
+1:43:43 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+[Shutdown] SIGTERM signal received - starting graceful shutdown
+[Shutdown] Stopping HTTP server (no new connections accepted)
+[Shutdown] HTTP server closed successfully
+[Shutdown] Closing database connection pool
+[DB] Initiating graceful shutdown...
+[Shutdown] Database connections closed successfully
+[Shutdown] Graceful shutdown completed successfully
+c1:43:44 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+c1:43:46 AM [express] serving on port 5000
+1:43:46 AM [express] Environment: development
+1:43:46 AM [express] Health endpoints available at:
+1:43:46 AM [express]   - GET /api/v1/health (liveness)
+1:43:46 AM [express]   - GET /api/v1/health/ready (readiness)
+1:43:46 AM [express]   - GET /api/v1/health/detailed (full diagnostics)
+1:43:46 AM [express]   - GET /api/v1/health/metrics (prometheus metrics)
+1:44:21 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+[Shutdown] SIGTERM signal received - starting graceful shutdown
+[Shutdown] Stopping HTTP server (no new connections accepted)
+[Shutdown] HTTP server closed successfully
+[Shutdown] Closing database connection pool
+[DB] Initiating graceful shutdown...
+[Shutdown] Database connections closed successfully
+[Shutdown] Graceful shutdown completed successfully
+c1:44:21 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+c[Fatal] Uncaught exception: Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+1:44:35 AM [tsx] change in ./server/routes/visualize.ts Rerunning...
+c1:44:35 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+c[Fatal] Uncaught exception: Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+1:44:47 AM [tsx] change in ./server/routes/visualize.ts Rerunning...
+c1:44:47 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+c[Fatal] Uncaught exception: Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+1:44:59 AM [tsx] change in ./server/routes/visualize.ts Rerunning...
+c1:44:59 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+c1:45:01 AM [express] serving on port 5000
+1:45:01 AM [express] Environment: development
+1:45:01 AM [express] Health endpoints available at:
+1:45:01 AM [express]   - GET /api/v1/health (liveness)
+1:45:01 AM [express]   - GET /api/v1/health/ready (readiness)
+1:45:01 AM [express]   - GET /api/v1/health/detailed (full diagnostics)
+1:45:01 AM [express]   - GET /api/v1/health/metrics (prometheus metrics)
+1:45:10 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+[Shutdown] SIGTERM signal received - starting graceful shutdown
+[Shutdown] Stopping HTTP server (no new connections accepted)
+[Shutdown] HTTP server closed successfully
+[Shutdown] Closing database connection pool
+[DB] Initiating graceful shutdown...
+[Shutdown] Database connections closed successfully
+[Shutdown] Graceful shutdown completed successfully
+c1:45:10 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+c1:45:12 AM [express] serving on port 5000
+1:45:12 AM [express] Environment: development
+1:45:12 AM [express] Health endpoints available at:
+1:45:12 AM [express]   - GET /api/v1/health (liveness)
+1:45:12 AM [express]   - GET /api/v1/health/ready (readiness)
+1:45:12 AM [express]   - GET /api/v1/health/detailed (full diagnostics)
+1:45:12 AM [express]   - GET /api/v1/health/metrics (prometheus metrics)

@@ -1,0 +1,58 @@
+{
+  "trilateratedLatitude": 43.02427292,
+  "trilateratedLongitude": -83.69764709,
+  "bestClusterWiGLEQoS": 0,
+  "firstSeen": "2024-10-08T23:49:22.000Z",
+  "lastSeen": "2024-10-08T17:25:36.000Z",
+  "lastUpdate": "2024-10-08T19:29:28.000Z",
+  "streetAddress": {
+    "housenumber": null,
+    "road": "Martin Luther King Avenue",
+    "city": "Flint",
+    "region": "MI",
+    "country": "US",
+    "postalcode": "48052"
+  },
+  "networkId": "a0:55:1f:ed:36:77",
+  "name": null,
+  "type": "infra",
+  "comment": null,
+  "bcninterval": 0,
+  "freenet": "?",
+  "dhcp": "?",
+  "paynet": "?",
+  "encryption": "wpa2",
+  "channel": 44,
+  "locationClusters": [
+    {
+      "centroidLatitude": 43.02427291870117,
+      "centroidLongitude": -83.69764709472656,
+      "minLastUpdate": "2024-10-08T07:00:00.000Z",
+      "maxLastUpdate": "2024-10-08T07:00:00.000Z",
+      "clusterSsid": null,
+      "locations": [
+        {
+          "alt": 185,
+          "accuracy": 3.79009,
+          "lastupdt": "2024-10-08T07:00:00.000Z",
+          "latitude": 43.02427292,
+          "longitude": -83.69764709,
+          "month": "202410",
+          "ssid": null,
+          "time": "2024-10-08T07:00:00.000Z",
+          "signal": -93,
+          "name": null,
+          "netId": "176287468303991",
+          "noise": 0,
+          "snr": 0,
+          "wep": "2",
+          "channel": 0,
+          "frequency": 5220,
+          "encryptionValue": "WPA2"
+        }
+      ],
+      "score": 0,
+      "daysObservedCount": 1
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "trilateratedLatitude": 43.02204895,
+  "trilateratedLongitude": -83.69750214,
+  "bestClusterWiGLEQoS": 2,
+  "firstSeen": "2022-04-15T19:32:58.000Z",
+  "lastSeen": "2025-01-29T09:33:15.000Z",
+  "lastUpdate": "2025-01-29T09:33:45.000Z",
+  "streetAddress": {
+    "housenumber": "725",
+    "road": "Garland Street",
+    "city": "Flint",
+    "region": "MI",
+    "country": "US",
+    "postalcode": "48503"
+  },
+  "networkId": "00:1e:c0:41:63:a2",
+  "name": null,
+  "type": "infra",
+  "comment": null,
+  "bcninterval": 0,
+  "freenet": "?",
+  "dhcp": "?",
+  "paynet": "?",
+  "encryption": "unknown",
+  "channel": 1,
+  "locationClusters": [
+    {
+      "centroidLatitude": 43.02205006711118,
+      "centroidLongitude": -83.69750801292625,
+      "minLastUpdate": "2022-04-15T07:00:00.000Z",
+      "maxLastUpdate": "2025-01-29T08:00:00.000Z",
+      "clusterSsid": "XR16-41-63-A2",
+      "locations": [
+        {
+          "alt": 179,
+          "accuracy": 3.79009,
+          "lastupdt": "2025-01-29T08:00:00.000Z",
+          "latitude": 43.02200699,
+          "longitude": -83.69720459,
+          "month": "202501",
+          "ssid": "XR16-41-63-A2",
+          "time": "2024-12-24T08:00:00.000Z",
+          "signal": -87,
+          "name": null,
+          "netId": "132074529698",
+          "noise": 0,
+          "snr": 0,
+          "wep": "?",
+          "channel": 0,
+          "frequency": 2412,
+          "encryptionValue": "Unknown"
+        },
+        {
+          "alt": 192,
+          "accuracy": 5.17221,
+          "lastupdt": "2022-04-15T07:00:00.000Z",
+          "latitude": 43.02209473,
+          "longitude": -83.69782257,
+          "month": "202204",
+          "ssid": "XR16-41-63-A2",
+          "time": "2022-04-15T07:00:00.000Z",
+          "signal": -91,
+          "name": null,
+          "netId": "132074529698",
+          "noise": 0,
+          "snr": 0,
+          "wep": "?",
+          "channel": 0,
+          "frequency": 0,
+          "encryptionValue": "Unknown"
+        }
+      ],
+      "score": 0,
+      "daysObservedCount": 2
+    }
+  ]
+}

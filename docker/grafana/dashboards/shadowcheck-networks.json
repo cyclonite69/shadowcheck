@@ -1,0 +1,396 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "green",
+                "value": 10
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "WITH home_networks AS (SELECT DISTINCT l.bssid FROM app.locations_legacy l WHERE ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography) <= 100), distant_appearances AS (SELECT l.bssid, COUNT(DISTINCT CONCAT(l.lat, ',', l.lon)) FILTER (WHERE ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography) > 500) as distant_locations FROM app.locations_legacy l WHERE l.bssid IN (SELECT bssid FROM home_networks) AND l.lat IS NOT NULL AND l.lon IS NOT NULL GROUP BY l.bssid HAVING COUNT(DISTINCT CONCAT(l.lat, ',', l.lon)) FILTER (WHERE ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography) > 500) > 0) SELECT COUNT(*) as value FROM distant_appearances;",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "title": "Surveillance Threats Detected",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "pieType": "pie",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT n.type as network_type, COUNT(*) as count FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid GROUP BY n.type ORDER BY count DESC;",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "title": "Network Type Distribution",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 15,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT CONCAT(lat, ',', lon)) as value FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL;",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "title": "Locations Visited",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "threat_level"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "value": "CRITICAL",
+                    "display": {
+                      "color": "dark-red"
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "value": "HIGH",
+                    "display": {
+                      "color": "dark-orange"
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "value": "MEDIUM",
+                    "display": {
+                      "color": "dark-yellow"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "WITH home_networks AS (SELECT DISTINCT l.bssid FROM app.locations_legacy l WHERE ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography) <= 100), distant_appearances AS (SELECT l.bssid, n.ssid, n.type, COUNT(DISTINCT CONCAT(l.lat, ',', l.lon)) FILTER (WHERE ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography) > 500) as distant_locations, MAX(ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography)) as max_distance_meters, COUNT(*) as total_observations, CASE WHEN n.ssid ~* '(netgear|linksys|asus|dlink|belkin|tp-link|home|wifi)' THEN true ELSE false END as is_consumer_pattern FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE l.bssid IN (SELECT bssid FROM home_networks) AND l.lat IS NOT NULL AND l.lon IS NOT NULL GROUP BY l.bssid, n.ssid, n.type HAVING COUNT(DISTINCT CONCAT(l.lat, ',', l.lon)) FILTER (WHERE ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography) > 500) > 0) SELECT bssid, ssid, type, distant_locations, ROUND((max_distance_meters / 1000)::numeric, 2) as max_distance_km, total_observations, is_consumer_pattern, CASE WHEN max_distance_meters > 10000 OR (is_consumer_pattern AND distant_locations > 2) THEN 'CRITICAL' WHEN max_distance_meters > 5000 OR is_consumer_pattern THEN 'HIGH' WHEN max_distance_meters > 1000 THEN 'MEDIUM' ELSE 'LOW' END as threat_level FROM distant_appearances ORDER BY max_distance_meters DESC LIMIT 20;",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "title": "Active Surveillance Threats",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["shadowcheck", "surveillance", "networks"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Shadowcheck - Network Analysis",
+  "uid": "shadowcheck-networks",
+  "version": 0,
+  "weekStart": ""
+}
