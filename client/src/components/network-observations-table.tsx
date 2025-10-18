@@ -293,8 +293,8 @@ export function NetworkObservationsTable() {
   const hasMore = displayLimit < filteredAndSortedNetworks.length;
 
   const loadMore = useCallback(() => {
-    setDisplayLimit(prev => Math.min(prev + 50, filteredAndSortedNetworks.length));
-  }, [filteredAndSortedNetworks.length]);
+    setDisplayLimit(prev => prev + 100);
+  }, []);
 
   return (
     <div className="premium-card">
