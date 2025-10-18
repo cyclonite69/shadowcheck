@@ -7,8 +7,9 @@ import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import VisualizationPage from "@/pages/visualization";
-import NetworksPage from "@/pages/networks";
+import SurveillancePage from "@/pages/surveillance";
 import { AdminPanel } from "@/components/admin-panel";
+import { NetworkObservationsTable } from "@/components/network-observations-table";
 import { MobileShell } from "@/components/MobileShell";
 import { DesktopShell } from "@/components/DesktopShell";
 import { FloatingActions } from "@/components/FloatingActions";
@@ -36,9 +37,10 @@ function Router() {
             <MobileShell>
               <Switch>
                 <Route path="/dashboard" component={Dashboard} />
-                <Route path="/networks" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><NetworksPage /></div>} />
+                <Route path="/networks" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><NetworkObservationsTable /></div>} />
                 <Route path="/visualization" component={VisualizationPage} />
-                <Route path="/admin" component={() => <div className="flex-1 px-3 md:px-6 py-4"><AdminPanel /></div>} />
+                <Route path="/surveillance" component={SurveillancePage} />
+                <Route path="/admin" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AdminPanel /></div>} />
                 <Route component={NotFound} />
               </Switch>
             </MobileShell>
@@ -46,9 +48,10 @@ function Router() {
             <DesktopShell>
               <Switch>
                 <Route path="/dashboard" component={Dashboard} />
-                <Route path="/networks" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><NetworksPage /></div>} />
+                <Route path="/networks" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><NetworkObservationsTable /></div>} />
                 <Route path="/visualization" component={VisualizationPage} />
-                <Route path="/admin" component={() => <div className="flex-1 px-3 md:px-6 py-4"><AdminPanel /></div>} />
+                <Route path="/surveillance" component={SurveillancePage} />
+                <Route path="/admin" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AdminPanel /></div>} />
                 <Route component={NotFound} />
               </Switch>
             </DesktopShell>
