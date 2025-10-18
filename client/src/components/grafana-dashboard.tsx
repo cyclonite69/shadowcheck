@@ -229,7 +229,8 @@ export function GrafanaDashboard() {
             </div>
 
             <Button
-              className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 transition-all shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30"
+              className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 transition-all shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 cursor-pointer active:scale-95"
+              style={{ cursor: 'pointer' }}
               onClick={() => window.open(GRAFANA_URL, "_blank")}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
