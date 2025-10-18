@@ -42,9 +42,16 @@ export interface NetworksResponse {
     longitude?: string;
     observed_at?: string;
     created_at?: string;
+    observation_count?: number;
+    type?: string;
   }>;
   count: number;
+  total_count?: number;
   limit: number;
+  cursor?: {
+    next_before_time_ms?: number | null;
+  };
+  rows?: Array<any>; // For new cursor-based API
 }
 
 export interface SpatialQueryResponse {
@@ -123,8 +130,37 @@ export const api = {
     return res.json();
   },
 
-  async getNetworks(limit: number = 50): Promise<NetworksResponse> {
-    const res = await apiRequest("GET", `/api/v1/networks?limit=${limit}`);
+  async getNetworks(options?: {
+    limit?: number;
+    offset?: number;
+    before_time_ms?: number;
+    distinct_latest?: boolean;
+    search?: string;
+    radio_types?: string[];
+    min_signal?: number;
+    max_signal?: number;
+    min_freq?: number;
+    max_freq?: number;
+  }): Promise<NetworksResponse> {
+    const params = new URLSearchParams();
+
+    if (options?.limit) params.append('limit', options.limit.toString());
+    if (options?.offset) params.append('offset', options.offset.toString());
+    if (options?.before_time_ms) params.append('before_time_ms', options.before_time_ms.toString());
+    if (options?.distinct_latest) params.append('distinct_latest', '1');
+    if (options?.search) params.append('search', options.search);
+    if (options?.radio_types && options.radio_types.length > 0) {
+      params.append('radio_types', options.radio_types.join(','));
+    }
+    if (options?.min_signal !== undefined) params.append('min_signal', options.min_signal.toString());
+    if (options?.max_signal !== undefined) params.append('max_signal', options.max_signal.toString());
+    if (options?.min_freq !== undefined) params.append('min_freq', options.min_freq.toString());
+    if (options?.max_freq !== undefined) params.append('max_freq', options.max_freq.toString());
+
+    const queryString = params.toString();
+    const url = queryString ? `/api/v1/networks?${queryString}` : '/api/v1/networks';
+
+    const res = await apiRequest("GET", url);
     return res.json();
   },
 
@@ -156,6 +192,11 @@ export const api = {
 
   async getRadioStats(): Promise<any> {
     const res = await apiRequest("GET", "/api/v1/radio-stats");
+    return res.json();
+  },
+
+  async getTimelineData(): Promise<any> {
+    const res = await apiRequest("GET", "/api/v1/timeline");
     return res.json();
   }
 };
