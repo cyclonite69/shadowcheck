@@ -208,7 +208,8 @@ export function AdminPanel() {
                 </div>
                 <button
                   onClick={() => handleOpenTool('Grafana', 'http://localhost:3000')}
-                  className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-md hover:from-orange-600 hover:to-red-700 transition-all shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 flex items-center gap-2 cursor-pointer hover:scale-105"
+                  className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-md hover:from-orange-600 hover:to-red-700 transition-all shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                  style={{ cursor: 'pointer' }}
                 >
                   <ExternalLink className="h-4 w-4" />
                   Open Grafana
@@ -277,8 +278,9 @@ export function AdminPanel() {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleOpenTool('Prometheus', 'http://localhost:9091')}
-                  className="px-4 py-2 bg-gradient-to-r from-red-500 to-orange-600 text-white rounded-md hover:from-red-600 hover:to-orange-700 transition-all shadow-lg shadow-red-500/20 hover:shadow-red-500/30 flex items-center gap-2 cursor-pointer hover:scale-105"
+                  onClick={() => handleOpenTool('Prometheus', 'http://localhost:9090')}
+                  className="px-4 py-2 bg-gradient-to-r from-red-500 to-orange-600 text-white rounded-md hover:from-red-600 hover:to-orange-700 transition-all shadow-lg shadow-red-500/20 hover:shadow-red-500/30 flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                  style={{ cursor: 'pointer' }}
                 >
                   <ExternalLink className="h-4 w-4" />
                   Open Prometheus
@@ -289,7 +291,7 @@ export function AdminPanel() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50">
                   <p className="text-sm text-slate-400 mb-1">Metrics Port</p>
-                  <p className="text-slate-100 font-mono">:9091</p>
+                  <p className="text-slate-100 font-mono">:9090</p>
                 </div>
                 <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50">
                   <p className="text-sm text-slate-400 mb-1">Retention</p>
@@ -318,7 +320,8 @@ export function AdminPanel() {
                 </div>
                 <button
                   onClick={() => handleOpenTool('pgAdmin', 'http://localhost:8080')}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-md hover:from-blue-600 hover:to-cyan-700 transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 flex items-center gap-2 cursor-pointer hover:scale-105"
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-md hover:from-blue-600 hover:to-cyan-700 transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                  style={{ cursor: 'pointer' }}
                 >
                   <ExternalLink className="h-4 w-4" />
                   Open pgAdmin
@@ -507,7 +510,7 @@ export function AdminPanel() {
 
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
                 <p className="text-sm text-blue-400">
-                  <strong>View Active Alerts:</strong> Check Grafana dashboard or Prometheus at <a href="http://localhost:9091/alerts" target="_blank" rel="noopener noreferrer" className="underline">localhost:9091/alerts</a>
+                  <strong>View Active Alerts:</strong> Check Grafana dashboard or Prometheus at <a href="http://localhost:9090/alerts" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer hover:text-blue-300">localhost:9090/alerts</a>
                 </p>
               </div>
             </div>
