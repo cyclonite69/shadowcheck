@@ -48,3 +48,4 @@ coverage/
 secrets/
 *.tar.gz
 postgres_backup_*.tar.gz
+output/

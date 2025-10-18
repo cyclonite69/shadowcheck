@@ -13,7 +13,7 @@ export function MobileShell({ children }: MobileShellProps) {
   const navItems = [
     { href: "/", icon: Home, label: "Home" },
     { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
-    { href: "/networks", icon: Wifi, label: "Observed Networks", highlight: true },
+    { href: "/networks", icon: Wifi, label: "Network Observations", highlight: true },
     { href: "/visualization", icon: TrendingUp, label: "Network Visualization" },
     { href: "/admin", icon: Shield, label: "Admin Panel" },
   ];
