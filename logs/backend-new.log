@@ -314,3 +314,99 @@ AggregateError [ECONNREFUSED]:
   address: '0.0.0.0',
   port: 5000
 }
+1:42:39 AM [tsx] change in ./server/index.ts Rerunning...
+c1:42:39 AM [tsx] change in ./server/index.ts Restarting...
+c1:42:41 AM [express] serving on port 5000
+1:42:41 AM [express] Environment: development
+1:42:41 AM [express] Health endpoints available at:
+1:42:41 AM [express]   - GET /api/v1/health (liveness)
+1:42:41 AM [express]   - GET /api/v1/health/ready (readiness)
+1:42:41 AM [express]   - GET /api/v1/health/detailed (full diagnostics)
+1:42:41 AM [express]   - GET /api/v1/health/metrics (prometheus metrics)
+1:43:43 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+[Shutdown] SIGTERM signal received - starting graceful shutdown
+[Shutdown] Stopping HTTP server (no new connections accepted)
+[Shutdown] HTTP server closed successfully
+[Shutdown] Closing database connection pool
+[DB] Initiating graceful shutdown...
+[Shutdown] Database connections closed successfully
+[Shutdown] Graceful shutdown completed successfully
+c1:43:44 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+c1:43:46 AM [express] serving on port 5000
+1:43:46 AM [express] Environment: development
+1:43:46 AM [express] Health endpoints available at:
+1:43:46 AM [express]   - GET /api/v1/health (liveness)
+1:43:46 AM [express]   - GET /api/v1/health/ready (readiness)
+1:43:46 AM [express]   - GET /api/v1/health/detailed (full diagnostics)
+1:43:46 AM [express]   - GET /api/v1/health/metrics (prometheus metrics)
+1:44:21 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+[Shutdown] SIGTERM signal received - starting graceful shutdown
+[Shutdown] Stopping HTTP server (no new connections accepted)
+[Shutdown] HTTP server closed successfully
+[Shutdown] Closing database connection pool
+[DB] Initiating graceful shutdown...
+[Shutdown] Database connections closed successfully
+[Shutdown] Graceful shutdown completed successfully
+c1:44:21 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+c[Fatal] Uncaught exception: Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+1:44:35 AM [tsx] change in ./server/routes/visualize.ts Rerunning...
+c1:44:35 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+c[Fatal] Uncaught exception: Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+1:44:47 AM [tsx] change in ./server/routes/visualize.ts Rerunning...
+c1:44:47 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+c[Fatal] Uncaught exception: Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+1:44:59 AM [tsx] change in ./server/routes/visualize.ts Rerunning...
+c1:44:59 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+c1:45:01 AM [express] serving on port 5000
+1:45:01 AM [express] Environment: development
+1:45:01 AM [express] Health endpoints available at:
+1:45:01 AM [express]   - GET /api/v1/health (liveness)
+1:45:01 AM [express]   - GET /api/v1/health/ready (readiness)
+1:45:01 AM [express]   - GET /api/v1/health/detailed (full diagnostics)
+1:45:01 AM [express]   - GET /api/v1/health/metrics (prometheus metrics)
+1:45:10 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+[Shutdown] SIGTERM signal received - starting graceful shutdown
+[Shutdown] Stopping HTTP server (no new connections accepted)
+[Shutdown] HTTP server closed successfully
+[Shutdown] Closing database connection pool
+[DB] Initiating graceful shutdown...
+[Shutdown] Database connections closed successfully
+[Shutdown] Graceful shutdown completed successfully
+c1:45:10 AM [tsx] change in ./server/routes/visualize.ts Restarting...
+c1:45:12 AM [express] serving on port 5000
+1:45:12 AM [express] Environment: development
+1:45:12 AM [express] Health endpoints available at:
+1:45:12 AM [express]   - GET /api/v1/health (liveness)
+1:45:12 AM [express]   - GET /api/v1/health/ready (readiness)
+1:45:12 AM [express]   - GET /api/v1/health/detailed (full diagnostics)
+1:45:12 AM [express]   - GET /api/v1/health/metrics (prometheus metrics)

@@ -6,6 +6,7 @@ import pg from "pg";
 import { setupVite, log } from "./vite.js";
 import { registerShutdownHandlers } from "./utils/shutdown";
 import healthRouter from "./routes/health";
+import visualizeRouter from "./routes/visualize";
 
 const { Pool } = pg;
 
@@ -68,6 +69,7 @@ const calculateChannel = (frequency: number | null | undefined): number | null =
 
 // Mount enhanced health check endpoints (with /ready, /detailed, /metrics)
 app.use("/api/v1/health", healthRouter);
+app.use("/api/v1/visualize", visualizeRouter);
 
 // Legacy health endpoint for backward compatibility
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
