@@ -17,7 +17,8 @@ import {
   ShieldAlert,
   ShieldCheck,
   X,
-  Calendar
+  Calendar,
+  Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +71,7 @@ export function NetworkObservationsTable() {
   const [securityFilter, setSecurityFilter] = useState<string[]>([]);
   const [signalFilter, setSignalFilter] = useState<{ min: number; max: number }>({ min: -100, max: 0 });
   const [frequencyFilter, setFrequencyFilter] = useState<{ min: number; max: number }>({ min: 0, max: 7200 });
+  const [channelFilter, setChannelFilter] = useState<number[]>([]);
   const [dateFilter, setDateFilter] = useState<{ start: string; end: string }>({ start: '', end: '' });
   const [sortField, setSortField] = useState<SortField>('observed_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -154,7 +156,7 @@ export function NetworkObservationsTable() {
     if (!networks?.data) return [];
 
     // Most filtering is now done server-side
-    // Apply security and date filters client-side
+    // Apply security, channel, and date filters client-side
     let filtered = (networks.data as NetworkObservation[]).filter(network => {
       // Security filter (client-side only)
       if (securityFilter.length > 0) {
@@ -163,6 +165,11 @@ export function NetworkObservationsTable() {
           ? parseWiFiSecurity(network.encryption)
           : parseNonWiFiSecurity(network.encryption, radioType);
         if (!securityFilter.includes(secInfo.level)) return false;
+      }
+
+      // Channel filter (client-side)
+      if (channelFilter.length > 0 && network.channel) {
+        if (!channelFilter.includes(network.channel)) return false;
       }
 
       // Date range filter (client-side)
@@ -235,7 +242,7 @@ export function NetworkObservationsTable() {
     });
 
     return filtered;
-  }, [networks, securityFilter, dateFilter, sortField, sortDirection]);
+  }, [networks, securityFilter, channelFilter, dateFilter, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -276,7 +283,7 @@ export function NetworkObservationsTable() {
 
   const activeFilterCount = Object.values(activeFilters).filter(Boolean).length;
   const totalFilterCount = Object.keys(activeFilters).length;
-  const hasActiveFilters = searchTerm || securityFilter.length > 0 || activeFilterCount < totalFilterCount || signalFilter.min !== -100 || signalFilter.max !== 0 || frequencyFilter.min !== 0 || frequencyFilter.max !== 7200 || dateFilter.start || dateFilter.end;
+  const hasActiveFilters = searchTerm || securityFilter.length > 0 || channelFilter.length > 0 || activeFilterCount < totalFilterCount || signalFilter.min !== -100 || signalFilter.max !== 0 || frequencyFilter.min !== 0 || frequencyFilter.max !== 7200 || dateFilter.start || dateFilter.end;
 
   // Virtualization: Only render visible rows
   const displayedNetworks = useMemo(() => {
@@ -570,6 +577,77 @@ export function NetworkObservationsTable() {
                         </Button>
                       )}
                     </div>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Channel Filter */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Layers className="h-4 w-4" />
+                    Channel
+                    {channelFilter.length > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded">
+                        {channelFilter.length}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto">
+                  <DropdownMenuLabel>Filter by WiFi Channel</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="p-2">
+                    <div className="mb-2 text-xs text-muted-foreground font-semibold">2.4 GHz Channels</div>
+                    <div className="grid grid-cols-4 gap-1">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(ch => (
+                        <DropdownMenuCheckboxItem
+                          key={ch}
+                          checked={channelFilter.includes(ch)}
+                          onCheckedChange={(checked) =>
+                            setChannelFilter(prev =>
+                              checked
+                                ? [...prev, ch].sort((a, b) => a - b)
+                                : prev.filter(c => c !== ch)
+                            )
+                          }
+                          className="px-2 py-1 text-xs"
+                        >
+                          {ch}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </div>
+                    <DropdownMenuSeparator className="my-2" />
+                    <div className="mb-2 text-xs text-muted-foreground font-semibold">5 GHz Channels</div>
+                    <div className="grid grid-cols-4 gap-1">
+                      {[36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165].map(ch => (
+                        <DropdownMenuCheckboxItem
+                          key={ch}
+                          checked={channelFilter.includes(ch)}
+                          onCheckedChange={(checked) =>
+                            setChannelFilter(prev =>
+                              checked
+                                ? [...prev, ch].sort((a, b) => a - b)
+                                : prev.filter(c => c !== ch)
+                            )
+                          }
+                          className="px-2 py-1 text-xs"
+                        >
+                          {ch}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </div>
+                    <DropdownMenuSeparator className="my-2" />
+                    {channelFilter.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setChannelFilter([])}
+                        className="w-full"
+                      >
+                        Reset
+                      </Button>
+                    )}
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -905,6 +983,7 @@ export function NetworkObservationsTable() {
                             setSecurityFilter([]);
                             setSignalFilter({ min: -100, max: 0 });
                             setFrequencyFilter({ min: 0, max: 7200 });
+                            setChannelFilter([]);
                             setDateFilter({ start: '', end: '' });
                             setActiveFilters({ wifi: true, cell: true, bluetooth: true, ble: true });
                             setDisplayLimit(100);
