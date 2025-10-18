@@ -27,6 +27,12 @@ export function ApiTestPanel() {
           case "health":
             result = await api.getHealth();
             break;
+          case "version":
+            result = await api.getVersion();
+            break;
+          case "config":
+            result = await api.getConfig();
+            break;
           case "status":
             result = await api.getSystemStatus();
             break;
@@ -35,6 +41,9 @@ export function ApiTestPanel() {
             break;
           case "networks":
             result = await api.getNetworks({ limit: 10 });
+            break;
+          case "within":
+            result = await api.spatialQuery(43.0234, -83.6968, 5000, 10);
             break;
           case "visualize":
             result = await api.getVisualization();
@@ -125,6 +134,22 @@ export function ApiTestPanel() {
     },
     {
       method: "GET",
+      path: "/api/v1/version",
+      endpoint: "version",
+      available: true,
+      description: "Get API version information",
+      category: "System",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/config",
+      endpoint: "config",
+      available: true,
+      description: "Get frontend configuration (Mapbox token)",
+      category: "System",
+    },
+    {
+      method: "GET",
       path: "/api/v1/status",
       endpoint: "status",
       available: true,
@@ -147,6 +172,14 @@ export function ApiTestPanel() {
       endpoint: "networks",
       available: systemStatus?.database.connected || false,
       description: "Fetch network observations (paginated)",
+      category: "Data",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/within?lat=43.02&lon=-83.69&radius=5000",
+      endpoint: "within",
+      available: systemStatus?.database.connected || false,
+      description: "Spatial query: networks within radius",
       category: "Data",
     },
     {
