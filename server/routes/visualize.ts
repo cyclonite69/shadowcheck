@@ -12,16 +12,19 @@ router.get("/", async (req, res) => {
   try {
     const sql = `
       SELECT
-        bssid,
-        lat,
-        lon,
-        level,
-        time,
-        altitude,
-        accuracy
-      FROM app.locations_legacy
-      WHERE lat IS NOT NULL AND lon IS NOT NULL
-      ORDER BY time DESC
+        l.bssid,
+        l.lat,
+        l.lon,
+        l.level,
+        l.time,
+        l.altitude,
+        l.accuracy,
+        n.ssid,
+        n.type as radio_type
+      FROM app.locations_legacy l
+      LEFT JOIN app.networks_legacy n ON l.bssid = n.bssid
+      WHERE l.lat IS NOT NULL AND l.lon IS NOT NULL
+      ORDER BY l.time DESC
       LIMIT $1
     `;
     const { rows } = await query(sql, [limit]);
@@ -35,12 +38,14 @@ router.get("/", async (req, res) => {
           geometry: { type: "Point", coordinates: [Number(r.lon), Number(r.lat)] },
           properties: {
             bssid: r.bssid,
+            ssid: r.ssid,
             signal: r.level,
-            seen: r.time,
+            seen: r.time ? new Date(Number(r.time)).toISOString() : null,
             lat: Number(r.lat),
             lon: Number(r.lon),
             alt: r.altitude,
-            accuracy: r.accuracy
+            accuracy: r.accuracy,
+            radio_type: r.radio_type || 'wifi'
           }
         }))
       }
