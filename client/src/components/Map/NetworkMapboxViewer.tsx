@@ -139,7 +139,7 @@ export function NetworkMapboxViewer({
     // Process features with calculated radius and color
     const processedFeatures = networks.map((feature) => {
       const zoom = currentMap.getZoom();
-      const signal = feature.properties.signal_strength || null;
+      const signal = feature.properties.signal || feature.properties.signal_strength || null;
       const freq = feature.properties.frequency || 0;
       const bssid = feature.properties.bssid;
 
@@ -152,6 +152,7 @@ export function NetworkMapboxViewer({
           ...feature.properties,
           calculatedRadius: radius,
           colour: color,
+          color: color,
           mac: normalizeMac(bssid),
           freq: freq ? toGHz(freq) : '',
           signal: signal
