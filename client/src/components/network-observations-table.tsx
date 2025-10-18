@@ -76,7 +76,6 @@ export function NetworkObservationsTable() {
   const [sortField, setSortField] = useState<SortField>('observed_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [displayLimit, setDisplayLimit] = useState(100);
-  const [totalLimit, setTotalLimit] = useState(2000); // Increased from 500
 
   const { data: systemStatus } = useQuery({
     queryKey: ["/api/v1/status"],
@@ -90,9 +89,9 @@ export function NetworkObservationsTable() {
     .map(([type, _]) => type);
 
   const { data: networks, isLoading, error } = useQuery({
-    queryKey: ["/api/v1/networks", searchTerm, enabledRadioTypes, signalFilter, frequencyFilter, totalLimit],
+    queryKey: ["/api/v1/networks", searchTerm, enabledRadioTypes, signalFilter, frequencyFilter],
     queryFn: () => api.getNetworks({
-      limit: totalLimit,
+      limit: 100000, // Request up to 100K observations - no artificial limit
       search: searchTerm || undefined,
       radio_types: enabledRadioTypes.length < 4 ? enabledRadioTypes : undefined,
       min_signal: signalFilter.min !== -100 ? signalFilter.min : undefined,
