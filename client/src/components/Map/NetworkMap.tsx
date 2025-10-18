@@ -72,12 +72,12 @@ export default function NetworkMap() {
   });
 
   const { data: visualizationData, isLoading } = useQuery({
-    queryKey: ['/api/v1/g63/visualize'],
+    queryKey: ['/api/v1/visualize'],
     refetchInterval: 30000,
   });
 
   const { data: analytics } = useQuery({
-    queryKey: ['/api/v1/g63/analytics'],
+    queryKey: ['/api/v1/analytics'],
     refetchInterval: 30000,
   });
 

@@ -9,12 +9,12 @@ export function SvgNetworkMap() {
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
 
   const { data: visualizationData, isLoading } = useQuery({
-    queryKey: ['/api/v1/g63/visualize'],
+    queryKey: ['/api/v1/visualize'],
     refetchInterval: 30000,
   });
 
   const { data: networks } = useQuery({
-    queryKey: ['/api/v1/g63/networks'],
+    queryKey: ['/api/v1/networks'],
     refetchInterval: 30000,
   });
 
