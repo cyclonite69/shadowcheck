@@ -16,7 +16,9 @@ router.get("/", async (req, res) => {
         lat,
         lon,
         level,
-        time
+        time,
+        altitude,
+        accuracy
       FROM app.locations_legacy
       WHERE lat IS NOT NULL AND lon IS NOT NULL
       ORDER BY time DESC
@@ -33,10 +35,12 @@ router.get("/", async (req, res) => {
           geometry: { type: "Point", coordinates: [Number(r.lon), Number(r.lat)] },
           properties: {
             bssid: r.bssid,
-            signal_strength: r.level,
-            observed_at: r.time,
-            latitude: Number(r.lat),
-            longitude: Number(r.lon)
+            signal: r.level,
+            seen: r.time,
+            lat: Number(r.lat),
+            lon: Number(r.lon),
+            alt: r.altitude,
+            accuracy: r.accuracy
           }
         }))
       }
