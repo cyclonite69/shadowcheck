@@ -12,9 +12,12 @@ export const pool = connectionString
   ? new Pool({
       connectionString,
       ssl: sslRequired ? { rejectUnauthorized: false } : undefined,
-      max: 10,
-      idleTimeoutMillis: 10_000,
-      connectionTimeoutMillis: 10_000,
+      max: 20,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 60_000,
+      query_timeout: 120_000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
     })
   : new Pool({
       host: process.env.PGHOST,
@@ -23,9 +26,12 @@ export const pool = connectionString
       user: process.env.PGUSER,
       password: process.env.PGPASSWORD,
       ssl: sslRequired ? { rejectUnauthorized: false } : undefined,
-      max: 10,
-      idleTimeoutMillis: 10_000,
-      connectionTimeoutMillis: 10_000,
+      max: 20,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 60_000,
+      query_timeout: 120_000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
     });
 
 // Retry on transient connection issues (Neon autosuspend/resume, etc.)
@@ -38,7 +44,7 @@ const RETRY_CODES = new Set([
 ]);
 const RETRY_MESSAGES = ["ETIMEDOUT", "ECONNRESET"];
 
-export async function query<T = any>(text: string, params?: any[], tries = 2): Promise<pg.QueryResult<T>> {
+export async function query<T extends pg.QueryResultRow = any>(text: string, params?: any[], tries = 2): Promise<pg.QueryResult<T>> {
   for (let attempt = 1; ; attempt++) {
     const client = await pool.connect();
     try {
@@ -58,7 +64,6 @@ export async function query<T = any>(text: string, params?: any[], tries = 2): P
   }
 }
 
-// Drizzle database instance
 export const db = connectionString
   ? drizzle(postgres(connectionString, { ssl: sslRequired ? { rejectUnauthorized: false } : undefined }))
   : null;

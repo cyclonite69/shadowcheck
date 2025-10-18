@@ -13,12 +13,14 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    
     "declaration": true,
     "outDir": "./dist",
-    "rootDir": "./",
-    "baseUrl": ".",
+    "rootDir": "../",
+    "baseUrl": "../",
     "paths": {
-      "@/*": ["./"]
+      "@/*": ["./*"],
+      "@shared/*": ["shared/*"]
     },
     "types": ["node"]
   },

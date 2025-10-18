@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, BarChart3, Wifi, TrendingUp, Shield, Satellite, Zap, RefreshCw, Download, Server, Circle } from "lucide-react";
+import { Home, BarChart3, Wifi, TrendingUp, Shield, Satellite, Zap, RefreshCw, Download, Server, Circle, Eye } from "lucide-react";
 
 export function Sidebar() {
   const [location] = useLocation();
@@ -7,56 +7,60 @@ export function Sidebar() {
   const navItems = [
     { href: "/", icon: Home, label: "Home", highlight: true },
     { href: "/dashboard", icon: BarChart3, label: "Dashboard", highlight: true },
-    { href: "/networks", icon: Wifi, label: "Observed Networks", highlight: true },
+    { href: "/networks", icon: Wifi, label: "Network Observations", highlight: true },
     { href: "/visualization", icon: TrendingUp, label: "Network Visualization", highlight: true },
+    { href: "/surveillance", icon: Eye, label: "Surveillance Intelligence", highlight: true },
     { href: "/admin", icon: Shield, label: "Admin Panel", highlight: true },
   ];
 
   return (
-    <div className="w-64 bg-gradient-to-b from-card to-card/95 border-r border-border/50 flex flex-col backdrop-blur-sm">
+    <div className="h-screen bg-slate-900/95 backdrop-blur-xl border-r border-slate-800/50 flex flex-col cyber-scan-line overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-border/50">
+      <div className="p-6 border-b border-slate-800/50">
         <Link href="/">
-          <div className="flex items-center gap-3 cursor-pointer group">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg ring-1 ring-blue-500/20 group-hover:ring-blue-500/40 transition-all duration-300">
-              <Shield className="h-5 w-5 text-white" />
+          <div className="flex flex-col items-center gap-4 cursor-pointer group">
+            {/* ShadowCheck Badge */}
+            <div className="relative">
+              <div className="icon-container w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/50">
+                <Shield className="h-10 w-10 text-white" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-slate-900">✓</span>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent group-hover:from-blue-500 group-hover:to-purple-600 transition-all duration-300">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent group-hover:from-blue-400 group-hover:to-purple-500 transition-all duration-300 drop-shadow-[0_2px_8px_rgba(59,130,246,0.5)]">
                 ShadowCheck
               </h1>
-              <p className="text-xs text-slate-400 cyber-text tracking-wider">
-                SIGINT FORENSICS PLATFORM
+              <p className="text-[10px] text-slate-400 cyber-text tracking-widest mt-1">
+                SIGINT FORENSICS
               </p>
             </div>
           </div>
         </Link>
       </div>
       
-      {/* Navigation */}
-      <nav className="flex-1 p-4">
-        <div className="space-y-1">
+      {/* Navigation - Scrollable */}
+      <nav className="flex-1 p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
+        <div className="space-y-2">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${
                 location === item.href
-                  ? "bg-gradient-to-r from-primary/20 to-accent/20 text-primary border border-primary/20 shadow-sm"
-                  : item.highlight
-                  ? "hover:bg-gradient-to-r hover:from-slate-500/10 hover:to-blue-500/10 text-slate-600 hover:text-cyan-300 border border-slate-500/20 hover:border-slate-500/40"
-                  : "hover:bg-muted/50 text-muted-foreground hover:text-foreground border border-transparent hover:border-border/50"
+                  ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white border border-blue-500/30 shadow-lg cyber-glow"
+                  : "hover:bg-slate-800/50 text-slate-400 hover:text-slate-200 border border-transparent hover:border-slate-700/50"
               }`}
               data-testid={`nav-link-${item.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
             >
-              <item.icon className={`w-4 h-4 transition-colors ${
-                location === item.href ? "text-primary" : 
-                item.highlight ? "text-slate-600 group-hover:text-cyan-300" :
-                "group-hover:text-primary"
+              <item.icon className={`w-5 h-5 transition-colors ${
+                location === item.href ? "text-blue-400" :
+                "text-slate-500 group-hover:text-blue-400"
               }`} />
               <span className="text-sm font-medium">{item.label}</span>
               {location === item.href && (
-                <div className="ml-auto w-2 h-2 bg-primary rounded-full"></div>
+                <div className="ml-auto w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
               )}
             </Link>
           ))}
@@ -64,33 +68,37 @@ export function Sidebar() {
         
         {/* Quick Actions */}
         <div className="mt-8">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Zap className="h-3 w-3" />
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2 cyber-text">
+            <Zap className="h-4 w-4 text-blue-400" />
             Quick Actions
           </h3>
           <div className="space-y-2">
-            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md bg-muted/30 border border-border/30 hover:bg-muted/50 transition-colors text-left">
-              <RefreshCw className="h-3 w-3 text-primary" />
-              <span className="text-xs text-muted-foreground">Refresh Data</span>
+            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/50 hover:border-blue-500/30 transition-all duration-200 text-left cyber-glow group">
+              <RefreshCw className="h-4 w-4 text-blue-400 group-hover:animate-spin" />
+              <span className="text-xs text-slate-400 group-hover:text-slate-300">Refresh Data</span>
             </button>
-            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md bg-muted/30 border border-border/30 hover:bg-muted/50 transition-colors text-left">
-              <Download className="h-3 w-3 text-primary" />
-              <span className="text-xs text-muted-foreground">Export Data</span>
+            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/50 hover:border-purple-500/30 transition-all duration-200 text-left cyber-glow group">
+              <Download className="h-4 w-4 text-purple-400" />
+              <span className="text-xs text-slate-400 group-hover:text-slate-300">Export Data</span>
             </button>
           </div>
         </div>
       </nav>
-      
+
       {/* Footer */}
-      <div className="p-4 border-t border-border/50 bg-muted/20">
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Server className="h-3 w-3" />
-            <span>Replit Cloud</span>
+      <div className="p-4 border-t border-slate-800/50 bg-slate-950/50">
+        <div className="flex flex-col gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-blue-500" />
+            <span className="font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+              ShadowCheck
+            </span>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 bg-accent rounded-full"></div>
-            <span className="text-accent font-medium">Live</span>
+          <div className="text-[10px] text-slate-500 tracking-wider cyber-text">
+            WIRELESS INTELLIGENCE PLATFORM
+          </div>
+          <div className="mt-2 px-3 py-1 silver-accent rounded-full inline-block">
+            <span className="text-[10px] font-semibold text-slate-700">OPERATIONAL</span>
           </div>
         </div>
       </div>

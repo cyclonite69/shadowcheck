@@ -1,0 +1,124 @@
+# ==============================================================================
+# PROMTAIL CONFIGURATION FOR SHADOWCHECK
+# Log Shipping to Loki
+# ==============================================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: info
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # ==========================================================================
+  # DOCKER CONTAINER LOGS
+  # ==========================================================================
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+
+    relabel_configs:
+      # Only scrape shadowcheck containers
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(shadowcheck_.*)'
+        target_label: 'container'
+
+      # Extract service name
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+
+      # Extract project name
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: 'project'
+
+      # Add environment label
+      - replacement: 'production'
+        target_label: 'environment'
+
+      # Add layer label from container labels
+      - source_labels: ['__meta_docker_container_label_layer']
+        target_label: 'layer'
+
+    # Pipeline stages for log parsing
+    pipeline_stages:
+      # Parse timestamp
+      - timestamp:
+          source: time
+          format: RFC3339Nano
+
+      # Extract JSON logs
+      - json:
+          expressions:
+            level: level
+            message: message
+            timestamp: timestamp
+
+      # Label extraction
+      - labels:
+          level:
+
+      # Output formatting
+      - output:
+          source: message
+
+  # ==========================================================================
+  # BACKEND APPLICATION LOGS
+  # ==========================================================================
+  - job_name: backend-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: shadowcheck-backend
+          service: backend
+          layer: api
+          __path__: /var/log/backend/*.log
+
+    pipeline_stages:
+      # Parse JSON logs from backend
+      - json:
+          expressions:
+            timestamp: timestamp
+            level: level
+            message: message
+            service: service
+
+      - timestamp:
+          source: timestamp
+          format: RFC3339
+
+      - labels:
+          level:
+          service:
+
+  # ==========================================================================
+  # POSTGRESQL LOGS (if mounted)
+  # ==========================================================================
+  - job_name: postgres-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: postgres
+          service: postgres
+          layer: database
+          __path__: /var/log/postgres/*.log
+
+    pipeline_stages:
+      # PostgreSQL log format
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} \w+) \[(?P<pid>\d+)\] (?P<level>\w+):  (?P<message>.*)'
+
+      - timestamp:
+          source: timestamp
+          format: '2006-01-02 15:04:05.000 MST'
+
+      - labels:
+          level:
+          pid:

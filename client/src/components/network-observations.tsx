@@ -167,7 +167,7 @@ export function NetworkObservations() {
                   <div className="icon-container w-8 h-8 mr-2">
                     <Antenna className="h-4 w-4 text-green-300" />
                   </div>
-                  Observed Networks
+                  Network Observations
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">All detected radio signals: WiFi, Cellular, Bluetooth</p>
               </div>

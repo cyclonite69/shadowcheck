@@ -10,6 +10,15 @@ import { Switch } from '@/components/ui/switch';
 import { generateColorFromBSSID, getSignalStrengthCategory, getSecurityStyling } from '@/lib/color-utils';
 import { ChevronDown, ChevronUp, Search, Eye, EyeOff, Wifi } from 'lucide-react';
 
+interface Network {
+  bssid: string;
+  ssid: string;
+  capabilities: string;
+  bestlevel: number;
+  frequency: number;
+  lasttime: string;
+}
+
 interface NetworkDataTableProps {
   onNetworkToggle?: (bssid: string, visible: boolean) => void;
   visibleNetworks?: Set<string>;
@@ -21,9 +30,9 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [showAll, setShowAll] = useState(false);
 
-  const { data: g63Networks, isLoading } = useQuery({
-    queryKey: ['/api/v1/g63/networks'],
-    queryFn: () => api.getG63Networks(showAll ? 1000 : 100),
+  const { data: networks, isLoading } = useQuery({
+    queryKey: ['/api/v1/networks'],
+    queryFn: () => api.getNetworks(showAll ? 1000 : 100),
     refetchInterval: 30000,
   });
 
@@ -37,15 +46,15 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
   };
 
   const sortedAndFilteredNetworks = useMemo(() => {
-    if (!g63Networks?.data) return [];
+    if (!networks?.data) return [];
 
-    let filtered = g63Networks.data.filter(network => 
+    let filtered = (networks.data as Network[]).filter((network: Network) => 
       network.ssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
       network.bssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
       network.capabilities.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    return filtered.sort((a, b) => {
+    return filtered.sort((a: Network, b: Network) => {
       let aVal = a[sortField as keyof typeof a];
       let bVal = b[sortField as keyof typeof b];
 
@@ -58,7 +67,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [g63Networks?.data, searchTerm, sortField, sortDirection]);
+  }, [networks?.data, searchTerm, sortField, sortDirection]);
 
   const toggleNetworkVisibility = (bssid: string) => {
     const isVisible = visibleNetworks.has(bssid);
@@ -66,7 +75,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
   };
 
   const toggleAllNetworks = (visible: boolean) => {
-    sortedAndFilteredNetworks.forEach(network => {
+    sortedAndFilteredNetworks.forEach((network: Network) => {
       onNetworkToggle?.(network.bssid, visible);
     });
   };
@@ -91,18 +100,18 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
     );
   }
 
-  if (!g63Networks?.data || g63Networks.data.length === 0) {
+  if (!networks?.data || networks.data.length === 0) {
     return (
       <Card className="border-blue-500/20 bg-card/80 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-blue-600 flex items-center gap-2">
             <Wifi className="h-5 w-5" />
-            G63 Network Data Table
+            Network Data Table
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
-            No G63 network data available. API returned: {JSON.stringify(g63Networks)}
+            No network data available. API returned: {JSON.stringify(networks)}
           </div>
         </CardContent>
       </Card>
