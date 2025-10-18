@@ -30,14 +30,35 @@ export function ApiTestPanel() {
           case "version":
             result = await api.getVersion();
             break;
+          case "config":
+            result = await api.getConfig();
+            break;
           case "networks":
-            result = await api.getNetworks(10);
+            result = await api.getNetworks({ limit: 10 });
             break;
           case "status":
             result = await api.getSystemStatus();
             break;
           case "within":
-            result = await fetch('/api/v1/within?lat=37.7749&lon=-122.4194&radius=5000').then(r => r.json());
+            result = await api.spatialQuery(43.0234, -83.6968, 5000, 10);
+            break;
+          case "visualize":
+            result = await api.getVisualization();
+            break;
+          case "analytics":
+            result = await api.getAnalytics();
+            break;
+          case "signal-strength":
+            result = await api.getSignalStrengthDistribution();
+            break;
+          case "security-analysis":
+            result = await api.getSecurityAnalysis();
+            break;
+          case "radio-stats":
+            result = await api.getRadioStats();
+            break;
+          case "timeline":
+            result = await api.getTimelineData();
             break;
           default:
             throw new Error("Unknown endpoint");
@@ -99,33 +120,106 @@ export function ApiTestPanel() {
   };
 
   const endpoints = [
+    // System Endpoints
     {
       method: "GET",
       path: "/api/v1/health",
       endpoint: "health",
       available: true,
-      description: "Check system health status",
+      description: "Check API server health and uptime",
+      category: "System",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/version",
+      endpoint: "version",
+      available: true,
+      description: "Get API version information",
+      category: "System",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/config",
+      endpoint: "config",
+      available: true,
+      description: "Get application configuration",
+      category: "System",
     },
     {
       method: "GET",
       path: "/api/v1/status",
       endpoint: "status",
       available: true,
-      description: "Get system status information",
+      description: "Get detailed system status and metrics",
+      category: "System",
     },
+
+    // Data Endpoints
     {
       method: "GET",
-      path: "/api/v1/networks",
+      path: "/api/v1/networks?limit=10",
       endpoint: "networks",
       available: systemStatus?.database.connected || false,
-      description: "Fetch network observations",
+      description: "Fetch network observations (paginated)",
+      category: "Data",
     },
     {
       method: "GET",
-      path: "/api/v1/within",
+      path: "/api/v1/within?lat=43.02&lon=-83.69&radius=5000",
       endpoint: "within",
       available: systemStatus?.database.connected || false,
-      description: "Query networks within radius",
+      description: "Spatial query: networks within radius",
+      category: "Data",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/visualize",
+      endpoint: "visualize",
+      available: systemStatus?.database.connected || false,
+      description: "Get GeoJSON data for map visualization",
+      category: "Data",
+    },
+
+    // Analytics Endpoints
+    {
+      method: "GET",
+      path: "/api/v1/analytics",
+      endpoint: "analytics",
+      available: systemStatus?.database.connected || false,
+      description: "Get comprehensive analytics summary",
+      category: "Analytics",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/signal-strength",
+      endpoint: "signal-strength",
+      available: systemStatus?.database.connected || false,
+      description: "Signal strength distribution analysis",
+      category: "Analytics",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/security-analysis",
+      endpoint: "security-analysis",
+      available: systemStatus?.database.connected || false,
+      description: "Network security analysis and stats",
+      category: "Analytics",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/radio-stats",
+      endpoint: "radio-stats",
+      available: systemStatus?.database.connected || false,
+      description: "Radio type statistics (WiFi/BLE/BT/Cell)",
+      category: "Analytics",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/timeline",
+      endpoint: "timeline",
+      available: systemStatus?.database.connected || false,
+      description: "Network observation timeline data",
+      category: "Analytics",
     },
   ];
 
@@ -164,9 +258,24 @@ export function ApiTestPanel() {
           </div>
         </div>
       </div>
-      <div className="p-6 space-y-3">
-        {endpoints.map((ep) => (
-          <div key={ep.endpoint} className="space-y-2">
+      <div className="p-6 space-y-6">
+        {/* Group endpoints by category */}
+        {['System', 'Data', 'Analytics'].map(category => {
+          const categoryEndpoints = endpoints.filter(ep => ep.category === category);
+          if (categoryEndpoints.length === 0) return null;
+
+          return (
+            <div key={category} className="space-y-3">
+              <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  category === 'System' ? 'bg-blue-400' :
+                  category === 'Data' ? 'bg-green-400' :
+                  'bg-purple-400'
+                }`}></div>
+                {category} Endpoints
+              </h4>
+              {categoryEndpoints.map((ep) => (
+                <div key={ep.endpoint} className="space-y-2">
             <div className="flex items-center justify-between p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-slate-600/50 transition-colors">
               <div className="flex items-center gap-3 flex-1">
                 <span className={`px-2.5 py-1 text-xs font-mono font-semibold rounded ${
@@ -224,7 +333,10 @@ export function ApiTestPanel() {
               </div>
             )}
           </div>
-        ))}
+              ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
