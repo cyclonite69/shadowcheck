@@ -3,13 +3,32 @@
  * Fetches data from API and displays with shadowcheck-lite features
  */
 
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { NetworkMapboxViewer } from './NetworkMapboxViewer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Info, Filter, X, ChevronDown, Wifi, Bluetooth, Radio } from 'lucide-react';
+
+interface FilterState {
+  dateRange: { start: string; end: string };
+  networkTypes: { wifi: boolean; ble: boolean; bluetooth: boolean };
+  signalRange: [number, number];
+  searchTerm: string;
+}
 
 export function MapboxNetworkVisualization() {
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>({
+    dateRange: { start: '', end: '' },
+    networkTypes: { wifi: true, ble: true, bluetooth: true },
+    signalRange: [-100, 0],
+    searchTerm: ''
+  });
   // Fetch Mapbox token from config
   const { data: config } = useQuery({
     queryKey: ['/api/v1/config'],
@@ -34,10 +53,68 @@ export function MapboxNetworkVisualization() {
 
   const mapboxToken = config?.mapboxToken || import.meta.env.VITE_MAPBOX_TOKEN || '';
 
+  // Client-side filtering
+  const filteredNetworks = useMemo(() => {
+    if (!networks) return [];
+
+    return networks.filter((network: any) => {
+      const props = network.properties;
+
+      // Date range filter
+      if (filters.dateRange.start || filters.dateRange.end) {
+        const obsDate = new Date(props.seen);
+        if (filters.dateRange.start && obsDate < new Date(filters.dateRange.start)) return false;
+        if (filters.dateRange.end && obsDate > new Date(filters.dateRange.end)) return false;
+      }
+
+      // Network type filter
+      const radioType = props.radio_type?.toLowerCase() || 'w';
+      if (radioType === 'w' && !filters.networkTypes.wifi) return false;
+      if (radioType === 'e' && !filters.networkTypes.ble) return false;
+      if (radioType === 'b' && !filters.networkTypes.bluetooth) return false;
+
+      // Signal strength filter
+      const signal = props.signal;
+      if (signal !== null && signal !== undefined) {
+        if (signal < filters.signalRange[0] || signal > filters.signalRange[1]) return false;
+      }
+
+      // Search term (SSID or BSSID)
+      if (filters.searchTerm) {
+        const term = filters.searchTerm.toLowerCase();
+        const ssid = (props.ssid || '').toLowerCase();
+        const bssid = (props.bssid || '').toLowerCase();
+        if (!ssid.includes(term) && !bssid.includes(term)) return false;
+      }
+
+      return true;
+    });
+  }, [networks, filters]);
+
+  const hasActiveFilters =
+    filters.dateRange.start ||
+    filters.dateRange.end ||
+    !filters.networkTypes.wifi ||
+    !filters.networkTypes.ble ||
+    !filters.networkTypes.bluetooth ||
+    filters.signalRange[0] !== -100 ||
+    filters.signalRange[1] !== 0 ||
+    filters.searchTerm;
+
+  const resetFilters = () => {
+    setFilters({
+      dateRange: { start: '', end: '' },
+      networkTypes: { wifi: true, ble: true, bluetooth: true },
+      signalRange: [-100, 0],
+      searchTerm: ''
+    });
+  };
+
   console.log('🗺️ Mapbox state:', {
     isLoading,
     hasToken: !!mapboxToken,
     networkCount: networks?.length || 0,
+    filteredCount: filteredNetworks.length,
     configData: config
   });
 
@@ -90,7 +167,7 @@ export function MapboxNetworkVisualization() {
         <div>
           <h3 className="text-lg font-semibold text-slate-300">Network Map</h3>
           <p className="text-sm text-slate-400">
-            Showing {networks.length} network observation{networks.length !== 1 ? 's' : ''}
+            Showing {filteredNetworks.length} of {networks.length} network observation{networks.length !== 1 ? 's' : ''}
           </p>
         </div>
         <div className="text-xs text-slate-500">
@@ -105,6 +182,120 @@ export function MapboxNetworkVisualization() {
           </span>
         </div>
       </div>
+
+      {/* Filter Panel */}
+      <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <div className="premium-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-2 text-slate-300 hover:text-white">
+                <Filter className="h-4 w-4" />
+                <span className="font-medium">Filters</span>
+                {hasActiveFilters && (
+                  <span className="ml-1 px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded-full">
+                    Active
+                  </span>
+                )}
+                <ChevronDown className={`h-4 w-4 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
+              </Button>
+            </CollapsibleTrigger>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetFilters}
+                className="gap-1 text-xs text-slate-400 hover:text-white"
+              >
+                <X className="h-3 w-3" />
+                Reset All
+              </Button>
+            )}
+          </div>
+
+          <CollapsibleContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-3 border-t border-slate-700/50">
+              {/* Search Filter */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-300">Search SSID / BSSID</label>
+                <Input
+                  placeholder="Filter by name or MAC..."
+                  value={filters.searchTerm}
+                  onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
+                  className="bg-slate-800/50 border-slate-700"
+                />
+              </div>
+
+              {/* Date Range Filter */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-300">Date Range</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="datetime-local"
+                    value={filters.dateRange.start}
+                    onChange={(e) => setFilters({ ...filters, dateRange: { ...filters.dateRange, start: e.target.value } })}
+                    className="bg-slate-800/50 border-slate-700 text-xs"
+                  />
+                  <Input
+                    type="datetime-local"
+                    value={filters.dateRange.end}
+                    onChange={(e) => setFilters({ ...filters, dateRange: { ...filters.dateRange, end: e.target.value } })}
+                    className="bg-slate-800/50 border-slate-700 text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Signal Strength Filter */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-300">
+                  Signal Strength: {filters.signalRange[0]} to {filters.signalRange[1]} dBm
+                </label>
+                <Slider
+                  min={-100}
+                  max={0}
+                  step={5}
+                  value={filters.signalRange}
+                  onValueChange={(value) => setFilters({ ...filters, signalRange: value as [number, number] })}
+                  className="mt-2"
+                />
+              </div>
+
+              {/* Network Type Filter */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-300">Network Types</label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={filters.networkTypes.wifi ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilters({ ...filters, networkTypes: { ...filters.networkTypes, wifi: !filters.networkTypes.wifi } })}
+                    className="flex-1 gap-1"
+                  >
+                    <Wifi className="h-3 w-3" />
+                    WiFi
+                  </Button>
+                  <Button
+                    variant={filters.networkTypes.ble ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilters({ ...filters, networkTypes: { ...filters.networkTypes, ble: !filters.networkTypes.ble } })}
+                    className="flex-1 gap-1"
+                  >
+                    <Bluetooth className="h-3 w-3" />
+                    BLE
+                  </Button>
+                  <Button
+                    variant={filters.networkTypes.bluetooth ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilters({ ...filters, networkTypes: { ...filters.networkTypes, bluetooth: !filters.networkTypes.bluetooth } })}
+                    className="flex-1 gap-1"
+                  >
+                    <Radio className="h-3 w-3" />
+                    BT
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
 
       {/* Map Container with Legend */}
       <div className="relative rounded-lg border border-slate-700/50 overflow-hidden shadow-2xl shadow-black/50">
@@ -200,7 +391,7 @@ export function MapboxNetworkVisualization() {
         {/* Map */}
         <div className="h-[700px]">
           <NetworkMapboxViewer
-            networks={networks}
+            networks={filteredNetworks}
             mapboxToken={mapboxToken}
             onNetworkClick={(network) => {
               console.log('Network clicked:', network);
