@@ -190,11 +190,7 @@ export function UnifiedNetworkView() {
         {/* Bottom Panel: Table */}
         <ResizablePanel defaultSize={40} minSize={20}>
           <div className="h-full overflow-hidden bg-slate-900">
-            <NetworkTableView
-              networks={filteredNetworks}
-              selectedNetworkId={selectedNetworkId}
-              onRowClick={handleTableRowClick}
-            />
+            <NetworkObservationsTable />
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
