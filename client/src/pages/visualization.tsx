@@ -4,6 +4,7 @@ import { NetworkObservationsTable } from "@/components/network-observations-tabl
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MapPin, Map, Search, Table, Wifi, Bluetooth } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { iconColors } from '@/lib/iconColors';
 
 export default function VisualizationPage() {
   // Fetch network data for stats
@@ -48,11 +49,11 @@ export default function VisualizationPage() {
             {/* Stats Bar */}
             <div className="flex items-center gap-6 text-sm px-2">
               <div className="flex items-center gap-2">
-                <Wifi className="h-4 w-4 text-blue-400" />
+                <Wifi className={`h-4 w-4 ${iconColors.primary.text}`} />
                 <span className="font-medium text-slate-300">{stats.total} Networks</span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-emerald-400" />
+                <MapPin className={`h-4 w-4 ${iconColors.success.text}`} />
                 <span className="font-medium text-slate-300">{stats.locations} Locations</span>
               </div>
             </div>

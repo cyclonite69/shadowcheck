@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'wouter';
 import { BarChart3, Wifi, MapPin, Shield, Activity, Zap, Radio, Bluetooth, Radar, Satellite, Target, Antenna } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ScatterChart, Scatter, ZAxis } from 'recharts';
+import { iconColors } from '@/lib/iconColors';
 
 export default function Dashboard() {
 
@@ -132,13 +133,13 @@ export default function Dashboard() {
             <CardContent className="relative p-8">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="icon-container">
-                  <Wifi className="h-8 w-8 text-blue-400" />
+                  <Wifi className={`h-8 w-8 ${iconColors.primary.text}`} />
                 </div>
                 <div>
                   <p className="text-3xl metric-value mb-2" data-testid="metric-wifi-observations">
                     {wifiStats.observations.toLocaleString()}
                   </p>
-                  <p className="text-base font-semibold text-blue-400 mb-1">WiFi Observations</p>
+                  <p className={`text-base font-semibold ${iconColors.primary.text} mb-1`}>WiFi Observations</p>
                   <p className="text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full">
                     {wifiStats.networks.toLocaleString()} networks
                   </p>
@@ -155,13 +156,13 @@ export default function Dashboard() {
             <CardContent className="relative p-8">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="icon-container">
-                  <Antenna className="h-8 w-8 text-emerald-500" />
+                  <Antenna className={`h-8 w-8 ${iconColors.success.text}`} />
                 </div>
                 <div>
                   <p className="text-3xl metric-value mb-2" data-testid="metric-cellular-observations">
                     {cellularStats.observations.toLocaleString()}
                   </p>
-                  <p className="text-base font-semibold text-emerald-500 mb-1">Cellular Observations</p>
+                  <p className={`text-base font-semibold ${iconColors.success.text} mb-1`}>Cellular Observations</p>
                   <p className="text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full">
                     {cellularStats.networks.toLocaleString()} towers
                   </p>
@@ -178,13 +179,13 @@ export default function Dashboard() {
             <CardContent className="relative p-8">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="icon-container">
-                  <Bluetooth className="h-8 w-8 text-purple-400" />
+                  <Bluetooth className={`h-8 w-8 ${iconColors.secondary.text}`} />
                 </div>
                 <div>
                   <p className="text-3xl metric-value mb-2" data-testid="metric-bluetooth-observations">
                     {bluetoothStats.observations.toLocaleString()}
                   </p>
-                  <p className="text-base font-semibold text-purple-400 mb-1">Bluetooth Observations</p>
+                  <p className={`text-base font-semibold ${iconColors.secondary.text} mb-1`}>Bluetooth Observations</p>
                   <p className="text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full">
                     {bluetoothStats.networks.toLocaleString()} devices
                   </p>
@@ -201,13 +202,13 @@ export default function Dashboard() {
             <CardContent className="relative p-8">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="icon-container">
-                  <Radio className="h-8 w-8 text-amber-500" />
+                  <Radio className={`h-8 w-8 ${iconColors.warning.text}`} />
                 </div>
                 <div>
                   <p className="text-3xl metric-value mb-2" data-testid="metric-ble-observations">
                     {bleStats.observations.toLocaleString()}
                   </p>
-                  <p className="text-base font-semibold text-amber-500 mb-1">BLE Observations</p>
+                  <p className={`text-base font-semibold ${iconColors.warning.text} mb-1`}>BLE Observations</p>
                   <p className="text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full">
                     {bleStats.networks.toLocaleString()} devices
                   </p>
@@ -224,13 +225,13 @@ export default function Dashboard() {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                   <div className="icon-container w-16 h-16">
-                    <Radar className="h-8 w-8 text-cyan-400" />
+                    <Radar className={`h-8 w-8 ${iconColors.info.text}`} />
                   </div>
                   <div>
                     <p className="text-4xl metric-value mb-2" data-testid="metric-total-observations">
                       {Number(overview.total_observations || 0).toLocaleString()}
                     </p>
-                    <p className="text-lg font-medium text-cyan-400 mb-1">Total Network Observations</p>
+                    <p className={`text-lg font-medium ${iconColors.info.text} mb-1`}>Total Network Observations</p>
                     <p className="text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full inline-block">
                       Location records in database
                     </p>
@@ -245,13 +246,13 @@ export default function Dashboard() {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                   <div className="icon-container w-16 h-16">
-                    <Shield className="h-8 w-8 text-indigo-400" />
+                    <Shield className={`h-8 w-8 ${iconColors.neutral.text}`} />
                   </div>
                   <div>
                     <p className="text-4xl metric-value mb-2" data-testid="metric-distinct-networks">
                       {Number(overview.distinct_networks || 0).toLocaleString()}
                     </p>
-                    <p className="text-lg font-medium text-indigo-400 mb-1">Distinct Networks</p>
+                    <p className={`text-lg font-medium ${iconColors.neutral.text} mb-1`}>Distinct Networks</p>
                     <p className="text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full inline-block">
                       Unique radio sources detected
                     </p>
@@ -266,7 +267,7 @@ export default function Dashboard() {
           <div className="premium-card">
           <CardHeader>
             <CardTitle className="text-slate-300 flex items-center gap-2">
-              <Shield className="h-5 w-5 text-rose-400" />
+              <Shield className={`h-5 w-5 ${iconColors.danger.text}`} />
               Network Security Breakdown
             </CardTitle>
             <CardDescription className="text-slate-400">
@@ -509,7 +510,7 @@ export default function Dashboard() {
           <div className="premium-card">
           <CardHeader>
             <CardTitle className="text-slate-300 flex items-center gap-2">
-              <Radar className="h-5 w-5 text-teal-400" />
+              <Radar className={`h-5 w-5 ${iconColors.info.text}`} />
               Radio Type Distribution
             </CardTitle>
             <CardDescription className="text-slate-400">
@@ -583,7 +584,7 @@ export default function Dashboard() {
           <div className="premium-card">
           <CardHeader>
             <CardTitle className="text-slate-300 flex items-center gap-2">
-              <Activity className="h-5 w-5 text-emerald-400" />
+              <Activity className={`h-5 w-5 ${iconColors.success.text}`} />
               Signal Strength Distribution
             </CardTitle>
             <CardDescription className="text-slate-400">
@@ -650,7 +651,7 @@ export default function Dashboard() {
           <div className="premium-card">
           <CardHeader>
             <CardTitle className="text-slate-300 flex items-center gap-2">
-              <Zap className="h-5 w-5 text-yellow-400" />
+              <Zap className={`h-5 w-5 ${iconColors.warning.text}`} />
               Network Detection Timeline
             </CardTitle>
             <CardDescription className="text-slate-400">
@@ -704,7 +705,7 @@ export default function Dashboard() {
                 <CardHeader className="relative p-8">
                   <div className="flex flex-col items-center text-center space-y-4">
                     <div className="icon-container">
-                      <Radar className="h-8 w-8 text-sky-400" />
+                      <Radar className={`h-8 w-8 ${iconColors.info.text}`} />
                     </div>
                     <div>
                       <CardTitle className="text-slate-300 text-xl mb-3">
@@ -724,7 +725,7 @@ export default function Dashboard() {
                 <CardHeader className="relative p-8">
                   <div className="flex flex-col items-center text-center space-y-4">
                     <div className="icon-container">
-                      <Shield className="h-8 w-8 text-orange-400" />
+                      <Shield className={`h-8 w-8 ${iconColors.special.text}`} />
                     </div>
                     <div>
                       <CardTitle className="text-slate-300 text-xl mb-3">
@@ -744,7 +745,7 @@ export default function Dashboard() {
           <div className="premium-card">
           <CardHeader>
             <CardTitle className="text-slate-300 flex items-center gap-2">
-              <Activity className="h-5 w-5 text-lime-400" />
+              <Activity className={`h-5 w-5 ${iconColors.success.text}`} />
               Recent SIGINT Activity
             </CardTitle>
             <CardDescription className="text-slate-400">
