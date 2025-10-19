@@ -665,7 +665,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT CASE WHEN capabilities ~* 'WPA3' THEN 'WPA3' WHEN capabilities ~* 'WPA2' THEN 'WPA2' WHEN capabilities ~* 'WPA' THEN 'WPA' WHEN capabilities ~* 'WEP' THEN 'WEP' WHEN capabilities = '[ESS]' OR capabilities IS NULL THEN 'Open' ELSE 'Other' END as security_type, COUNT(DISTINCT bssid) as value FROM app.networks_legacy WHERE type = 'wifi' GROUP BY security_type ORDER BY value DESC;",
+          "rawSql": "SELECT CASE WHEN capabilities ~* 'WPA3' THEN 'WPA3' WHEN capabilities ~* 'WPA2' THEN 'WPA2' WHEN capabilities ~* 'WPA' THEN 'WPA' WHEN capabilities ~* 'WEP' THEN 'WEP' WHEN capabilities = '[ESS]' OR capabilities IS NULL THEN 'Open' ELSE 'Other' END as security_type, COUNT(DISTINCT bssid) as value FROM app.networks_legacy WHERE type = 'W' GROUP BY security_type ORDER BY value DESC;",
           "refId": "A"
         }
       ],
@@ -768,7 +768,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT CASE WHEN capabilities ~* 'WPA3' THEN 'WPA3' WHEN capabilities ~* 'WPA2' THEN 'WPA2' WHEN capabilities ~* 'WPA' THEN 'WPA' WHEN capabilities ~* 'WEP' THEN 'WEP' WHEN capabilities = '[ESS]' OR capabilities IS NULL THEN 'Open' ELSE 'Other' END as encryption_type, COUNT(DISTINCT bssid) as networks, CASE WHEN capabilities ~* 'WPA3' THEN 'Low' WHEN capabilities ~* 'WPA2' THEN 'Low' WHEN capabilities ~* 'WPA' THEN 'Medium' WHEN capabilities ~* 'WEP' THEN 'High' WHEN capabilities = '[ESS]' OR capabilities IS NULL THEN 'High' ELSE 'Medium' END as security_risk FROM app.networks_legacy WHERE type = 'wifi' GROUP BY encryption_type, security_risk ORDER BY networks DESC;",
+          "rawSql": "SELECT CASE WHEN capabilities ~* 'WPA3' THEN 'WPA3' WHEN capabilities ~* 'WPA2' THEN 'WPA2' WHEN capabilities ~* 'WPA' THEN 'WPA' WHEN capabilities ~* 'WEP' THEN 'WEP' WHEN capabilities = '[ESS]' OR capabilities IS NULL THEN 'Open' ELSE 'Other' END as encryption_type, COUNT(DISTINCT bssid) as networks, CASE WHEN capabilities ~* 'WPA3' THEN 'Low' WHEN capabilities ~* 'WPA2' THEN 'Low' WHEN capabilities ~* 'WPA' THEN 'Medium' WHEN capabilities ~* 'WEP' THEN 'High' WHEN capabilities = '[ESS]' OR capabilities IS NULL THEN 'High' ELSE 'Medium' END as security_risk FROM app.networks_legacy WHERE type = 'W' GROUP BY encryption_type, security_risk ORDER BY networks DESC;",
           "refId": "A"
         }
       ],
@@ -1419,7 +1419,7 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT DATE_TRUNC('hour', TO_TIMESTAMP(time / 1000)) as time, n.type as metric, COUNT(DISTINCT bssid) as value FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE time IS NOT NULL AND $__timeFilter(TO_TIMESTAMP(time / 1000)) GROUP BY 1, 2 ORDER BY 1;",
+          "rawSql": "SELECT DATE_TRUNC('hour', TO_TIMESTAMP(l.time / 1000)) as time, n.type as metric, COUNT(DISTINCT l.bssid) as value FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE l.time IS NOT NULL AND $__timeFilter(TO_TIMESTAMP(l.time / 1000)) GROUP BY 1, 2 ORDER BY 1;",
           "refId": "A"
         }
       ],
@@ -1506,7 +1506,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT CASE WHEN n.frequency BETWEEN 2412 AND 2484 THEN CAST(1 + ((n.frequency - 2412) / 5) AS TEXT) WHEN n.frequency BETWEEN 5170 AND 5825 THEN CAST((n.frequency - 5000) / 5 AS TEXT) ELSE 'Unknown' END as channel, COUNT(DISTINCT l.bssid) as networks FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE n.type = 'wifi' AND n.frequency IS NOT NULL GROUP BY channel ORDER BY MIN(n.frequency);",
+          "rawSql": "SELECT CASE WHEN n.frequency BETWEEN 2412 AND 2484 THEN CAST(1 + ((n.frequency - 2412) / 5) AS TEXT) WHEN n.frequency BETWEEN 5170 AND 5825 THEN CAST((n.frequency - 5000) / 5 AS TEXT) ELSE 'Unknown' END as channel, COUNT(DISTINCT l.bssid) as networks FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE n.type = 'W' AND n.frequency IS NOT NULL GROUP BY channel ORDER BY MIN(n.frequency);",
           "refId": "A"
         }
       ],
@@ -1584,7 +1584,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT CASE WHEN n.frequency BETWEEN 2412 AND 2484 THEN '2.4 GHz' WHEN n.frequency BETWEEN 5170 AND 5825 THEN '5 GHz' WHEN n.frequency BETWEEN 5925 AND 7125 THEN '6 GHz' ELSE 'Other' END as frequency_band, COUNT(DISTINCT l.bssid) as unique_networks, COUNT(*) as total_observations, ROUND(AVG(l.level)::numeric, 2) as avg_signal_strength FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE n.type = 'wifi' AND n.frequency IS NOT NULL GROUP BY frequency_band ORDER BY MIN(n.frequency);",
+          "rawSql": "SELECT CASE WHEN n.frequency BETWEEN 2412 AND 2484 THEN '2.4 GHz' WHEN n.frequency BETWEEN 5170 AND 5825 THEN '5 GHz' WHEN n.frequency BETWEEN 5925 AND 7125 THEN '6 GHz' ELSE 'Other' END as frequency_band, COUNT(DISTINCT l.bssid) as unique_networks, COUNT(*) as total_observations, ROUND(AVG(l.level)::numeric, 2) as avg_signal_strength FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE n.type = 'W' AND n.frequency IS NOT NULL GROUP BY frequency_band ORDER BY MIN(n.frequency);",
           "refId": "A"
         }
       ],
