@@ -4,11 +4,865 @@
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
+  "graphTooltip": 1,
   "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 100,
+      "panels": [],
+      "title": "Network Discovery Overview",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "id": 1,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT bssid) as value FROM app.locations_legacy;",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Unique Networks",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT CONCAT(lat, ',', lon)) as value FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL;",
+          "refId": "A"
+        }
+      ],
+      "title": "Distinct Locations Visited",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) as value FROM app.locations_legacy;",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Observations",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "cyan",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND((COUNT(*) FILTER (WHERE lat IS NOT NULL AND lon IS NOT NULL)::numeric / NULLIF(COUNT(*), 0) * 100), 2) as value FROM app.locations_legacy;",
+          "refId": "A"
+        }
+      ],
+      "title": "GPS Coverage %",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 101,
+      "panels": [],
+      "title": "Radio Type Distribution",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": ["value", "percent"]
+        },
+        "pieType": "pie",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT n.type as network_type, COUNT(*) as count FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid GROUP BY n.type ORDER BY count DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Network Type Distribution (All Time)",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "avg_signal"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": -80
+                    },
+                    {
+                      "color": "green",
+                      "value": -60
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT n.type as radio_type, COUNT(DISTINCT l.bssid) as unique_networks, COUNT(*) as observations, ROUND(AVG(l.level)::numeric, 2) as avg_signal, MIN(l.level) as min_signal, MAX(l.level) as max_signal FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE n.type IS NOT NULL GROUP BY n.type ORDER BY observations DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Radio Type Statistics",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 102,
+      "panels": [],
+      "title": "Signal Strength Analysis",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": -90
+              },
+              {
+                "color": "yellow",
+                "value": -80
+              },
+              {
+                "color": "green",
+                "value": -70
+              },
+              {
+                "color": "blue",
+                "value": -60
+              }
+            ]
+          },
+          "unit": "dBm"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 0,
+        "y": 17
+      },
+      "id": 7,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "mean"
+          ],
+          "fields": ""
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND(AVG(level)::numeric, 2) as value FROM app.locations_legacy WHERE level IS NOT NULL;",
+          "refId": "A"
+        }
+      ],
+      "title": "Average Signal Strength",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Count",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 18,
+        "x": 6,
+        "y": 17
+      },
+      "id": 8,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE WHEN level >= -50 THEN 'Excellent (-50 to 0)' WHEN level >= -60 THEN 'Good (-60 to -50)' WHEN level >= -70 THEN 'Fair (-70 to -60)' WHEN level >= -80 THEN 'Weak (-80 to -70)' ELSE 'Very Weak (< -80)' END as signal_range, COUNT(*) as count FROM app.locations_legacy WHERE level IS NOT NULL GROUP BY signal_range ORDER BY MIN(level) DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Signal Strength Distribution",
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 103,
+      "panels": [],
+      "title": "Network Security & Encryption",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": ["value", "percent"]
+        },
+        "pieType": "donut",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE WHEN capabilities ~* 'WPA3' THEN 'WPA3' WHEN capabilities ~* 'WPA2' THEN 'WPA2' WHEN capabilities ~* 'WPA' THEN 'WPA' WHEN capabilities ~* 'WEP' THEN 'WEP' WHEN capabilities = '[ESS]' OR capabilities IS NULL THEN 'Open' ELSE 'Other' END as security_type, COUNT(DISTINCT bssid) as value FROM app.networks_legacy WHERE type = 'wifi' GROUP BY security_type ORDER BY value DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "WiFi Security Types",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "security_risk"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "value": "High",
+                    "display": {
+                      "color": "red"
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "value": "Medium",
+                    "display": {
+                      "color": "yellow"
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "value": "Low",
+                    "display": {
+                      "color": "green"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE WHEN capabilities ~* 'WPA3' THEN 'WPA3' WHEN capabilities ~* 'WPA2' THEN 'WPA2' WHEN capabilities ~* 'WPA' THEN 'WPA' WHEN capabilities ~* 'WEP' THEN 'WEP' WHEN capabilities = '[ESS]' OR capabilities IS NULL THEN 'Open' ELSE 'Other' END as encryption_type, COUNT(DISTINCT bssid) as networks, CASE WHEN capabilities ~* 'WPA3' THEN 'Low' WHEN capabilities ~* 'WPA2' THEN 'Low' WHEN capabilities ~* 'WPA' THEN 'Medium' WHEN capabilities ~* 'WEP' THEN 'High' WHEN capabilities = '[ESS]' OR capabilities IS NULL THEN 'High' ELSE 'Medium' END as security_risk FROM app.networks_legacy WHERE type = 'wifi' GROUP BY encryption_type, security_risk ORDER BY networks DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "WiFi Encryption Analysis",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "id": 104,
+      "panels": [],
+      "title": "Top Networks & SSIDs",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT n.ssid, n.bssid, n.type, COUNT(*) as observations, ROUND(AVG(l.level)::numeric, 2) as avg_signal, COUNT(DISTINCT CONCAT(l.lat, ',', l.lon)) as locations_seen, MIN(TO_TIMESTAMP(l.time / 1000)) as first_seen, MAX(TO_TIMESTAMP(l.time / 1000)) as last_seen FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE l.lat IS NOT NULL AND l.lon IS NOT NULL GROUP BY n.ssid, n.bssid, n.type ORDER BY observations DESC LIMIT 20;",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Networks by Observations",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "id": 105,
+      "panels": [],
+      "title": "Surveillance & Tracking Detection",
+      "type": "row"
+    },
     {
       "datasource": {
         "type": "postgres",
@@ -44,9 +898,9 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 0
+        "y": 43
       },
-      "id": 1,
+      "id": 12,
       "options": {
         "orientation": "auto",
         "reduceOptions": {
@@ -67,108 +921,13 @@
             "uid": "PostgreSQL"
           },
           "format": "table",
-          "group": [],
-          "metricColumn": "none",
           "rawQuery": true,
           "rawSql": "WITH home_networks AS (SELECT DISTINCT l.bssid FROM app.locations_legacy l WHERE ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography) <= 100), distant_appearances AS (SELECT l.bssid, COUNT(DISTINCT CONCAT(l.lat, ',', l.lon)) FILTER (WHERE ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography) > 500) as distant_locations FROM app.locations_legacy l WHERE l.bssid IN (SELECT bssid FROM home_networks) AND l.lat IS NOT NULL AND l.lon IS NOT NULL GROUP BY l.bssid HAVING COUNT(DISTINCT CONCAT(l.lat, ',', l.lon)) FILTER (WHERE ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography) > 500) > 0) SELECT COUNT(*) as value FROM distant_appearances;",
-          "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              }
-            ]
-          ],
-          "timeColumn": "time",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            }
-          ]
+          "refId": "A"
         }
       ],
       "title": "Surveillance Threats Detected",
       "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "PostgreSQL"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            }
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 9,
-        "x": 6,
-        "y": 0
-      },
-      "id": 2,
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "pieType": "pie",
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "PostgreSQL"
-          },
-          "format": "table",
-          "group": [],
-          "metricColumn": "none",
-          "rawQuery": true,
-          "rawSql": "SELECT n.type as network_type, COUNT(*) as count FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid GROUP BY n.type ORDER BY count DESC;",
-          "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              }
-            ]
-          ],
-          "timeColumn": "time",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            }
-          ]
-        }
-      ],
-      "title": "Network Type Distribution",
-      "type": "piechart"
     },
     {
       "datasource": {
@@ -196,10 +955,10 @@
       "gridPos": {
         "h": 8,
         "w": 9,
-        "x": 15,
-        "y": 0
+        "x": 6,
+        "y": 43
       },
-      "id": 3,
+      "id": 13,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -222,33 +981,87 @@
             "uid": "PostgreSQL"
           },
           "format": "table",
-          "group": [],
-          "metricColumn": "none",
           "rawQuery": true,
           "rawSql": "SELECT COUNT(DISTINCT CONCAT(lat, ',', lon)) as value FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL;",
-          "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              }
-            ]
-          ],
-          "timeColumn": "time",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            }
-          ]
+          "refId": "A"
         }
       ],
       "title": "Locations Visited",
       "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "cyan",
+                "value": null
+              }
+            ]
+          },
+          "unit": "m"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 15,
+        "y": 43
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH home_location AS (SELECT ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography as home_point), max_distances AS (SELECT l.bssid, MAX(ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, h.home_point)) as max_distance FROM app.locations_legacy l, home_location h WHERE l.lat IS NOT NULL AND l.lon IS NOT NULL GROUP BY l.bssid) SELECT ROUND(MAX(max_distance)::numeric, 2) as value FROM max_distances;",
+          "refId": "A"
+        }
+      ],
+      "title": "Max Distance from Home",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 51
+      },
+      "id": 106,
+      "panels": [],
+      "title": "Threat Intelligence",
+      "type": "row"
     },
     {
       "datasource": {
@@ -325,9 +1138,9 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 52
       },
-      "id": 4,
+      "id": 15,
       "options": {
         "cellHeight": "sm",
         "footer": {
@@ -348,32 +1161,434 @@
             "uid": "PostgreSQL"
           },
           "format": "table",
-          "group": [],
-          "metricColumn": "none",
           "rawQuery": true,
           "rawSql": "WITH home_networks AS (SELECT DISTINCT l.bssid FROM app.locations_legacy l WHERE ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography) <= 100), distant_appearances AS (SELECT l.bssid, n.ssid, n.type, COUNT(DISTINCT CONCAT(l.lat, ',', l.lon)) FILTER (WHERE ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography) > 500) as distant_locations, MAX(ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography)) as max_distance_meters, COUNT(*) as total_observations, CASE WHEN n.ssid ~* '(netgear|linksys|asus|dlink|belkin|tp-link|home|wifi)' THEN true ELSE false END as is_consumer_pattern FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE l.bssid IN (SELECT bssid FROM home_networks) AND l.lat IS NOT NULL AND l.lon IS NOT NULL GROUP BY l.bssid, n.ssid, n.type HAVING COUNT(DISTINCT CONCAT(l.lat, ',', l.lon)) FILTER (WHERE ST_Distance(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography, ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography) > 500) > 0) SELECT bssid, ssid, type, distant_locations, ROUND((max_distance_meters / 1000)::numeric, 2) as max_distance_km, total_observations, is_consumer_pattern, CASE WHEN max_distance_meters > 10000 OR (is_consumer_pattern AND distant_locations > 2) THEN 'CRITICAL' WHEN max_distance_meters > 5000 OR is_consumer_pattern THEN 'HIGH' WHEN max_distance_meters > 1000 THEN 'MEDIUM' ELSE 'LOW' END as threat_level FROM distant_appearances ORDER BY max_distance_meters DESC LIMIT 20;",
-          "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              }
-            ]
-          ],
-          "timeColumn": "time",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            }
-          ]
+          "refId": "A"
         }
       ],
       "title": "Active Surveillance Threats",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      },
+      "id": 107,
+      "panels": [],
+      "title": "Network Vendor & Manufacturer Analysis",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 65
+      },
+      "id": 16,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": ["value", "percent"]
+        },
+        "pieType": "pie",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH network_ouis AS (SELECT DISTINCT l.bssid, UPPER(REPLACE(SUBSTRING(l.bssid, 1, 8), ':', '')) as oui FROM app.locations_legacy l WHERE l.bssid IS NOT NULL) SELECT COALESCE(m.organization_name, 'Unknown') as manufacturer, COUNT(*) as value FROM network_ouis n LEFT JOIN app.radio_manufacturers m ON n.oui = m.oui_prefix_24bit GROUP BY manufacturer ORDER BY value DESC LIMIT 15;",
+          "refId": "A"
+        }
+      ],
+      "title": "Top 15 Manufacturers by Network Count",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "networks"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "observations"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 65
+      },
+      "id": 17,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH network_ouis AS (SELECT l.bssid, UPPER(REPLACE(SUBSTRING(l.bssid, 1, 8), ':', '')) as oui, COUNT(*) as obs_count FROM app.locations_legacy l WHERE l.bssid IS NOT NULL GROUP BY l.bssid, oui) SELECT COALESCE(m.organization_name, 'Unknown Manufacturer') as manufacturer, COUNT(DISTINCT n.bssid) as networks, SUM(n.obs_count) as observations, ROUND(AVG(n.obs_count)::numeric, 2) as avg_obs_per_network FROM network_ouis n LEFT JOIN app.radio_manufacturers m ON n.oui = m.oui_prefix_24bit GROUP BY manufacturer ORDER BY networks DESC LIMIT 20;",
+          "refId": "A"
+        }
+      ],
+      "title": "Manufacturer Statistics",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 73
+      },
+      "id": 108,
+      "panels": [],
+      "title": "Temporal & Channel Analysis",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Networks Discovered",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 74
+      },
+      "id": 18,
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT DATE_TRUNC('hour', TO_TIMESTAMP(time / 1000)) as time, n.type as metric, COUNT(DISTINCT bssid) as value FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE time IS NOT NULL AND $__timeFilter(TO_TIMESTAMP(time / 1000)) GROUP BY 1, 2 ORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Network Discovery Over Time (by Radio Type)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Networks",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 82
+      },
+      "id": 19,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE WHEN n.frequency BETWEEN 2412 AND 2484 THEN CAST(1 + ((n.frequency - 2412) / 5) AS TEXT) WHEN n.frequency BETWEEN 5170 AND 5825 THEN CAST((n.frequency - 5000) / 5 AS TEXT) ELSE 'Unknown' END as channel, COUNT(DISTINCT l.bssid) as networks FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE n.type = 'wifi' AND n.frequency IS NOT NULL GROUP BY channel ORDER BY MIN(n.frequency);",
+          "refId": "A"
+        }
+      ],
+      "title": "WiFi Channel Distribution",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "PostgreSQL"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "frequency_ghz"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 82
+      },
+      "id": 20,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "PostgreSQL"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE WHEN n.frequency BETWEEN 2412 AND 2484 THEN '2.4 GHz' WHEN n.frequency BETWEEN 5170 AND 5825 THEN '5 GHz' WHEN n.frequency BETWEEN 5925 AND 7125 THEN '6 GHz' ELSE 'Other' END as frequency_band, COUNT(DISTINCT l.bssid) as unique_networks, COUNT(*) as total_observations, ROUND(AVG(l.level)::numeric, 2) as avg_signal_strength FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE n.type = 'wifi' AND n.frequency IS NOT NULL GROUP BY frequency_band ORDER BY MIN(n.frequency);",
+          "refId": "A"
+        }
+      ],
+      "title": "WiFi Frequency Band Analysis",
       "type": "table"
     }
   ],
