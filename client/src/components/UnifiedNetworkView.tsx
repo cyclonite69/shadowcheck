@@ -7,7 +7,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 import { NetworkMapboxViewer } from '@/components/Map/NetworkMapboxViewer';
-import { NetworkObservationsTable } from '@/components/network-observations-table';
+import { NetworkTableView } from '@/components/NetworkTableView';
 import { NetworkFilters } from '@/components/NetworkFilters';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -104,11 +104,23 @@ export function UnifiedNetworkView() {
   const handleNetworkClick = useCallback((network: any) => {
     const networkId = network.properties?.bssid || network.properties?.uid;
     setSelectedNetworkId(networkId);
-    // Scroll table to show this row (Phase 2 enhancement)
+    // Scroll table to show this row
     setTimeout(() => {
       const row = document.getElementById(`network-row-${networkId}`);
       row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
+  }, []);
+
+  // Handle table row click → center map on location (Phase 2)
+  const handleTableRowClick = useCallback((network: any) => {
+    const networkId = network.properties?.bssid || network.properties?.uid;
+    setSelectedNetworkId(networkId);
+
+    // Extract coordinates from network
+    const coords = network.geometry?.coordinates;
+    if (coords && coords.length === 2) {
+      setMapCenter([coords[0], coords[1]]);
+    }
   }, []);
 
   const mapboxToken = config?.mapboxToken || import.meta.env.VITE_MAPBOX_TOKEN || '';
@@ -156,6 +168,8 @@ export function UnifiedNetworkView() {
               networks={filteredNetworks}
               mapboxToken={mapboxToken}
               onNetworkClick={handleNetworkClick}
+              selectedNetworkId={selectedNetworkId}
+              center={mapCenter}
             />
 
             {/* Map Tools Overlay - Phase 4 enhancement */}
@@ -176,7 +190,11 @@ export function UnifiedNetworkView() {
         {/* Bottom Panel: Table */}
         <ResizablePanel defaultSize={40} minSize={20}>
           <div className="h-full overflow-hidden bg-slate-900">
-            <NetworkObservationsTable />
+            <NetworkTableView
+              networks={filteredNetworks}
+              selectedNetworkId={selectedNetworkId}
+              onRowClick={handleTableRowClick}
+            />
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
