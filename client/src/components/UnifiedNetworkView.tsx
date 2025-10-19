@@ -7,7 +7,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 import { NetworkMapboxViewer } from '@/components/Map/NetworkMapboxViewer';
-import { NetworkTableView } from '@/components/NetworkTableView';
+import { NetworkObservationsTable } from '@/components/network-observations-table';
 import { NetworkFilters } from '@/components/NetworkFilters';
 import { Skeleton } from '@/components/ui/skeleton';
 
