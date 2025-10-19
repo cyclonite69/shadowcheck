@@ -1,17 +1,16 @@
 /**
  * Network Table View - Simplified table for unified view
- * Accepts networks as props and supports selection/click
+ * Accepts networks as props and supports row selection
  */
 
-import { useMemo } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Wifi, Bluetooth, Signal, Radio } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useMemo, useEffect, useRef } from 'react';
+import { Wifi, Bluetooth, Signal, Shield, ShieldAlert, ShieldCheck, Radio } from 'lucide-react';
+import { formatForensicsTime } from '@/lib/dateUtils';
+import { parseWiFiSecurity, parseNonWiFiSecurity, getSecurityLevelColor } from '@/lib/securityUtils';
 import { iconColors } from '@/lib/iconColors';
-import { formatRelativeTime } from '@/lib/dateUtils';
-import { parseWiFiSecurity, getSecurityLevelColor } from '@/lib/securityUtils';
+import { cn } from '@/lib/utils';
 
-interface Network {
+interface NetworkFeature {
   type: 'Feature';
   geometry: {
     type: 'Point';
@@ -22,12 +21,11 @@ interface Network {
     bssid: string;
     ssid: string;
     frequency?: number;
-    signal?: number | null;
     signal_strength?: number | null;
+    signal?: number | null;
     encryption?: string;
-    capabilities?: string;
-    seen?: string;
     observed_at?: string;
+    seen?: string;
     radio_type?: string;
     latitude?: number;
     longitude?: number;
@@ -35,142 +33,168 @@ interface Network {
 }
 
 interface NetworkTableViewProps {
-  networks: Network[];
+  networks: NetworkFeature[];
   selectedNetworkId?: string | null;
-  onRowClick?: (network: Network) => void;
+  onRowClick?: (network: NetworkFeature) => void;
 }
 
-const getRadioTypeIcon = (type: string) => {
-  const upperType = type?.toUpperCase() || 'W';
-  switch (upperType) {
-    case 'W':
-      return <Wifi className={`w-4 h-4 ${iconColors.primary.text}`} />;
-    case 'B':
-      return <Bluetooth className={`w-4 h-4 ${iconColors.secondary.text}`} />;
-    case 'E':
-      return <Signal className={`w-4 h-4 ${iconColors.warning.text}`} />;
-    default:
-      return <Radio className={`w-4 h-4 ${iconColors.neutral.text}`} />;
-  }
-};
-
-const getRadioTypeName = (type: string) => {
-  const upperType = type?.toUpperCase() || 'W';
-  switch (upperType) {
-    case 'W':
-      return 'WiFi';
-    case 'B':
-      return 'Bluetooth';
-    case 'E':
-      return 'BLE';
-    case 'G':
-      return 'GSM';
-    case 'L':
-      return 'LTE';
-    case 'N':
-      return 'NR';
-    default:
-      return 'Unknown';
-  }
-};
-
 export function NetworkTableView({ networks, selectedNetworkId, onRowClick }: NetworkTableViewProps) {
-  const displayNetworks = useMemo(() => {
-    return networks.slice(0, 500); // Limit to 500 for performance
+  const displayLimit = 500; // Show first 500 networks for performance
+  const selectedRowRef = useRef<HTMLTableRowElement>(null);
+
+  // Scroll to selected row when selection changes
+  useEffect(() => {
+    if (selectedNetworkId && selectedRowRef.current) {
+      selectedRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [selectedNetworkId]);
+
+  const displayedNetworks = useMemo(() => {
+    return networks.slice(0, displayLimit);
   }, [networks]);
+
+  const getRadioIcon = (type?: string) => {
+    const radioType = type?.toUpperCase() || 'W';
+
+    switch (radioType) {
+      case 'W':
+        return <Wifi className={`h-4 w-4 ${iconColors.primary.text}`} />;
+      case 'B':
+        return <Bluetooth className={`h-4 w-4 ${iconColors.secondary.text}`} />;
+      case 'E':
+      case 'L':
+        return <Signal className={`h-4 w-4 ${iconColors.warning.text}`} />;
+      default:
+        return <Radio className="h-4 w-4 text-slate-400" />;
+    }
+  };
+
+  const getSignalColor = (signal?: number | null) => {
+    if (!signal) return 'text-slate-500';
+    if (signal >= -50) return 'text-green-400';
+    if (signal >= -70) return 'text-yellow-400';
+    if (signal >= -85) return 'text-orange-400';
+    return 'text-red-400';
+  };
+
+  const getSecurityBadge = (encryption?: string) => {
+    if (!encryption) return null;
+
+    const security = parseWiFiSecurity(encryption) || parseNonWiFiSecurity(encryption);
+    const color = getSecurityLevelColor(security.level);
+
+    const Icon = security.level === 'high' ? ShieldAlert :
+                 security.level === 'low' ? ShieldCheck : Shield;
+
+    return (
+      <span className={cn(
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium',
+        color === 'red' && 'bg-red-500/10 text-red-400 border border-red-500/20',
+        color === 'yellow' && 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
+        color === 'green' && 'bg-green-500/10 text-green-400 border border-green-500/20'
+      )}>
+        <Icon className="h-3 w-3" />
+        {security.type}
+      </span>
+    );
+  };
+
+  const getNetworkId = (network: NetworkFeature) => {
+    return network.properties.bssid || network.properties.uid || '';
+  };
 
   if (networks.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-400">
-        <p>No networks found. Adjust filters to see data.</p>
+      <div className="flex items-center justify-center h-full text-slate-500">
+        <p>No networks found. Adjust filters to see results.</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-auto bg-slate-900">
-      <Table>
-        <TableHeader className="sticky top-0 bg-slate-800 z-10">
-          <TableRow>
-            <TableHead className="w-12 text-slate-300">Type</TableHead>
-            <TableHead className="text-slate-300">SSID</TableHead>
-            <TableHead className="text-slate-300">BSSID</TableHead>
-            <TableHead className="w-24 text-center text-slate-300">Signal</TableHead>
-            <TableHead className="w-32 text-slate-300">Security</TableHead>
-            <TableHead className="w-32 text-slate-300">Last Seen</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {displayNetworks.map((network) => {
-            const networkId = network.properties.bssid || network.properties.uid;
-            const isSelected = networkId === selectedNetworkId;
-            const signal = network.properties.signal ?? network.properties.signal_strength;
-            const radioType = network.properties.radio_type || 'W';
-            const security = radioType.toUpperCase() === 'W'
-              ? parseWiFiSecurity(network.properties.capabilities || network.properties.encryption || '')
-              : 'N/A';
+    <div className="h-full flex flex-col bg-slate-900">
+      {/* Table Header */}
+      <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/50">
+        <h3 className="text-sm font-semibold text-slate-300">
+          Showing {displayedNetworks.length.toLocaleString()} of {networks.length.toLocaleString()} networks
+        </h3>
+      </div>
 
-            return (
-              <TableRow
-                key={networkId}
-                id={`network-row-${networkId}`}
-                onClick={() => onRowClick?.(network)}
-                className={cn(
-                  'cursor-pointer hover:bg-slate-800 transition-colors',
-                  isSelected && 'bg-blue-900/30 border-l-4 border-blue-500'
-                )}
-              >
-                <TableCell>
-                  <div className="flex items-center justify-center">
-                    {getRadioTypeIcon(radioType)}
-                  </div>
-                </TableCell>
-                <TableCell className="font-medium text-slate-200">
-                  {network.properties.ssid || <span className="text-slate-500 italic">Hidden</span>}
-                </TableCell>
-                <TableCell className="font-mono text-sm text-slate-400">
-                  {network.properties.bssid}
-                </TableCell>
-                <TableCell className="text-center">
-                  {signal !== null && signal !== undefined ? (
-                    <span className={cn(
-                      'font-semibold',
-                      signal > -60 ? 'text-green-400' :
-                      signal > -70 ? 'text-yellow-400' :
-                      signal > -80 ? 'text-orange-400' :
-                      'text-red-400'
-                    )}>
-                      {signal} dBm
-                    </span>
-                  ) : (
-                    <span className="text-slate-600">—</span>
+      {/* Scrollable Table Container */}
+      <div className="flex-1 overflow-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-slate-800 border-b border-slate-700 z-10">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Type</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">SSID</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">BSSID</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Signal</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Frequency</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Security</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Last Seen</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800">
+            {displayedNetworks.map((network) => {
+              const networkId = getNetworkId(network);
+              const isSelected = selectedNetworkId === networkId;
+              const props = network.properties;
+              const signal = props.signal_strength ?? props.signal;
+
+              return (
+                <tr
+                  key={networkId}
+                  id={`network-row-${networkId}`}
+                  ref={isSelected ? selectedRowRef : null}
+                  onClick={() => onRowClick?.(network)}
+                  className={cn(
+                    'cursor-pointer transition-all',
+                    'hover:bg-slate-800/50',
+                    isSelected && 'bg-blue-500/10 border-l-4 border-l-blue-500'
                   )}
-                </TableCell>
-                <TableCell>
-                  {radioType.toUpperCase() === 'W' ? (
-                    <span className={cn(
-                      'text-xs px-2 py-1 rounded',
-                      getSecurityLevelColor(security)
-                    )}>
-                      {security}
+                >
+                  <td className="px-4 py-3">
+                    {getRadioIcon(props.radio_type)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-slate-200 font-medium">
+                      {props.ssid || <span className="text-slate-500 italic">Hidden</span>}
                     </span>
-                  ) : (
-                    <span className="text-slate-500 text-xs">
-                      {getRadioTypeName(radioType)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <code className="text-xs text-slate-400">{props.bssid}</code>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={cn('font-mono text-xs', getSignalColor(signal))}>
+                      {signal ? `${signal} dBm` : '-'}
                     </span>
-                  )}
-                </TableCell>
-                <TableCell className="text-sm text-slate-400">
-                  {formatRelativeTime(network.properties.seen || network.properties.observed_at || '')}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-      {networks.length > 500 && (
-        <div className="sticky bottom-0 bg-slate-800 border-t border-slate-700 p-3 text-center text-sm text-slate-400">
-          Showing 500 of {networks.length.toLocaleString()} networks. Use filters to refine results.
+                  </td>
+                  <td className="px-4 py-3 text-slate-300">
+                    {props.frequency ? `${props.frequency} MHz` : '-'}
+                  </td>
+                  <td className="px-4 py-3">
+                    {getSecurityBadge(props.encryption)}
+                  </td>
+                  <td className="px-4 py-3 text-slate-400 text-xs">
+                    {props.observed_at ? formatForensicsTime(props.observed_at) :
+                     props.seen ? formatForensicsTime(props.seen) : '-'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer showing if there are more networks */}
+      {networks.length > displayLimit && (
+        <div className="px-4 py-3 border-t border-slate-700 bg-slate-800/50">
+          <p className="text-xs text-slate-500">
+            Showing first {displayLimit} networks. {(networks.length - displayLimit).toLocaleString()} more hidden for performance.
+          </p>
         </div>
       )}
     </div>

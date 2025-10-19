@@ -7,7 +7,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 import { NetworkMapboxViewer } from '@/components/Map/NetworkMapboxViewer';
-import { NetworkObservationsTable } from '@/components/network-observations-table';
+import { NetworkTableView } from '@/components/NetworkTableView';
 import { NetworkFilters } from '@/components/NetworkFilters';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -44,13 +44,35 @@ export function UnifiedNetworkView() {
     },
   });
 
-  // Fetch network data with filters
+  // Fetch ALL observations (not just unique networks)
   const { data: networksResponse, isLoading } = useQuery({
-    queryKey: ['/api/v1/visualize', filters],
+    queryKey: ['/api/v1/networks', filters],
     queryFn: async () => {
-      const res = await fetch('/api/v1/visualize?limit=100000');
+      const res = await fetch('/api/v1/networks?limit=200000&group_by_bssid=false');
       const json = await res.json();
-      return json.ok ? json.data.features : [];
+      if (!json.ok) return [];
+
+      // Convert API response to GeoJSON format for map
+      return json.data.map((obs: any) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [parseFloat(obs.longitude), parseFloat(obs.latitude)]
+        },
+        properties: {
+          bssid: obs.bssid,
+          ssid: obs.ssid,
+          frequency: obs.frequency,
+          signal_strength: obs.signal_strength,
+          signal: obs.signal_strength,
+          encryption: obs.encryption,
+          observed_at: obs.observed_at,
+          seen: obs.observed_at,
+          radio_type: obs.type,
+          latitude: parseFloat(obs.latitude),
+          longitude: parseFloat(obs.longitude)
+        }
+      }));
     },
     refetchInterval: 30000,
     staleTime: 15000,
@@ -190,7 +212,11 @@ export function UnifiedNetworkView() {
         {/* Bottom Panel: Table */}
         <ResizablePanel defaultSize={40} minSize={20}>
           <div className="h-full overflow-hidden bg-slate-900">
-            <NetworkObservationsTable />
+            <NetworkTableView
+              networks={filteredNetworks}
+              selectedNetworkId={selectedNetworkId}
+              onRowClick={handleTableRowClick}
+            />
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
