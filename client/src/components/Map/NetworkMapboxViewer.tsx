@@ -44,12 +44,16 @@ interface NetworkMapboxViewerProps {
   networks: NetworkFeature[];
   mapboxToken: string;
   onNetworkClick?: (network: NetworkFeature) => void;
+  selectedNetworkId?: string | null;
+  center?: [number, number] | null;
 }
 
 export function NetworkMapboxViewer({
   networks,
   mapboxToken,
-  onNetworkClick
+  onNetworkClick,
+  selectedNetworkId = null,
+  center = null
 }: NetworkMapboxViewerProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -261,6 +265,24 @@ export function NetworkMapboxViewer({
       });
     }
 
+    // Add selected point highlight layer
+    if (!currentMap.getLayer('selected-point')) {
+      currentMap.addLayer({
+        id: 'selected-point',
+        type: 'circle',
+        source: 'wifi',
+        filter: ['all', ['!', ['has', 'point_count']], ['==', 'bssid', '']],
+        paint: {
+          'circle-radius': 12,
+          'circle-color': '#3b82f6',
+          'circle-opacity': 0.3,
+          'circle-stroke-color': '#3b82f6',
+          'circle-stroke-width': 3,
+          'circle-stroke-opacity': 1
+        }
+      });
+    }
+
     // Click handler for clusters - zoom in
     const clusterClickHandler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
       if (!e.features || e.features.length === 0) return;
@@ -294,6 +316,24 @@ export function NetworkMapboxViewer({
     // Wire up professional tooltips using project's existing system
     const cleanupTooltip = wireTooltipNetwork(currentMap, 'pts', { env: 'urban', min: 8, max: 250 });
 
+    // Add click handler for individual points
+    const pointClickHandler = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+      if (!e.features || e.features.length === 0) return;
+
+      const feature = e.features[0];
+      if (onNetworkClick && feature) {
+        onNetworkClick(feature as any);
+      }
+    };
+
+    currentMap.on('click', 'pts', pointClickHandler);
+    currentMap.on('mouseenter', 'pts', () => {
+      currentMap.getCanvas().style.cursor = 'pointer';
+    });
+    currentMap.on('mouseleave', 'pts', () => {
+      currentMap.getCanvas().style.cursor = '';
+    });
+
     // Fit bounds to data
     if (processedFeatures.length > 0) {
       const coords = processedFeatures.map(f => f.geometry.coordinates);
@@ -317,6 +357,11 @@ export function NetworkMapboxViewer({
       currentMap.off('click', 'clusters', clusterClickHandler);
       currentMap.off('mouseenter', 'clusters');
       currentMap.off('mouseleave', 'clusters');
+
+      // Clean up point event listeners
+      currentMap.off('click', 'pts', pointClickHandler);
+      currentMap.off('mouseenter', 'pts');
+      currentMap.off('mouseleave', 'pts');
 
       // Clean up tooltip system
       if (cleanupTooltip) cleanupTooltip();
@@ -348,6 +393,32 @@ export function NetworkMapboxViewer({
       }
     };
   }, [mapLoaded]);
+
+  // Update selected point highlight
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    const layer = map.current.getLayer('selected-point');
+    if (layer) {
+      map.current.setFilter('selected-point', [
+        'all',
+        ['!', ['has', 'point_count']],
+        ['==', 'bssid', selectedNetworkId || '']
+      ]);
+    }
+  }, [selectedNetworkId, mapLoaded]);
+
+  // Center map on selected network
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !center) return;
+
+    map.current.flyTo({
+      center: center,
+      zoom: Math.max(map.current.getZoom(), 16),
+      duration: 1000,
+      essential: true
+    });
+  }, [center, mapLoaded]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
