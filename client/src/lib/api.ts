@@ -135,6 +135,7 @@ export const api = {
     offset?: number;
     before_time_ms?: number;
     distinct_latest?: boolean;
+    group_by_bssid?: boolean;
     search?: string;
     radio_types?: string[];
     min_signal?: number;
@@ -148,6 +149,7 @@ export const api = {
     if (options?.offset) params.append('offset', options.offset.toString());
     if (options?.before_time_ms) params.append('before_time_ms', options.before_time_ms.toString());
     if (options?.distinct_latest) params.append('distinct_latest', '1');
+    if (options?.group_by_bssid) params.append('group_by_bssid', '1');
     if (options?.search) params.append('search', options.search);
     if (options?.radio_types && options.radio_types.length > 0) {
       params.append('radio_types', options.radio_types.join(','));

@@ -92,7 +92,8 @@ export function NetworkObservationsTable() {
   const { data: networks, isLoading, error } = useQuery({
     queryKey: ["/api/v1/networks", searchTerm, enabledRadioTypes, signalFilter, frequencyFilter],
     queryFn: () => api.getNetworks({
-      limit: 100000, // Request up to 100K observations - no artificial limit
+      limit: 200000, // Request up to 200K unique networks (enough for whole dataset)
+      group_by_bssid: true, // Get unique networks with observation counts
       search: searchTerm || undefined,
       radio_types: enabledRadioTypes.length < 4 ? enabledRadioTypes : undefined,
       min_signal: signalFilter.min !== -100 ? signalFilter.min : undefined,
@@ -338,7 +339,7 @@ export function NetworkObservationsTable() {
                   Network Observations
                 </h3>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  {filteredAndSortedNetworks.length} of {networks?.data?.length || 0} observations
+                  {filteredAndSortedNetworks.length} of {networks?.data?.length || 0} networks
                 </p>
               </div>
             </div>
@@ -986,7 +987,7 @@ export function NetworkObservationsTable() {
                 <div className="px-6 py-4 border-t border-border/20 bg-muted/10">
                   <div className="flex items-center justify-between text-sm">
                     <div className="text-muted-foreground">
-                      Showing {displayedNetworks.length} of {filteredAndSortedNetworks.length} observations
+                      Showing {displayedNetworks.length} of {filteredAndSortedNetworks.length} networks
                       {hasActiveFilters && <span className="text-primary ml-2">(filtered from {networks.data.length} total)</span>}
                     </div>
                     <div className="flex items-center gap-2">
