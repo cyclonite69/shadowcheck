@@ -83,6 +83,7 @@ app.get("/healthz", (_req, res) => res.json({ ok: true }));
  */
 app.get("/api/v1/networks", async (req, res) => {
   const distinctLatest = String(req.query.distinct_latest || "") === "1";
+  const groupByBssid = String(req.query.group_by_bssid || "") === "1";
   const limit = toInt(req.query.limit, 100);
   const offset = toInt(req.query.offset, 0);
 
@@ -95,6 +96,113 @@ app.get("/api/v1/networks", async (req, res) => {
   const maxFreq = req.query.max_freq ? Number(req.query.max_freq) : null;
 
   try {
+    if (groupByBssid) {
+      // Group by BSSID mode: one row per unique network with observation counts
+      const params: any[] = [];
+      const where: string[] = [];
+
+      // Search filter
+      if (search) {
+        params.push(`%${search}%`);
+        where.push(`(LOWER(n.bssid) LIKE $${params.length} OR LOWER(n.ssid) LIKE $${params.length})`);
+      }
+
+      // Radio type filter
+      if (radioTypes.length > 0) {
+        const radioConditions: string[] = [];
+        radioTypes.forEach(type => {
+          if (type === 'cell') {
+            radioConditions.push(`n.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'`);
+          } else if (type === 'bluetooth') {
+            radioConditions.push(`(n.type = 'B')`);
+          } else if (type === 'ble') {
+            radioConditions.push(`(n.frequency = 0 OR n.frequency BETWEEN 1 AND 500)`);
+          } else if (type === 'wifi') {
+            radioConditions.push(`(n.frequency BETWEEN 2400 AND 6000)`);
+          }
+        });
+        if (radioConditions.length > 0) {
+          where.push(`(${radioConditions.join(' OR ')})`);
+        }
+      }
+
+      params.push(limit, offset);
+
+      const sql = `
+        WITH latest_networks AS (
+          SELECT DISTINCT ON (bssid)
+            bssid, ssid, type, frequency, capabilities, service
+          FROM app.networks_legacy
+          ORDER BY bssid, lasttime DESC NULLS LAST
+        ),
+        latest_observations AS (
+          SELECT DISTINCT ON (bssid)
+            bssid, lat, lon, altitude, accuracy, level, time
+          FROM app.locations_legacy
+          ORDER BY bssid, time DESC NULLS LAST
+        ),
+        grouped_observations AS (
+          SELECT
+            l.bssid,
+            COUNT(*) as observation_count
+          FROM app.locations_legacy l
+          GROUP BY l.bssid
+        )
+        SELECT
+          g.bssid,
+          n.ssid,
+          n.type,
+          n.frequency,
+          n.capabilities,
+          lo.level as signal_strength,
+          lo.lat as latitude,
+          lo.lon as longitude,
+          lo.altitude,
+          lo.accuracy,
+          lo.time,
+          g.observation_count,
+          TO_TIMESTAMP(lo.time::bigint / 1000) as observed_at,
+          COUNT(*) OVER() AS total_count
+        FROM grouped_observations g
+        LEFT JOIN latest_networks n ON g.bssid = n.bssid
+        LEFT JOIN latest_observations lo ON g.bssid = lo.bssid
+        ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+        ORDER BY lo.time DESC NULLS LAST
+        LIMIT $${params.length - 1} OFFSET $${params.length};
+      `;
+      const { rows } = await pool.query(sql, params);
+      const total_count = rows.length ? Number(rows[0].total_count) : 0;
+
+      return res.json({
+        ok: true,
+        mode: "grouped",
+        count: rows.length,
+        total_count,
+        data: rows.map(row => {
+          const { total_count, ...networkData } = row;
+          const frequency = networkData.frequency;
+          const calculatedChannel = calculateChannel(frequency);
+
+          return {
+            id: networkData.bssid,
+            bssid: networkData.bssid,
+            ssid: networkData.ssid,
+            frequency: frequency,
+            channel: calculatedChannel,
+            encryption: networkData.capabilities,
+            latitude: networkData.latitude ? String(networkData.latitude) : undefined,
+            longitude: networkData.longitude ? String(networkData.longitude) : undefined,
+            altitude: networkData.altitude,
+            accuracy: networkData.accuracy,
+            observed_at: networkData.observed_at?.toISOString() || networkData.time,
+            signal_strength: networkData.signal_strength,
+            observation_count: Number(networkData.observation_count) || 0,
+            type: networkData.type
+          };
+        })
+      });
+    }
+
     if (distinctLatest) {
       // latest-per-bssid path (matches visualize_latest)
       const params: any[] = [];
