@@ -1,4 +1,4 @@
-import ReactDOM from "react-dom";
+import { createRoot, Root } from "react-dom/client";
 import OriginalTooltip from "@/components/ref-tooltip/OriginalTooltip";
 import "@/components/ref-tooltip/ref-tooltip.css";
 
@@ -102,6 +102,7 @@ export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Op
   const max = typeof opts.max === "number" ? opts.max : 250;
 
   let tooltipLocked = false;
+  let reactRoot: Root | null = null;
 
   // Add range source
   if (!map.getSource("range")) {
@@ -137,7 +138,10 @@ export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Op
   const hideTooltip = () => {
     tipRoot.style.left = "-9999px";
     tipRoot.style.top = "-9999px";
-    try { ReactDOM.render(<></>, tipRoot); } catch {}
+    if (reactRoot) {
+      reactRoot.unmount();
+      reactRoot = null;
+    }
   };
   const clearRange = () => {
     (map.getSource("range") as any)?.setData({ type: "FeatureCollection", features: [] });
@@ -212,7 +216,10 @@ export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Op
     tipRoot.style.left = `${x}px`;
     tipRoot.style.top = `${y}px`;
 
-    ReactDOM.render(<OriginalTooltip {...props} />, tipRoot);
+    if (!reactRoot) {
+      reactRoot = createRoot(tipRoot);
+    }
+    reactRoot.render(<OriginalTooltip {...props} />);
     tooltipLocked = true;
   });
 
