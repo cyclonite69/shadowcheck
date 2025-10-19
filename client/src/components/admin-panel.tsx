@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Shield, Database, MemoryStick, Plug, Activity, Server, BarChart3, FileText, Bell, ExternalLink, Copy, Eye, EyeOff, Settings } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { iconColors } from '@/lib/iconColors';
 
 export function AdminPanel() {
   const [endpointsOpen, setEndpointsOpen] = useState(false);
@@ -71,27 +72,27 @@ export function AdminPanel() {
         <div className="premium-card p-2 mb-6">
           <TabsList className="grid w-full grid-cols-6 bg-transparent gap-2">
             <TabsTrigger value="system" data-testid="tab-system" className="premium-card hover:scale-105 flex items-center gap-2">
-              <Activity className="h-4 w-4 text-green-400" />
+              <Activity className={`h-4 w-4 ${iconColors.success.text}`} />
               <span className="hidden lg:inline">System</span>
             </TabsTrigger>
             <TabsTrigger value="api" data-testid="tab-api" className="premium-card hover:scale-105 flex items-center gap-2">
-              <Plug className="h-4 w-4 text-amber-400" />
+              <Plug className={`h-4 w-4 ${iconColors.warning.text}`} />
               <span className="hidden lg:inline">API</span>
             </TabsTrigger>
             <TabsTrigger value="database" data-testid="tab-database" className="premium-card hover:scale-105 flex items-center gap-2">
-              <Database className="h-4 w-4 text-cyan-400" />
+              <Database className={`h-4 w-4 ${iconColors.info.text}`} />
               <span className="hidden lg:inline">Database</span>
             </TabsTrigger>
             <TabsTrigger value="monitoring" className="premium-card hover:scale-105 flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-orange-400" />
+              <BarChart3 className={`h-4 w-4 ${iconColors.special.text}`} />
               <span className="hidden lg:inline">Monitoring</span>
             </TabsTrigger>
             <TabsTrigger value="logs" className="premium-card hover:scale-105 flex items-center gap-2">
-              <FileText className="h-4 w-4 text-emerald-400" />
+              <FileText className={`h-4 w-4 ${iconColors.success.text}`} />
               <span className="hidden lg:inline">Logs</span>
             </TabsTrigger>
             <TabsTrigger value="alerts" className="premium-card hover:scale-105 flex items-center gap-2">
-              <Bell className="h-4 w-4 text-yellow-400" />
+              <Bell className={`h-4 w-4 ${iconColors.warning.text}`} />
               <span className="hidden lg:inline">Alerts</span>
             </TabsTrigger>
           </TabsList>
@@ -439,7 +440,7 @@ export function AdminPanel() {
               {/* Service Availability Alerts */}
               <div className="space-y-3">
                 <h4 className="text-md font-semibold text-slate-200 flex items-center gap-2">
-                  <Server className="h-4 w-4 text-blue-400" />
+                  <Server className={`h-4 w-4 ${iconColors.primary.text}`} />
                   Service Availability
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -463,7 +464,7 @@ export function AdminPanel() {
               {/* Database Health Alerts */}
               <div className="space-y-3">
                 <h4 className="text-md font-semibold text-slate-200 flex items-center gap-2">
-                  <Database className="h-4 w-4 text-cyan-400" />
+                  <Database className={`h-4 w-4 ${iconColors.info.text}`} />
                   Database Health
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -487,7 +488,7 @@ export function AdminPanel() {
               {/* Memory Alerts */}
               <div className="space-y-3">
                 <h4 className="text-md font-semibold text-slate-200 flex items-center gap-2">
-                  <MemoryStick className="h-4 w-4 text-purple-400" />
+                  <MemoryStick className={`h-4 w-4 ${iconColors.secondary.text}`} />
                   Memory Usage
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

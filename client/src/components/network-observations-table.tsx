@@ -39,6 +39,7 @@ import {
 import { formatForensicsTime, formatRelativeTime } from "@/lib/dateUtils";
 import { parseWiFiSecurity, parseNonWiFiSecurity, getSecurityLevelColor } from "@/lib/securityUtils";
 import { bssidToColor, formatBSSID } from "@/utils/bssid-color";
+import { iconColors } from "@/lib/iconColors";
 
 type SortField = 'ssid' | 'bssid' | 'frequency' | 'signal_strength' | 'observed_at' | 'radio_type' | 'encryption' | 'channel' | 'observation_count';
 type SortDirection = 'asc' | 'desc';
@@ -137,10 +138,10 @@ export function NetworkObservationsTable() {
 
   function getRadioIcon(radioType: RadioType) {
     switch(radioType) {
-      case 'wifi': return <Wifi className="h-5 w-5 text-blue-400" />;
-      case 'cell': return <Signal className="h-5 w-5 text-green-400" />;
-      case 'bluetooth': return <Bluetooth className="h-5 w-5 text-purple-400" />;
-      case 'ble': return <Radio className="h-5 w-5 text-purple-300" />;
+      case 'wifi': return <Wifi className={`h-5 w-5 ${iconColors.primary.text}`} />;
+      case 'cell': return <Signal className={`h-5 w-5 ${iconColors.success.text}`} />;
+      case 'bluetooth': return <Bluetooth className={`h-5 w-5 ${iconColors.secondary.text}`} />;
+      case 'ble': return <Radio className={`h-5 w-5 ${iconColors.warning.text}`} />;
     }
   }
 
@@ -335,7 +336,7 @@ export function NetworkObservationsTable() {
               </CollapsibleTrigger>
               <div>
                 <h3 className="text-lg font-semibold text-green-300 flex items-center gap-2">
-                  <Antenna className="h-5 w-5" />
+                  <Antenna className={`h-5 w-5 ${iconColors.success.text}`} />
                   Network Observations
                 </h3>
                 <p className="text-sm text-muted-foreground mt-0.5">
@@ -387,7 +388,7 @@ export function NetworkObservationsTable() {
                       setActiveFilters(prev => ({ ...prev, wifi: checked }))
                     }
                   >
-                    <Wifi className="h-4 w-4 mr-2 text-blue-400" />
+                    <Wifi className={`h-4 w-4 mr-2 ${iconColors.primary.text}`} />
                     WiFi Networks
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
@@ -396,7 +397,7 @@ export function NetworkObservationsTable() {
                       setActiveFilters(prev => ({ ...prev, cell: checked }))
                     }
                   >
-                    <Signal className="h-4 w-4 mr-2 text-green-400" />
+                    <Signal className={`h-4 w-4 mr-2 ${iconColors.success.text}`} />
                     Cellular Towers
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
@@ -405,7 +406,7 @@ export function NetworkObservationsTable() {
                       setActiveFilters(prev => ({ ...prev, bluetooth: checked }))
                     }
                   >
-                    <Bluetooth className="h-4 w-4 mr-2 text-purple-400" />
+                    <Bluetooth className={`h-4 w-4 mr-2 ${iconColors.secondary.text}`} />
                     Bluetooth
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
@@ -414,7 +415,7 @@ export function NetworkObservationsTable() {
                       setActiveFilters(prev => ({ ...prev, ble: checked }))
                     }
                   >
-                    <Radio className="h-4 w-4 mr-2 text-purple-300" />
+                    <Radio className={`h-4 w-4 mr-2 ${iconColors.warning.text}`} />
                     Bluetooth LE
                   </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
@@ -509,7 +510,7 @@ export function NetworkObservationsTable() {
                       )
                     }
                   >
-                    <ShieldCheck className="h-4 w-4 mr-2 text-green-400" />
+                    <ShieldCheck className={`h-4 w-4 mr-2 ${iconColors.success.text}`} />
                     High (WPA3, WPA2)
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
@@ -522,7 +523,7 @@ export function NetworkObservationsTable() {
                       )
                     }
                   >
-                    <Shield className="h-4 w-4 mr-2 text-yellow-400" />
+                    <Shield className={`h-4 w-4 mr-2 ${iconColors.warning.text}`} />
                     Medium (WPA)
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
@@ -535,7 +536,7 @@ export function NetworkObservationsTable() {
                       )
                     }
                   >
-                    <ShieldAlert className="h-4 w-4 mr-2 text-red-400" />
+                    <ShieldAlert className={`h-4 w-4 mr-2 ${iconColors.danger.text}`} />
                     Low (WEP, Open)
                   </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>

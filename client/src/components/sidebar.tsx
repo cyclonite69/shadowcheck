@@ -1,16 +1,17 @@
 import { Link, useLocation } from "wouter";
 import { Home, BarChart3, Wifi, TrendingUp, Shield, Satellite, Zap, RefreshCw, Download, Server, Circle, Eye } from "lucide-react";
+import { iconColors } from "@/lib/iconColors";
 
 export function Sidebar() {
   const [location] = useLocation();
 
   const navItems = [
-    { href: "/", icon: Home, label: "Home", highlight: true },
-    { href: "/dashboard", icon: BarChart3, label: "Dashboard", highlight: true },
-    { href: "/networks", icon: Wifi, label: "Network Observations", highlight: true },
-    { href: "/visualization", icon: TrendingUp, label: "Network Visualization", highlight: true },
-    { href: "/surveillance", icon: Eye, label: "Surveillance Intelligence", highlight: true },
-    { href: "/admin", icon: Shield, label: "Admin Panel", highlight: true },
+    { href: "/", icon: Home, label: "Home", highlight: true, color: iconColors.primary },
+    { href: "/dashboard", icon: BarChart3, label: "Dashboard", highlight: true, color: iconColors.info },
+    { href: "/networks", icon: Wifi, label: "Network Observations", highlight: true, color: iconColors.primary },
+    { href: "/visualization", icon: TrendingUp, label: "Network Visualization", highlight: true, color: iconColors.success },
+    { href: "/surveillance", icon: Eye, label: "Surveillance Intelligence", highlight: true, color: iconColors.special },
+    { href: "/admin", icon: Shield, label: "Admin Panel", highlight: true, color: iconColors.neutral },
   ];
 
   return (
@@ -49,18 +50,18 @@ export function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${
                 location === item.href
-                  ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white border border-blue-500/30 shadow-lg cyber-glow"
+                  ? `bg-gradient-to-r ${item.color.bg}/20 ${item.color.border.replace('border-', 'to-')}/20 text-white border ${item.color.border}/30 shadow-lg ${item.color.glow} cyber-glow`
                   : "hover:bg-slate-800/50 text-slate-400 hover:text-slate-200 border border-transparent hover:border-slate-700/50"
               }`}
               data-testid={`nav-link-${item.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
             >
               <item.icon className={`w-5 h-5 transition-colors ${
-                location === item.href ? "text-blue-400" :
-                "text-slate-500 group-hover:text-blue-400"
+                location === item.href ? item.color.text :
+                `text-slate-500 group-hover:${item.color.text}`
               }`} />
               <span className="text-sm font-medium">{item.label}</span>
               {location === item.href && (
-                <div className="ml-auto w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                <div className={`ml-auto w-2 h-2 ${item.color.bg} rounded-full animate-pulse`}></div>
               )}
             </Link>
           ))}
@@ -69,16 +70,16 @@ export function Sidebar() {
         {/* Quick Actions */}
         <div className="mt-8">
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2 cyber-text">
-            <Zap className="h-4 w-4 text-blue-400" />
+            <Zap className={`h-4 w-4 ${iconColors.warning.text}`} />
             Quick Actions
           </h3>
           <div className="space-y-2">
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/50 hover:border-blue-500/30 transition-all duration-200 text-left cyber-glow group">
-              <RefreshCw className="h-4 w-4 text-blue-400 group-hover:animate-spin" />
+            <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/50 hover:${iconColors.primary.border}/30 transition-all duration-200 text-left cyber-glow group`}>
+              <RefreshCw className={`h-4 w-4 ${iconColors.primary.text} group-hover:animate-spin`} />
               <span className="text-xs text-slate-400 group-hover:text-slate-300">Refresh Data</span>
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/50 hover:border-purple-500/30 transition-all duration-200 text-left cyber-glow group">
-              <Download className="h-4 w-4 text-purple-400" />
+            <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/50 hover:${iconColors.info.border}/30 transition-all duration-200 text-left cyber-glow group`}>
+              <Download className={`h-4 w-4 ${iconColors.info.text}`} />
               <span className="text-xs text-slate-400 group-hover:text-slate-300">Export Data</span>
             </button>
           </div>
@@ -89,7 +90,7 @@ export function Sidebar() {
       <div className="p-4 border-t border-slate-800/50 bg-slate-950/50">
         <div className="flex flex-col gap-2 text-xs">
           <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-blue-500" />
+            <Shield className={`h-4 w-4 ${iconColors.primary.text}`} />
             <span className="font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
               ShadowCheck
             </span>

@@ -20,6 +20,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { GrafanaDashboard } from '@/components/grafana-dashboard';
+import { iconColors } from '@/lib/iconColors';
 
 // Home coordinates as reference point
 const HOME_LAT = 43.02342188;
@@ -147,13 +148,13 @@ export default function SurveillancePage() {
               <CardContent className="relative p-6">
                 <div className="flex flex-col items-center text-center space-y-4">
                   <div className="icon-container w-12 h-12">
-                    <MapPin className="h-6 w-6 text-blue-400" />
+                    <MapPin className={`h-6 w-6 ${iconColors.primary.text}`} />
                   </div>
                   <div>
                     <p className="text-3xl metric-value mb-2">
                       {statsData.total_locations.toLocaleString()}
                     </p>
-                    <p className="text-base font-semibold text-blue-400 mb-1">Total Locations</p>
+                    <p className={`text-base font-semibold ${iconColors.primary.text} mb-1`}>Total Locations</p>
                     <p className="text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full">
                       Visited spots
                     </p>
@@ -166,13 +167,13 @@ export default function SurveillancePage() {
               <CardContent className="relative p-6">
                 <div className="flex flex-col items-center text-center space-y-4">
                   <div className="icon-container w-12 h-12">
-                    <Wifi className="h-6 w-6 text-emerald-500" />
+                    <Wifi className={`h-6 w-6 ${iconColors.success.text}`} />
                   </div>
                   <div>
                     <p className="text-3xl metric-value mb-2">
                       {statsData.total_networks.toLocaleString()}
                     </p>
-                    <p className="text-base font-semibold text-emerald-500 mb-1">Networks Detected</p>
+                    <p className={`text-base font-semibold ${iconColors.success.text} mb-1`}>Networks Detected</p>
                     <p className="text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full">
                       Unique BSSIDs
                     </p>
@@ -185,13 +186,13 @@ export default function SurveillancePage() {
               <CardContent className="relative p-6">
                 <div className="flex flex-col items-center text-center space-y-4">
                   <div className="icon-container w-12 h-12">
-                    <AlertTriangle className="h-6 w-6 text-red-400" />
+                    <AlertTriangle className={`h-6 w-6 ${iconColors.danger.text}`} />
                   </div>
                   <div>
                     <p className="text-3xl metric-value mb-2 text-red-300">
                       {statsData.high_risk_networks.toLocaleString()}
                     </p>
-                    <p className="text-base font-semibold text-red-400 mb-1">High Risk</p>
+                    <p className={`text-base font-semibold ${iconColors.danger.text} mb-1`}>High Risk</p>
                     <p className="text-sm !text-slate-700 dark:!text-slate-300 bg-red-500/20 border border-red-500/30 px-3 py-1 rounded-full">
                       Suspicious patterns
                     </p>
@@ -204,13 +205,13 @@ export default function SurveillancePage() {
               <CardContent className="relative p-6">
                 <div className="flex flex-col items-center text-center space-y-4">
                   <div className="icon-container w-12 h-12">
-                    <Target className="h-6 w-6 text-purple-400" />
+                    <Target className={`h-6 w-6 ${iconColors.secondary.text}`} />
                   </div>
                   <div>
                     <p className="text-3xl metric-value mb-2 text-purple-300">
                       {statsData.locations_near_home.toLocaleString()}
                     </p>
-                    <p className="text-base font-semibold text-purple-400 mb-1">Near Home</p>
+                    <p className={`text-base font-semibold ${iconColors.secondary.text} mb-1`}>Near Home</p>
                     <p className="text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full">
                       Within 500m
                     </p>
@@ -223,13 +224,13 @@ export default function SurveillancePage() {
               <CardContent className="relative p-6">
                 <div className="flex flex-col items-center text-center space-y-4">
                   <div className="icon-container w-12 h-12">
-                    <Navigation className="h-6 w-6 text-amber-500" />
+                    <Navigation className={`h-6 w-6 ${iconColors.warning.text}`} />
                   </div>
                   <div>
                     <p className="text-3xl metric-value mb-2 text-amber-300">
                       {(statsData.avg_distance_from_home / 1000).toFixed(1)}
                     </p>
-                    <p className="text-base font-semibold text-amber-500 mb-1">Avg Distance</p>
+                    <p className={`text-base font-semibold ${iconColors.warning.text} mb-1`}>Avg Distance</p>
                     <p className="text-sm !text-slate-700 dark:!text-slate-300 silver-accent px-3 py-1 rounded-full">
                       km from home
                     </p>
@@ -244,23 +245,23 @@ export default function SurveillancePage() {
             <div className="premium-card p-2 mb-6">
               <TabsList className="grid w-full grid-cols-5 bg-transparent gap-2">
                 <TabsTrigger value="overview" className="premium-card hover:scale-105 flex items-center gap-2">
-                  <Eye className="h-4 w-4 text-purple-400" />
+                  <Eye className={`h-4 w-4 ${iconColors.secondary.text}`} />
                   <span className="hidden lg:inline">Overview</span>
                 </TabsTrigger>
                 <TabsTrigger value="locations" className="premium-card hover:scale-105 flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-blue-400" />
+                  <MapPin className={`h-4 w-4 ${iconColors.primary.text}`} />
                   <span className="hidden lg:inline">Locations</span>
                 </TabsTrigger>
                 <TabsTrigger value="networks" className="premium-card hover:scale-105 flex items-center gap-2">
-                  <Wifi className="h-4 w-4 text-emerald-400" />
+                  <Wifi className={`h-4 w-4 ${iconColors.success.text}`} />
                   <span className="hidden lg:inline">Networks</span>
                 </TabsTrigger>
                 <TabsTrigger value="threats" className="premium-card hover:scale-105 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-400" />
+                  <AlertTriangle className={`h-4 w-4 ${iconColors.danger.text}`} />
                   <span className="hidden lg:inline">Threats</span>
                 </TabsTrigger>
                 <TabsTrigger value="analytics" className="premium-card hover:scale-105 flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-orange-400" />
+                  <BarChart3 className={`h-4 w-4 ${iconColors.special.text}`} />
                   <span className="hidden lg:inline">Analytics</span>
                 </TabsTrigger>
               </TabsList>
@@ -272,7 +273,7 @@ export default function SurveillancePage() {
                 <Card className="premium-card">
                   <CardHeader>
                     <CardTitle className="text-slate-300 flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-blue-400" />
+                      <Shield className={`h-5 w-5 ${iconColors.primary.text}`} />
                       Recent Threat Activity
                     </CardTitle>
                     <CardDescription className="text-slate-400">
@@ -332,7 +333,7 @@ export default function SurveillancePage() {
                 <Card className="premium-card">
                   <CardHeader>
                     <CardTitle className="text-slate-300 flex items-center gap-2">
-                      <Activity className="h-5 w-5 text-green-400" />
+                      <Activity className={`h-5 w-5 ${iconColors.success.text}`} />
                       Location Activity Summary
                     </CardTitle>
                     <CardDescription className="text-slate-400">
@@ -355,7 +356,7 @@ export default function SurveillancePage() {
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <MapPin className="h-4 w-4 text-blue-400" />
+                                <MapPin className={`h-4 w-4 ${iconColors.primary.text}`} />
                                 <span className="text-slate-200 font-semibold">Location #{loc.location_id}</span>
                               </div>
                               <span className="text-slate-400 text-xs">
@@ -396,7 +397,7 @@ export default function SurveillancePage() {
               <Card className="premium-card">
                 <CardHeader>
                   <CardTitle className="text-slate-300 flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-blue-400" />
+                    <MapPin className={`h-5 w-5 ${iconColors.primary.text}`} />
                     Location Visit History
                   </CardTitle>
                   <CardDescription className="text-slate-400">
@@ -420,7 +421,7 @@ export default function SurveillancePage() {
                           <div className="flex items-start justify-between mb-4">
                             <div>
                               <div className="flex items-center gap-2 mb-2">
-                                <MapPin className="h-5 w-5 text-blue-400" />
+                                <MapPin className={`h-5 w-5 ${iconColors.primary.text}`} />
                                 <h3 className="text-lg font-semibold text-slate-200">
                                   Location #{loc.location_id}
                                 </h3>
@@ -478,7 +479,7 @@ export default function SurveillancePage() {
               <Card className="premium-card">
                 <CardHeader>
                   <CardTitle className="text-slate-300 flex items-center gap-2">
-                    <Wifi className="h-5 w-5 text-emerald-400" />
+                    <Wifi className={`h-5 w-5 ${iconColors.success.text}`} />
                     Network Detection Patterns
                   </CardTitle>
                   <CardDescription className="text-slate-400">
@@ -502,7 +503,7 @@ export default function SurveillancePage() {
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
-                                <Wifi className="h-5 w-5 text-emerald-400" />
+                                <Wifi className={`h-5 w-5 ${iconColors.success.text}`} />
                                 <h3 className="text-lg font-semibold text-slate-200">
                                   {network.ssid || 'Hidden Network'}
                                 </h3>
@@ -555,7 +556,7 @@ export default function SurveillancePage() {
               <Card className="premium-card">
                 <CardHeader>
                   <CardTitle className="text-slate-300 flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-red-400" />
+                    <AlertTriangle className={`h-5 w-5 ${iconColors.danger.text}`} />
                     Active Surveillance Threats
                   </CardTitle>
                   <CardDescription className="text-slate-400">
@@ -585,7 +586,7 @@ export default function SurveillancePage() {
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
-                                <AlertTriangle className="h-6 w-6 text-red-400" />
+                                <AlertTriangle className={`h-6 w-6 ${iconColors.danger.text}`} />
                                 <h3 className="text-xl font-bold text-slate-100">
                                   {threat.ssid || 'Hidden Network'}
                                 </h3>
@@ -647,7 +648,7 @@ export default function SurveillancePage() {
               <Card className="premium-card">
                 <CardHeader>
                   <CardTitle className="text-slate-300 flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-orange-400" />
+                    <BarChart3 className={`h-5 w-5 ${iconColors.special.text}`} />
                     Grafana Surveillance Analytics
                   </CardTitle>
                   <CardDescription className="text-slate-400">

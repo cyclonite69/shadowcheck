@@ -2,14 +2,14 @@ import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Shield, 
-  MapPin, 
-  Activity, 
-  Radar, 
-  Wifi, 
-  Target, 
-  Eye, 
+import {
+  Shield,
+  MapPin,
+  Activity,
+  Radar,
+  Wifi,
+  Target,
+  Eye,
   Lock,
   ArrowRight,
   BarChart3,
@@ -19,31 +19,32 @@ import {
   Antenna,
   Radio
 } from 'lucide-react';
+import { iconColors } from '@/lib/iconColors';
 
 const features = [
   {
-    icon: <Radar className="h-6 w-6" />,
+    icon: <Radar className={`h-6 w-6 ${iconColors.info.text}`} />,
     title: "Real-time Signal Intelligence",
     description: "Advanced SIGINT collection and analysis of wireless communications and RF signatures.",
-    accent: "text-blue-300"
+    accent: iconColors.info.text
   },
   {
-    icon: <MapPin className="h-6 w-6" />,
-    title: "Geospatial Intelligence", 
+    icon: <MapPin className={`h-6 w-6 ${iconColors.success.text}`} />,
+    title: "Geospatial Intelligence",
     description: "Military-grade mapping with PostGIS spatial analysis for forensic investigations.",
-    accent: "text-green-300"
+    accent: iconColors.success.text
   },
   {
-    icon: <Target className="h-6 w-6" />,
+    icon: <Target className={`h-6 w-6 ${iconColors.secondary.text}`} />,
     title: "Electronic Surveillance",
     description: "Multi-spectrum monitoring for cellular, WiFi, Bluetooth, and BLE device detection.",
-    accent: "text-purple-300"
+    accent: iconColors.secondary.text
   },
   {
-    icon: <Database className="h-6 w-6" />,
+    icon: <Database className={`h-6 w-6 ${iconColors.special.text}`} />,
     title: "Forensic Database",
     description: "Comprehensive intelligence database with advanced correlation and pattern analysis.",
-    accent: "text-orange-300"
+    accent: iconColors.special.text
   }
 ];
 
@@ -170,7 +171,7 @@ export default function HomePage() {
               <div className="premium-card cyber-border data-stream hover:scale-105">
                 <CardContent className="p-8 text-center">
                   <div className="icon-container mx-auto mb-6">
-                    <BarChart3 className="h-10 w-10 text-blue-300" />
+                    <BarChart3 className={`h-10 w-10 ${iconColors.primary.text}`} />
                   </div>
                   <h3 className="text-xl font-bold text-slate-100 mb-3">SIGINT Analytics</h3>
                   <p className="text-slate-300 cyber-text">Real-time signal intelligence metrics with advanced data correlation</p>
@@ -183,7 +184,7 @@ export default function HomePage() {
               <div className="premium-card cyber-border data-stream hover:scale-105">
                 <CardContent className="p-8 text-center">
                   <div className="icon-container mx-auto mb-6">
-                    <Radar className="h-10 w-10 text-green-300" />
+                    <Radar className={`h-10 w-10 ${iconColors.success.text}`} />
                   </div>
                   <h3 className="text-xl font-bold text-slate-100 mb-3">Electronic Warfare</h3>
                   <p className="text-slate-300 cyber-text">Multi-spectrum surveillance and RF signature analysis</p>
@@ -196,7 +197,7 @@ export default function HomePage() {
               <div className="premium-card cyber-border data-stream hover:scale-105">
                 <CardContent className="p-8 text-center">
                   <div className="icon-container mx-auto mb-6">
-                    <Target className="h-10 w-10 text-orange-300" />
+                    <Target className={`h-10 w-10 ${iconColors.special.text}`} />
                   </div>
                   <h3 className="text-xl font-bold text-slate-100 mb-3">Forensic Intelligence</h3>
                   <p className="text-slate-300 cyber-text">Advanced pattern recognition and threat assessment</p>
@@ -303,7 +304,7 @@ export default function HomePage() {
               <div className="text-center group flex-1">
                 <div className="premium-card hover:scale-105 p-8 h-full flex flex-col">
                   <div className="icon-container mx-auto mb-6">
-                    <Eye className="h-8 w-8 text-blue-300" />
+                    <Eye className={`h-8 w-8 ${iconColors.primary.text}`} />
                   </div>
                   <h3 className="text-xl font-semibold text-slate-200 mb-4">Real-time Monitoring</h3>
                   <p className="text-slate-300 flex-1">
@@ -317,7 +318,7 @@ export default function HomePage() {
               <div className="text-center group flex-1">
                 <div className="premium-card hover:scale-105 p-8 h-full flex flex-col">
                   <div className="icon-container mx-auto mb-6">
-                    <Radio className="h-8 w-8 text-green-300" />
+                    <Radio className={`h-8 w-8 ${iconColors.success.text}`} />
                   </div>
                   <h3 className="text-xl font-semibold text-slate-200 mb-4">Signal Intelligence</h3>
                   <p className="text-slate-300 flex-1">
@@ -331,7 +332,7 @@ export default function HomePage() {
               <div className="text-center group flex-1">
                 <div className="premium-card hover:scale-105 p-8 h-full flex flex-col">
                   <div className="icon-container mx-auto mb-6">
-                    <Lock className="h-8 w-8 text-purple-300" />
+                    <Lock className={`h-8 w-8 ${iconColors.secondary.text}`} />
                   </div>
                   <h3 className="text-xl font-semibold text-slate-200 mb-4">Security & Privacy</h3>
                   <p className="text-slate-300 flex-1">
