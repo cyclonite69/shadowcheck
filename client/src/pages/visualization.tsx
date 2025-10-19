@@ -1,8 +1,9 @@
 import { MapboxNetworkVisualization } from "@/components/Map/MapboxNetworkVisualization";
 import { SpatialQueryInterface } from "@/components/spatial-query-interface";
 import { NetworkObservationsTable } from "@/components/network-observations-table";
+import { UnifiedNetworkView } from "@/components/UnifiedNetworkView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Map, Search, Table, Wifi, Bluetooth } from 'lucide-react';
+import { MapPin, Map, Search, Table, Wifi, Bluetooth, LayoutGrid } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { iconColors } from '@/lib/iconColors';
 
@@ -60,9 +61,17 @@ export default function VisualizationPage() {
           </div>
 
           {/* Enhanced Tabs Section */}
-          <Tabs defaultValue="mapbox" className="w-full">
+          <Tabs defaultValue="unified" className="w-full">
             <div className="premium-card p-2 mb-6">
-              <TabsList className="grid w-full grid-cols-3 bg-transparent gap-2">
+              <TabsList className="grid w-full grid-cols-4 bg-transparent gap-2">
+                <TabsTrigger
+                  value="unified"
+                  data-testid="tab-unified"
+                  className="premium-card hover:scale-105 data-[state=active]:bg-gradient-to-br data-[state=active]:from-violet-600/20 data-[state=active]:to-fuchsia-600/20 data-[state=active]:shadow-lg data-[state=active]:shadow-violet-500/20 transition-all"
+                >
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  Unified View
+                </TabsTrigger>
                 <TabsTrigger
                   value="mapbox"
                   data-testid="tab-mapbox"
@@ -89,6 +98,12 @@ export default function VisualizationPage() {
                 </TabsTrigger>
               </TabsList>
             </div>
+
+          <TabsContent value="unified" className="space-y-6">
+            <div className="premium-card overflow-hidden" style={{ height: 'calc(100vh - 20rem)' }}>
+              <UnifiedNetworkView />
+            </div>
+          </TabsContent>
 
           <TabsContent value="mapbox" className="space-y-6">
             <div className="premium-card p-6">
