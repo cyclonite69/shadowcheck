@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Info, Filter, X, ChevronDown, Wifi, Bluetooth, Radio } from 'lucide-react';
+import { Info, Filter, X, ChevronDown, Wifi, Bluetooth, Radio, Maximize2, Minimize2 } from 'lucide-react';
 
 interface FilterState {
   dateRange: { start: string; end: string };
@@ -23,6 +23,7 @@ interface FilterState {
 
 export function MapboxNetworkVisualization() {
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     dateRange: { start: '', end: '' },
     networkTypes: { wifi: true, ble: true, bluetooth: true },
@@ -161,7 +162,7 @@ export function MapboxNetworkVisualization() {
   }
 
   return (
-    <div className="w-full space-y-4">
+    <div className={`w-full space-y-4 ${isFullscreen ? 'fixed inset-0 z-50 bg-slate-950 p-6' : ''}`}>
       {/* Map Info Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -170,16 +171,38 @@ export function MapboxNetworkVisualization() {
             Showing {filteredNetworks.length} of {networks.length} network observation{networks.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <div className="text-xs text-slate-500">
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
-            Click markers for details
-          </span>
-          <span className="mx-2">•</span>
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
-            Hover for signal range
-          </span>
+        <div className="flex items-center gap-4">
+          <div className="text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+              Click markers for details
+            </span>
+            <span className="mx-2">•</span>
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+              Hover for signal range
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="gap-2 bg-slate-800/50 border-slate-700 hover:bg-slate-700 hover:border-slate-600"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            style={{ cursor: 'pointer' }}
+          >
+            {isFullscreen ? (
+              <>
+                <Minimize2 className="h-4 w-4" />
+                Exit Fullscreen
+              </>
+            ) : (
+              <>
+                <Maximize2 className="h-4 w-4" />
+                Fullscreen
+              </>
+            )}
+          </Button>
         </div>
       </div>
 
@@ -389,7 +412,7 @@ export function MapboxNetworkVisualization() {
         </TooltipProvider>
 
         {/* Map */}
-        <div className="h-[700px]">
+        <div className={isFullscreen ? "h-[calc(100vh-12rem)]" : "h-[700px]"}>
           <NetworkMapboxViewer
             networks={filteredNetworks}
             mapboxToken={mapboxToken}

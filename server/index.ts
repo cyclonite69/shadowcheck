@@ -166,11 +166,11 @@ app.get("/api/v1/networks", async (req, res) => {
     // Signal strength filter
     if (minSignal !== null) {
       params.push(minSignal);
-      where.push(`n.bestlevel >= $${params.length}`);
+      where.push(`l.level >= $${params.length}`);
     }
     if (maxSignal !== null) {
       params.push(maxSignal);
-      where.push(`n.bestlevel <= $${params.length}`);
+      where.push(`l.level <= $${params.length}`);
     }
 
     // Frequency filter
@@ -192,37 +192,41 @@ app.get("/api/v1/networks", async (req, res) => {
         Number(req.query.maxLon)
       );
       where.push(
-        `n.lastlat BETWEEN $${params.length - 3} AND $${params.length - 2}
-         AND n.lastlon BETWEEN $${params.length - 1} AND $${params.length}`
+        `l.lat BETWEEN $${params.length - 3} AND $${params.length - 2}
+         AND l.lon BETWEEN $${params.length - 1} AND $${params.length}`
       );
     }
 
     params.push(limit, offset);
 
     const sql = `
+      WITH latest_networks AS (
+        SELECT DISTINCT ON (bssid)
+          bssid, ssid, type, frequency, capabilities, service
+        FROM app.networks_legacy
+        ORDER BY bssid, lasttime DESC NULLS LAST
+      )
       SELECT
-        n.bssid,
-        n.ssid as current_ssid,
+        l.unified_id,
+        l.bssid,
+        n.ssid,
         n.type,
-        n.frequency as current_frequency,
-        n.capabilities as current_capabilities,
-        n.lasttime,
-        n.lastlat,
-        n.lastlon,
+        n.frequency,
+        n.capabilities,
+        l.level as signal_strength,
+        l.lat as latitude,
+        l.lon as longitude,
+        l.altitude,
+        l.accuracy,
+        l.time,
         n.service,
-        n.bestlevel,
-        -- Get observation count from locations_legacy
-        COALESCE((
-          SELECT COUNT(*)
-          FROM app.locations_legacy l
-          WHERE l.bssid = n.bssid
-        ), 0) as observation_count,
         -- Convert timestamp to ISO format
-        TO_TIMESTAMP(n.lasttime::bigint / 1000) as lasttime_iso,
+        TO_TIMESTAMP(l.time::bigint / 1000) as observed_at,
         COUNT(*) OVER() AS total_count
-      FROM app.networks_legacy n
+      FROM app.locations_legacy l
+      LEFT JOIN latest_networks n ON l.bssid = n.bssid
       ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
-      ORDER BY n.lasttime DESC NULLS LAST
+      ORDER BY l.time DESC NULLS LAST
       LIMIT $${params.length - 1} OFFSET $${params.length};
     `;
     const { rows } = await pool.query(sql, params);
@@ -235,21 +239,22 @@ app.get("/api/v1/networks", async (req, res) => {
       total_count,
       data: rows.map(row => {
         const { total_count, ...networkData } = row;
-        const frequency = networkData.current_frequency;
+        const frequency = networkData.frequency;
         const calculatedChannel = calculateChannel(frequency);
 
         return {
-          id: networkData.bssid,
+          id: String(networkData.unified_id),
           bssid: networkData.bssid,
-          ssid: networkData.current_ssid,
+          ssid: networkData.ssid,
           frequency: frequency,
           channel: calculatedChannel,
-          encryption: networkData.current_capabilities,
-          latitude: networkData.lastlat ? String(networkData.lastlat) : undefined,
-          longitude: networkData.lastlon ? String(networkData.lastlon) : undefined,
-          observed_at: networkData.lasttime_iso?.toISOString() || networkData.lasttime,
-          signal_strength: networkData.bestlevel,
-          observation_count: Number(networkData.observation_count) || 0,
+          encryption: networkData.capabilities,
+          latitude: networkData.latitude ? String(networkData.latitude) : undefined,
+          longitude: networkData.longitude ? String(networkData.longitude) : undefined,
+          altitude: networkData.altitude,
+          accuracy: networkData.accuracy,
+          observed_at: networkData.observed_at?.toISOString() || networkData.time,
+          signal_strength: networkData.signal_strength,
           type: networkData.type
         };
       })
@@ -270,11 +275,11 @@ app.get("/api/v1/analytics", async (_req, res) => {
   try {
     const query = `
       SELECT
-        (SELECT COUNT(DISTINCT bssid) FROM app.locations_legacy WHERE bssid IS NOT NULL) as total_observations,
-        (SELECT COUNT(DISTINCT bssid) FROM app.networks_legacy WHERE bssid IS NOT NULL) as distinct_networks,
+        (SELECT COUNT(*) FROM app.locations_legacy) as total_observations,
+        (SELECT COUNT(DISTINCT bssid) FROM app.locations_legacy WHERE bssid IS NOT NULL) as distinct_networks,
         (SELECT MIN(time) FROM app.locations_legacy WHERE time IS NOT NULL AND time > 0) as earliest_observation,
         (SELECT MAX(time) FROM app.locations_legacy WHERE time IS NOT NULL) as latest_observation,
-        (SELECT COUNT(DISTINCT bssid) FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL AND bssid IS NOT NULL) as geolocated_observations
+        (SELECT COUNT(*) FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL) as geolocated_observations
     `;
 
     const result = await pool.query(query);
@@ -673,9 +678,10 @@ app.get("/api/v1/radio-stats", async (_req, res) => {
       location_counts AS (
         SELECT
           rc.radio_type,
-          COUNT(DISTINCT rc.bssid) as total_observations,
+          COUNT(*) as total_observations,
           COUNT(DISTINCT rc.bssid) as distinct_networks
         FROM radio_classification rc
+        INNER JOIN app.locations_legacy l ON rc.bssid = l.bssid
         WHERE rc.bssid IS NOT NULL
         GROUP BY rc.radio_type
       )
