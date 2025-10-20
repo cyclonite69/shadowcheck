@@ -34,10 +34,28 @@ export function UnifiedNetworkView() {
   const [selectedNetworkId, setSelectedNetworkId] = useState<string | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const [isRadiusSearchMode, setIsRadiusSearchMode] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Debounce search input (300ms delay)
   const debouncedSearch = useDebounce(filters.search, 300);
+
+  // Keyboard shortcuts (Phase 4)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isFullscreen) {
+          setIsFullscreen(false);
+        } else if (isRadiusSearchMode) {
+          setIsRadiusSearchMode(false);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen, isRadiusSearchMode]);
 
   // Fetch config for Mapbox token
   const { data: config } = useQuery({
@@ -51,7 +69,7 @@ export function UnifiedNetworkView() {
   // Fetch ALL observations (not just unique networks)
   // Use debounced search for query key to reduce API calls
   const { data: networksResponse, isLoading, isFetching } = useQuery({
-    queryKey: ['/api/v1/networks', debouncedSearch, filters.radioTypes, filters.signalRange, filters.dateRange, filters.securityTypes],
+    queryKey: ['/api/v1/networks', debouncedSearch, filters.radioTypes, filters.signalRange, filters.dateRange, filters.securityTypes, filters.radiusSearch],
     queryFn: async () => {
       // Build query string with server-side filters
       const params = new URLSearchParams({
@@ -80,6 +98,11 @@ export function UnifiedNetworkView() {
       }
       if (filters.securityTypes.length > 0) {
         params.append('security_types', filters.securityTypes.join(','));
+      }
+      if (filters.radiusSearch) {
+        params.append('radius_lat', filters.radiusSearch.lat.toString());
+        params.append('radius_lng', filters.radiusSearch.lng.toString());
+        params.append('radius_meters', filters.radiusSearch.radiusMeters.toString());
       }
 
       const res = await fetch(`/api/v1/networks?${params.toString()}`);
@@ -128,6 +151,21 @@ export function UnifiedNetworkView() {
     }, 100);
   }, []);
 
+  // Handle map click for radius search (Phase 4)
+  const handleMapClick = useCallback((lngLat: [number, number]) => {
+    if (isRadiusSearchMode) {
+      setFilters({
+        ...filters,
+        radiusSearch: {
+          lng: lngLat[0],
+          lat: lngLat[1],
+          radiusMeters: 1000 // Default 1km radius
+        }
+      });
+      setIsRadiusSearchMode(false); // Exit radius mode after setting
+    }
+  }, [isRadiusSearchMode, filters]);
+
   // Handle table row click → center map on location (Phase 2)
   const handleTableRowClick = useCallback((network: any) => {
     const networkId = network.properties?.bssid || network.properties?.uid;
@@ -165,16 +203,18 @@ export function UnifiedNetworkView() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] w-full bg-slate-900">
-      {/* Left Sidebar: Filter Panel */}
-      <div className="w-80 border-r border-slate-700 bg-slate-800/50 overflow-y-auto">
-        <NetworkFilters
-          filters={filters}
-          onChange={setFilters}
-          resultCount={filteredNetworks.length}
-          totalCount={networksResponse?.length || 0}
-        />
-      </div>
+    <div className={`flex w-full bg-slate-900 ${isFullscreen ? 'fixed inset-0 z-50' : 'h-[calc(100vh-12rem)]'}`}>
+      {/* Left Sidebar: Filter Panel (hidden in fullscreen) */}
+      {!isFullscreen && (
+        <div className="w-80 border-r border-slate-700 bg-slate-800/50 overflow-y-auto">
+          <NetworkFilters
+            filters={filters}
+            onChange={setFilters}
+            resultCount={filteredNetworks.length}
+            totalCount={networksResponse?.length || 0}
+          />
+        </div>
+      )}
 
       {/* Right Side: Map + Table Split View */}
       <ResizablePanelGroup direction="vertical" className="flex-1">
@@ -185,12 +225,16 @@ export function UnifiedNetworkView() {
               networks={filteredNetworks}
               mapboxToken={mapboxToken}
               onNetworkClick={handleNetworkClick}
+              onMapClick={handleMapClick}
               selectedNetworkId={selectedNetworkId}
               center={mapCenter}
+              isRadiusSearchMode={isRadiusSearchMode}
+              radiusSearch={filters.radiusSearch}
             />
 
             {/* Map Tools Overlay - Phase 4 enhancement */}
             <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+              {/* Network Count */}
               <div className="text-xs bg-slate-800/90 backdrop-blur-sm px-3 py-2 rounded-lg border border-slate-700 text-slate-300">
                 <div className="font-semibold">Networks: {filteredNetworks.length.toLocaleString()}</div>
                 {isFetching && (
@@ -199,6 +243,31 @@ export function UnifiedNetworkView() {
                     Updating...
                   </div>
                 )}
+              </div>
+
+              {/* Tool Buttons */}
+              <div className="flex flex-col gap-2">
+                {/* Radius Search Tool */}
+                <button
+                  onClick={() => setIsRadiusSearchMode(!isRadiusSearchMode)}
+                  className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                    isRadiusSearchMode
+                      ? 'bg-blue-600 text-white border-2 border-blue-400'
+                      : 'bg-slate-800/90 text-slate-300 border border-slate-700 hover:bg-slate-700'
+                  } backdrop-blur-sm`}
+                  title="Click map to search by radius"
+                >
+                  {isRadiusSearchMode ? '📍 Click Map' : '🎯 Radius Search'}
+                </button>
+
+                {/* Fullscreen Toggle */}
+                <button
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="px-3 py-2 rounded-lg text-xs font-medium bg-slate-800/90 text-slate-300 border border-slate-700 hover:bg-slate-700 backdrop-blur-sm transition-all"
+                  title={isFullscreen ? 'Exit Fullscreen (ESC)' : 'Fullscreen Mode'}
+                >
+                  {isFullscreen ? '🗙 Exit' : '⛶ Fullscreen'}
+                </button>
               </div>
             </div>
           </div>

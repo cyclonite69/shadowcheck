@@ -262,26 +262,57 @@ export function NetworkFilters({ filters, onChange, resultCount, totalCount }: N
           Location Radius Search
         </Label>
         {filters.radiusSearch ? (
-          <div className="p-3 bg-slate-800/50 border border-slate-700 rounded-lg space-y-2">
+          <div className="p-3 bg-slate-800/50 border border-slate-700 rounded-lg space-y-3">
             <p className="text-sm text-slate-300">
-              {filters.radiusSearch.radiusMeters}m radius from
-              <br />
-              <span className="text-xs text-slate-400">
+              Center: <span className="text-xs text-slate-400">
                 {filters.radiusSearch.lat.toFixed(4)}, {filters.radiusSearch.lng.toFixed(4)}
               </span>
             </p>
+
+            {/* Radius Slider */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-slate-400">Radius</span>
+                <span className="text-xs font-semibold text-blue-400">
+                  {filters.radiusSearch.radiusMeters >= 1000
+                    ? `${(filters.radiusSearch.radiusMeters / 1000).toFixed(1)} km`
+                    : `${filters.radiusSearch.radiusMeters} m`
+                  }
+                </span>
+              </div>
+              <Slider
+                min={100}
+                max={10000}
+                step={100}
+                value={[filters.radiusSearch.radiusMeters]}
+                onValueChange={(value) => onChange({
+                  ...filters,
+                  radiusSearch: {
+                    ...filters.radiusSearch!,
+                    radiusMeters: value[0]
+                  }
+                })}
+                className="py-2"
+              />
+              <div className="flex justify-between text-xs text-slate-500">
+                <span>100m</span>
+                <span>10km</span>
+              </div>
+            </div>
+
             <Button
               size="sm"
               variant="ghost"
               onClick={() => onChange({ ...filters, radiusSearch: null })}
               className="w-full text-slate-400 hover:text-slate-200"
             >
-              Clear
+              <X className="w-3 h-3 mr-1" />
+              Clear Radius Search
             </Button>
           </div>
         ) : (
           <p className="text-xs text-slate-500 italic">
-            Click "Radius Tool" on map to search by location
+            Click "🎯 Radius Search" button, then click map to set center point
           </p>
         )}
       </div>
