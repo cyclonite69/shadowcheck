@@ -103,6 +103,13 @@ export function getIconContainerClasses(type: keyof typeof iconColors) {
 }
 
 /**
+ * Get icon text color class
+ */
+export function getIconTextColor(type: keyof typeof iconColors) {
+  return iconColors[type].text;
+}
+
+/**
  * Semantic icon type mapping for common UI elements
  */
 export const semanticIcons = {

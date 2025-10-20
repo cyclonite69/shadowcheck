@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Database, Server, MapPin, Upload, CheckCircle2 } from 'lucide-react';
+import { iconColors, getIconContainerClasses, getIconTextColor } from '@/lib/iconColors';
 
 export function DatabaseStatus() {
   const { data: systemStatus, isLoading } = useQuery({
@@ -20,8 +21,8 @@ export function DatabaseStatus() {
       <div className="premium-card">
         <div className="p-6 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
-            <div className="icon-container w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/30 animate-pulse">
-              <Database className="h-5 w-5 text-white" />
+            <div className={`${getIconContainerClasses('info')} animate-pulse`}>
+              <Database className={`h-5 w-5 ${getIconTextColor('info')}`} />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-slate-100">Database Status</h3>
@@ -47,12 +48,8 @@ export function DatabaseStatus() {
     <div className="premium-card">
       <div className="p-6 border-b border-slate-700/50">
         <div className="flex items-center gap-3">
-          <div className={`icon-container w-10 h-10 bg-gradient-to-br ${
-            systemStatus?.database.connected
-              ? "from-green-500 to-emerald-600 shadow-lg shadow-green-500/30"
-              : "from-red-500 to-rose-600 shadow-lg shadow-red-500/30"
-          }`}>
-            <Database className="h-5 w-5 text-white" />
+          <div className={getIconContainerClasses(systemStatus?.database.connected ? 'success' : 'danger')}>
+            <Database className={`h-5 w-5 ${getIconTextColor(systemStatus?.database.connected ? 'success' : 'danger')}`} />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-slate-100">Database Status</h3>
@@ -97,7 +94,7 @@ export function DatabaseStatus() {
             <div className="pt-4 border-t border-slate-700/50">
               <button
                 onClick={handleRestoreDatabase}
-                className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all text-sm font-medium flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+                className={`w-full px-4 py-3 bg-gradient-to-r ${iconColors.primary.gradient} text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all text-sm font-medium flex items-center justify-center gap-2 shadow-lg ${iconColors.primary.glow}`}
                 data-testid="restore-database-button"
               >
                 <Upload className="h-4 w-4" />
