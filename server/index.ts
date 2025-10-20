@@ -7,6 +7,8 @@ import { setupVite, log } from "./vite.js";
 import { registerShutdownHandlers } from "./utils/shutdown";
 import healthRouter from "./routes/health";
 import visualizeRouter from "./routes/visualize";
+import surveillanceRouter from "./routes/surveillance";
+import { db as dbConnection } from "./db/connection";
 
 const { Pool } = pg;
 
@@ -70,6 +72,7 @@ const calculateChannel = (frequency: number | null | undefined): number | null =
 // Mount enhanced health check endpoints (with /ready, /detailed, /metrics)
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/visualize", visualizeRouter);
+app.use("/api/v1/surveillance", surveillanceRouter);
 
 // Legacy health endpoint for backward compatibility
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
@@ -851,6 +854,16 @@ const port = Number(process.env.PORT || 5000);
 
 // Setup Vite development server for frontend and start server
 (async () => {
+  // Initialize database connection with retry logic
+  try {
+    log('Initializing database connection...');
+    await dbConnection.connect();
+    log('Database connection established successfully');
+  } catch (error) {
+    console.error('Failed to initialize database connection:', error);
+    process.exit(1);
+  }
+
   // IMPORTANT: Vite middleware must be set up LAST (after all API routes)
   // Otherwise, the catch-all route will intercept API requests
   if (process.env.NODE_ENV !== "production") {
