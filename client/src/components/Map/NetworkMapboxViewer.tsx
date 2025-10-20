@@ -236,7 +236,7 @@ export function NetworkMapboxViewer({
         id: 'hover',
         type: 'circle',
         source: 'wifi',
-        filter: ['all', ['!has', 'point_count'], ['==', ['get', 'uid'], '']],
+        filter: ['all', ['!has', 'point_count'], ['==', 'uid', '']],
         paint: {
           'circle-radius': ['case', ['!=', ['get', 'signal'], null], ['get', 'calculatedRadius'], 20],
           'circle-color': ['get', 'colour'],
@@ -271,7 +271,7 @@ export function NetworkMapboxViewer({
         id: 'selected-point',
         type: 'circle',
         source: 'wifi',
-        filter: ['all', ['!has', 'point_count'], ['==', ['get', 'bssid'], '']],
+        filter: ['all', ['!has', 'point_count'], ['==', 'bssid', '']],
         paint: {
           'circle-radius': 12,
           'circle-color': '#3b82f6',
@@ -403,7 +403,7 @@ export function NetworkMapboxViewer({
       map.current.setFilter('selected-point', [
         'all',
         ['!has', 'point_count'],
-        ['==', ['get', 'bssid'], selectedNetworkId || '']
+        ['==', 'bssid', selectedNetworkId || '']
       ]);
     }
   }, [selectedNetworkId, mapLoaded]);
