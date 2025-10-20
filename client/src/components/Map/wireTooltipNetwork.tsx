@@ -144,12 +144,16 @@ export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Op
     }
   };
   const clearRange = () => {
-    // Check if map is still valid and has the source before trying to clear it
-    if (map && typeof map.getSource === 'function') {
-      const source = map.getSource("range");
-      if (source && typeof source.setData === 'function') {
-        source.setData({ type: "FeatureCollection", features: [] });
+    // Wrap in try-catch since map might be in destroyed state
+    try {
+      if (map && typeof map.getSource === 'function') {
+        const source = map.getSource("range");
+        if (source && typeof source.setData === 'function') {
+          source.setData({ type: "FeatureCollection", features: [] });
+        }
       }
+    } catch (err) {
+      // Map is being destroyed, silently ignore cleanup errors
     }
   };
 
