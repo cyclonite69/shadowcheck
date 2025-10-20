@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { FlaskConical, Play, CheckCircle2, XCircle, Zap, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { iconColors, getIconContainerClasses, getIconTextColor } from '@/lib/iconColors';
 
 export function ApiTestPanel() {
   const { toast } = useToast();
@@ -62,6 +63,22 @@ export function ApiTestPanel() {
             break;
           case "timeline":
             result = await api.getTimelineData();
+            break;
+          case "surveillance-stats":
+            result = await fetch('/api/v1/surveillance/stats').then(r => r.json());
+            break;
+          case "location-visits":
+            result = await fetch('/api/v1/surveillance/location-visits').then(r => r.json());
+            break;
+          case "network-patterns":
+            result = await fetch('/api/v1/surveillance/network-patterns').then(r => r.json());
+            break;
+          case "home-following":
+            result = await fetch('/api/v1/surveillance/home-following').then(r => r.json());
+            break;
+          case "network-timeline":
+            // Use a sample BSSID for testing
+            result = await fetch('/api/v1/surveillance/network-timeline/00:00:00:00:00:00').then(r => r.json());
             break;
           default:
             throw new Error("Unknown endpoint");
@@ -232,6 +249,48 @@ export function ApiTestPanel() {
       description: "Network observation timeline data",
       category: "Analytics",
     },
+
+    // Surveillance Endpoints
+    {
+      method: "GET",
+      path: "/api/v1/surveillance/stats",
+      endpoint: "surveillance-stats",
+      available: systemStatus?.database.connected || false,
+      description: "Surveillance detection statistics",
+      category: "Surveillance",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/surveillance/location-visits",
+      endpoint: "location-visits",
+      available: systemStatus?.database.connected || false,
+      description: "Location visit pattern analysis",
+      category: "Surveillance",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/surveillance/network-patterns",
+      endpoint: "network-patterns",
+      available: systemStatus?.database.connected || false,
+      description: "Network behavior pattern detection",
+      category: "Surveillance",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/surveillance/home-following",
+      endpoint: "home-following",
+      available: systemStatus?.database.connected || false,
+      description: "Home-following detection analysis",
+      category: "Surveillance",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/surveillance/network-timeline/:bssid",
+      endpoint: "network-timeline",
+      available: systemStatus?.database.connected || false,
+      description: "Network timeline by BSSID (sample)",
+      category: "Surveillance",
+    },
   ];
 
   return (
@@ -239,8 +298,8 @@ export function ApiTestPanel() {
       <div className="p-6 border-b border-slate-700/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="icon-container w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
-              <FlaskConical className="h-5 w-5 text-white" />
+            <div className={getIconContainerClasses('primary')}>
+              <FlaskConical className={`h-5 w-5 ${getIconTextColor('primary')}`} />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-slate-100">API Health Dashboard</h3>
@@ -271,7 +330,7 @@ export function ApiTestPanel() {
       </div>
       <div className="p-6 space-y-6">
         {/* Group endpoints by category */}
-        {['System', 'Data', 'Analytics'].map(category => {
+        {['System', 'Data', 'Analytics', 'Surveillance'].map(category => {
           const categoryEndpoints = endpoints.filter(ep => ep.category === category);
           if (categoryEndpoints.length === 0) return null;
 
@@ -281,7 +340,8 @@ export function ApiTestPanel() {
                 <div className={`w-2 h-2 rounded-full ${
                   category === 'System' ? 'bg-blue-400' :
                   category === 'Data' ? 'bg-green-400' :
-                  'bg-purple-400'
+                  category === 'Analytics' ? 'bg-purple-400' :
+                  'bg-orange-400'
                 }`}></div>
                 {category} Endpoints
               </h4>
@@ -303,7 +363,7 @@ export function ApiTestPanel() {
                 <button
                   onClick={() => testEndpointMutation.mutate(ep.endpoint)}
                   disabled={testEndpointMutation.isPending}
-                  className="px-4 py-2 text-xs font-medium bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-md hover:from-blue-600 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                  className={`px-4 py-2 text-xs font-medium bg-gradient-to-r ${iconColors.primary.gradient} text-white rounded-md hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg ${iconColors.primary.glow}`}
                   data-testid={`test-button-${ep.endpoint}`}
                 >
                   <Play className="h-3 w-3" />

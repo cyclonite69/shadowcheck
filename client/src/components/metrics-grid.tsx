@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Activity, Database, MemoryStick, MapPin } from 'lucide-react';
+import { iconColors } from '@/lib/iconColors';
 
 export function MetricsGrid() {
   const { data: systemStatus, isLoading } = useQuery({
@@ -15,37 +16,54 @@ export function MetricsGrid() {
     refetchInterval: 30000,
   });
 
+  const getIconColor = (title: string, status: boolean) => {
+    if (!status) return 'text-slate-500';
+
+    switch (title) {
+      case 'API Health':
+        return 'text-green-400';
+      case 'Database Status':
+        return 'text-cyan-400';
+      case 'Memory Usage':
+        return 'text-purple-400';
+      case 'PostGIS Enabled':
+        return 'text-amber-400';
+      default:
+        return 'text-slate-400';
+    }
+  };
+
   const metrics = [
     {
       title: "API Health",
       value: health?.ok ? "Online" : "Offline",
       icon: Activity,
-      gradient: health?.ok ? "from-green-500 to-emerald-600" : "from-red-500 to-rose-600",
-      shadowColor: health?.ok ? "shadow-green-500/30" : "shadow-red-500/30",
+      gradient: health?.ok ? iconColors.success.gradient : iconColors.danger.gradient,
+      shadowColor: health?.ok ? iconColors.success.glow : iconColors.danger.glow,
       status: health?.ok,
     },
     {
       title: "Database Status",
       value: systemStatus?.database.connected ? "Connected" : "Disconnected",
       icon: Database,
-      gradient: systemStatus?.database.connected ? "from-blue-500 to-cyan-600" : "from-gray-500 to-slate-600",
-      shadowColor: systemStatus?.database.connected ? "shadow-blue-500/30" : "shadow-gray-500/30",
+      gradient: systemStatus?.database.connected ? iconColors.info.gradient : iconColors.neutral.gradient,
+      shadowColor: systemStatus?.database.connected ? iconColors.info.glow : iconColors.neutral.glow,
       status: systemStatus?.database.connected,
     },
     {
       title: "Memory Usage",
       value: systemStatus ? `${systemStatus.memory.used}MB` : "0MB",
       icon: MemoryStick,
-      gradient: "from-purple-500 to-pink-600",
-      shadowColor: "shadow-purple-500/30",
+      gradient: iconColors.secondary.gradient,
+      shadowColor: iconColors.secondary.glow,
       status: true,
     },
     {
       title: "PostGIS Enabled",
       value: systemStatus?.database.postgisEnabled ? "Yes" : "No",
       icon: MapPin,
-      gradient: systemStatus?.database.postgisEnabled ? "from-amber-500 to-orange-600" : "from-gray-500 to-slate-600",
-      shadowColor: systemStatus?.database.postgisEnabled ? "shadow-amber-500/30" : "shadow-gray-500/30",
+      gradient: systemStatus?.database.postgisEnabled ? iconColors.warning.gradient : iconColors.neutral.gradient,
+      shadowColor: systemStatus?.database.postgisEnabled ? iconColors.warning.glow : iconColors.neutral.glow,
       status: systemStatus?.database.postgisEnabled,
     },
   ];
@@ -79,8 +97,8 @@ export function MetricsGrid() {
                 <p className="text-sm text-slate-400 mb-2">{metric.title}</p>
                 <p className={`text-2xl font-bold ${metric.status ? 'text-slate-100' : 'text-slate-400'}`}>{metric.value}</p>
               </div>
-              <div className={`icon-container w-12 h-12 bg-gradient-to-br ${metric.gradient} shadow-lg ${metric.shadowColor}`}>
-                <Icon className="h-6 w-6 text-white" />
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-slate-800/30 border border-slate-700/50`}>
+                <Icon className={`h-7 w-7 ${getIconColor(metric.title, metric.status)}`} strokeWidth={2.5} />
               </div>
             </div>
           </div>
