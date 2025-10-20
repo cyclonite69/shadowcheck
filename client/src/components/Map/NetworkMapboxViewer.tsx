@@ -44,16 +44,22 @@ interface NetworkMapboxViewerProps {
   networks: NetworkFeature[];
   mapboxToken: string;
   onNetworkClick?: (network: NetworkFeature) => void;
+  onMapClick?: (lngLat: [number, number]) => void;
   selectedNetworkId?: string | null;
   center?: [number, number] | null;
+  isRadiusSearchMode?: boolean;
+  radiusSearch?: { lat: number; lng: number; radiusMeters: number } | null;
 }
 
 export function NetworkMapboxViewer({
   networks,
   mapboxToken,
   onNetworkClick,
+  onMapClick,
   selectedNetworkId = null,
-  center = null
+  center = null,
+  isRadiusSearchMode = false,
+  radiusSearch = null
 }: NetworkMapboxViewerProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -421,6 +427,119 @@ export function NetworkMapboxViewer({
       essential: true
     });
   }, [center, mapLoaded]);
+
+  // Update cursor for radius search mode
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    const canvas = map.current.getCanvas();
+    if (isRadiusSearchMode) {
+      canvas.style.cursor = 'crosshair';
+    } else {
+      canvas.style.cursor = '';
+    }
+  }, [isRadiusSearchMode, mapLoaded]);
+
+  // Handle map click for radius search
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !onMapClick) return;
+
+    const handleClick = (e: mapboxgl.MapMouseEvent) => {
+      if (isRadiusSearchMode) {
+        // Don't trigger if clicking on a network point
+        const features = map.current?.queryRenderedFeatures(e.point, { layers: ['pts'] });
+        if (!features || features.length === 0) {
+          onMapClick([e.lngLat.lng, e.lngLat.lat]);
+        }
+      }
+    };
+
+    map.current.on('click', handleClick);
+
+    return () => {
+      if (map.current) {
+        map.current.off('click', handleClick);
+      }
+    };
+  }, [isRadiusSearchMode, mapLoaded, onMapClick]);
+
+  // Draw radius circle
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    const currentMap = map.current;
+
+    // Add radius source if it doesn't exist
+    if (!currentMap.getSource('radius-search')) {
+      currentMap.addSource('radius-search', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+    }
+
+    // Add radius circle layer if it doesn't exist
+    if (!currentMap.getLayer('radius-circle')) {
+      currentMap.addLayer({
+        id: 'radius-circle',
+        type: 'fill',
+        source: 'radius-search',
+        paint: {
+          'fill-color': '#3b82f6',
+          'fill-opacity': 0.1
+        }
+      });
+    }
+
+    // Add radius outline layer if it doesn't exist
+    if (!currentMap.getLayer('radius-outline')) {
+      currentMap.addLayer({
+        id: 'radius-outline',
+        type: 'line',
+        source: 'radius-search',
+        paint: {
+          'line-color': '#3b82f6',
+          'line-width': 2,
+          'line-opacity': 0.8
+        }
+      });
+    }
+
+    // Update radius circle data
+    if (radiusSearch) {
+      // Create circle polygon (simplified - just using a rough circle)
+      const steps = 64;
+      const coords: [number, number][] = [];
+      const radiusInDegrees = radiusSearch.radiusMeters / 111320; // Approximate meters to degrees
+
+      for (let i = 0; i <= steps; i++) {
+        const angle = (i * 360) / steps;
+        const radians = (angle * Math.PI) / 180;
+        const lon = radiusSearch.lng + radiusInDegrees * Math.cos(radians);
+        const lat = radiusSearch.lat + radiusInDegrees * Math.sin(radians);
+        coords.push([lon, lat]);
+      }
+
+      const circleFeature = {
+        type: 'Feature' as const,
+        geometry: {
+          type: 'Polygon' as const,
+          coordinates: [coords]
+        },
+        properties: {}
+      };
+
+      (currentMap.getSource('radius-search') as mapboxgl.GeoJSONSource).setData({
+        type: 'FeatureCollection',
+        features: [circleFeature]
+      });
+    } else {
+      // Clear radius circle
+      (currentMap.getSource('radius-search') as mapboxgl.GeoJSONSource)?.setData({
+        type: 'FeatureCollection',
+        features: []
+      });
+    }
+  }, [radiusSearch, mapLoaded]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>

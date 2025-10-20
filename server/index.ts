@@ -97,6 +97,9 @@ app.get("/api/v1/networks", async (req, res) => {
   const dateStart = req.query.date_start ? String(req.query.date_start) : null;
   const dateEnd = req.query.date_end ? String(req.query.date_end) : null;
   const securityTypes = req.query.security_types ? String(req.query.security_types).split(',').map(t => t.trim()) : [];
+  const radiusLat = req.query.radius_lat ? Number(req.query.radius_lat) : null;
+  const radiusLng = req.query.radius_lng ? Number(req.query.radius_lng) : null;
+  const radiusMeters = req.query.radius_meters ? Number(req.query.radius_meters) : null;
 
   try {
     if (groupByBssid) {
@@ -313,6 +316,20 @@ app.get("/api/v1/networks", async (req, res) => {
         `l.lat BETWEEN $${params.length - 3} AND $${params.length - 2}
          AND l.lon BETWEEN $${params.length - 1} AND $${params.length}`
       );
+    }
+
+    // Radius search filter (Haversine formula for geodesic distance)
+    if (radiusLat !== null && radiusLng !== null && radiusMeters !== null) {
+      params.push(radiusLat, radiusLng, radiusMeters);
+      where.push(`
+        (6371000 * acos(
+          cos(radians($${params.length - 2})) *
+          cos(radians(l.lat)) *
+          cos(radians(l.lon) - radians($${params.length - 1})) +
+          sin(radians($${params.length - 2})) *
+          sin(radians(l.lat))
+        )) <= $${params.length}
+      `);
     }
 
     params.push(limit, offset);
