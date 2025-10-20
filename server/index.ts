@@ -89,11 +89,14 @@ app.get("/api/v1/networks", async (req, res) => {
 
   // Filter parameters
   const search = String(req.query.search || "").toLowerCase();
-  const radioTypes = req.query.radio_types ? String(req.query.radio_types).split(',') : [];
+  const radioTypes = req.query.radio_types ? String(req.query.radio_types).split(',').map(t => t.trim().toUpperCase()) : [];
   const minSignal = req.query.min_signal ? Number(req.query.min_signal) : null;
   const maxSignal = req.query.max_signal ? Number(req.query.max_signal) : null;
   const minFreq = req.query.min_freq ? Number(req.query.min_freq) : null;
   const maxFreq = req.query.max_freq ? Number(req.query.max_freq) : null;
+  const dateStart = req.query.date_start ? String(req.query.date_start) : null;
+  const dateEnd = req.query.date_end ? String(req.query.date_end) : null;
+  const securityTypes = req.query.security_types ? String(req.query.security_types).split(',').map(t => t.trim()) : [];
 
   try {
     if (groupByBssid) {
@@ -107,23 +110,10 @@ app.get("/api/v1/networks", async (req, res) => {
         where.push(`(LOWER(n.bssid) LIKE $${params.length} OR LOWER(n.ssid) LIKE $${params.length})`);
       }
 
-      // Radio type filter
+      // Radio type filter (using single-letter codes: W, E, B, L, G)
       if (radioTypes.length > 0) {
-        const radioConditions: string[] = [];
-        radioTypes.forEach(type => {
-          if (type === 'cell') {
-            radioConditions.push(`n.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'`);
-          } else if (type === 'bluetooth') {
-            radioConditions.push(`(n.type = 'B')`);
-          } else if (type === 'ble') {
-            radioConditions.push(`(n.frequency = 0 OR n.frequency BETWEEN 1 AND 500)`);
-          } else if (type === 'wifi') {
-            radioConditions.push(`(n.frequency BETWEEN 2400 AND 6000)`);
-          }
-        });
-        if (radioConditions.length > 0) {
-          where.push(`(${radioConditions.join(' OR ')})`);
-        }
+        params.push(radioTypes);
+        where.push(`n.type = ANY($${params.length})`);
       }
 
       params.push(limit, offset);
@@ -252,23 +242,10 @@ app.get("/api/v1/networks", async (req, res) => {
       where.push(`(LOWER(n.bssid) LIKE $${params.length} OR LOWER(n.ssid) LIKE $${params.length} OR LOWER(n.capabilities) LIKE $${params.length})`);
     }
 
-    // Radio type filter
+    // Radio type filter (using single-letter codes: W, E, B, L, G)
     if (radioTypes.length > 0) {
-      const radioConditions: string[] = [];
-      radioTypes.forEach(type => {
-        if (type === 'cell') {
-          radioConditions.push(`n.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$'`);
-        } else if (type === 'bluetooth') {
-          radioConditions.push(`(n.ssid ILIKE '%bluetooth%' OR n.ssid ILIKE '%bt%' OR n.capabilities LIKE '%BT%')`);
-        } else if (type === 'ble') {
-          radioConditions.push(`(n.capabilities = 'Misc' OR n.capabilities = 'Uncategorized' OR n.frequency = 0 OR n.frequency BETWEEN 1 AND 500)`);
-        } else if (type === 'wifi') {
-          radioConditions.push(`(n.frequency BETWEEN 2400 AND 6000 AND n.capabilities NOT LIKE '%Misc%')`);
-        }
-      });
-      if (radioConditions.length > 0) {
-        where.push(`(${radioConditions.join(' OR ')})`);
-      }
+      params.push(radioTypes);
+      where.push(`n.type = ANY($${params.length})`);
     }
 
     // Signal strength filter
@@ -289,6 +266,39 @@ app.get("/api/v1/networks", async (req, res) => {
     if (maxFreq !== null) {
       params.push(maxFreq);
       where.push(`n.frequency <= $${params.length}`);
+    }
+
+    // Date range filter (time is in milliseconds since epoch)
+    if (dateStart) {
+      const startMs = new Date(dateStart).getTime();
+      params.push(startMs);
+      where.push(`l.time >= $${params.length}`);
+    }
+    if (dateEnd) {
+      const endMs = new Date(dateEnd).getTime() + (24 * 60 * 60 * 1000); // End of day
+      params.push(endMs);
+      where.push(`l.time <= $${params.length}`);
+    }
+
+    // Security type filter (WiFi only - matches capabilities field)
+    if (securityTypes.length > 0) {
+      const securityConditions: string[] = [];
+      securityTypes.forEach(type => {
+        if (type === 'Open') {
+          securityConditions.push(`(n.capabilities = '[ESS]' OR n.capabilities IS NULL OR n.capabilities = '')`);
+        } else if (type === 'WEP') {
+          securityConditions.push(`n.capabilities ILIKE '%WEP%'`);
+        } else if (type === 'WPA') {
+          securityConditions.push(`(n.capabilities ILIKE '%WPA%' AND n.capabilities NOT ILIKE '%WPA2%' AND n.capabilities NOT ILIKE '%WPA3%')`);
+        } else if (type === 'WPA2') {
+          securityConditions.push(`n.capabilities ILIKE '%WPA2%'`);
+        } else if (type === 'WPA3') {
+          securityConditions.push(`n.capabilities ILIKE '%WPA3%'`);
+        }
+      });
+      if (securityConditions.length > 0) {
+        where.push(`(${securityConditions.join(' OR ')})`);
+      }
     }
 
     // Bounding box filter

@@ -51,9 +51,38 @@ export function UnifiedNetworkView() {
   // Fetch ALL observations (not just unique networks)
   // Use debounced search for query key to reduce API calls
   const { data: networksResponse, isLoading, isFetching } = useQuery({
-    queryKey: ['/api/v1/networks', debouncedSearch, filters.radioTypes, filters.signalRange, filters.dateRange],
+    queryKey: ['/api/v1/networks', debouncedSearch, filters.radioTypes, filters.signalRange, filters.dateRange, filters.securityTypes],
     queryFn: async () => {
-      const res = await fetch('/api/v1/networks?limit=500000&group_by_bssid=false');
+      // Build query string with server-side filters
+      const params = new URLSearchParams({
+        limit: '500000',
+        group_by_bssid: 'false'
+      });
+
+      // Add filters as query params
+      if (debouncedSearch) {
+        params.append('search', debouncedSearch);
+      }
+      if (filters.radioTypes.length > 0) {
+        params.append('radio_types', filters.radioTypes.join(','));
+      }
+      if (filters.signalRange[0] !== -100) {
+        params.append('min_signal', filters.signalRange[0].toString());
+      }
+      if (filters.signalRange[1] !== 0) {
+        params.append('max_signal', filters.signalRange[1].toString());
+      }
+      if (filters.dateRange.start) {
+        params.append('date_start', filters.dateRange.start);
+      }
+      if (filters.dateRange.end) {
+        params.append('date_end', filters.dateRange.end);
+      }
+      if (filters.securityTypes.length > 0) {
+        params.append('security_types', filters.securityTypes.join(','));
+      }
+
+      const res = await fetch(`/api/v1/networks?${params.toString()}`);
       const json = await res.json();
       if (!json.ok) return [];
 
@@ -83,49 +112,10 @@ export function UnifiedNetworkView() {
     staleTime: 15000,
   });
 
-  // Apply client-side filters (Phase 3 will move this to server-side)
+  // Server-side filtering: Just return the response directly (already filtered by backend)
   const filteredNetworks = useMemo(() => {
-    if (!networksResponse) return [];
-
-    let filtered = networksResponse;
-
-    // Search filter (use debounced value)
-    if (debouncedSearch) {
-      const term = debouncedSearch.toLowerCase();
-      filtered = filtered.filter((network: any) => {
-        const ssid = (network.properties.ssid || '').toLowerCase();
-        const bssid = (network.properties.bssid || '').toLowerCase();
-        return ssid.includes(term) || bssid.includes(term);
-      });
-    }
-
-    // Radio type filter
-    if (filters.radioTypes.length > 0) {
-      filtered = filtered.filter((network: any) => {
-        const type = network.properties.radio_type?.toUpperCase() || 'W';
-        return filters.radioTypes.includes(type);
-      });
-    }
-
-    // Signal range filter
-    filtered = filtered.filter((network: any) => {
-      const signal = network.properties.signal;
-      if (signal === null || signal === undefined) return true;
-      return signal >= filters.signalRange[0] && signal <= filters.signalRange[1];
-    });
-
-    // Date range filter
-    if (filters.dateRange.start || filters.dateRange.end) {
-      filtered = filtered.filter((network: any) => {
-        const obsDate = new Date(network.properties.seen);
-        if (filters.dateRange.start && obsDate < new Date(filters.dateRange.start)) return false;
-        if (filters.dateRange.end && obsDate > new Date(filters.dateRange.end)) return false;
-        return true;
-      });
-    }
-
-    return filtered;
-  }, [networksResponse, debouncedSearch, filters.radioTypes, filters.signalRange, filters.dateRange]);
+    return networksResponse || [];
+  }, [networksResponse]);
 
   // Handle map network click → highlight table row (Phase 2)
   const handleNetworkClick = useCallback((network: any) => {
