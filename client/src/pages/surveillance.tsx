@@ -90,11 +90,21 @@ export default function SurveillancePage() {
     refetchInterval: 30000,
   });
 
-  // Fetch home-following threats
+  // Fetch WiFi surveillance threats with full observations
   const { data: threats, isLoading: threatsLoading } = useQuery({
-    queryKey: ['/api/v1/surveillance/home-following'],
+    queryKey: ['/api/v1/surveillance/wifi/threats'],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/surveillance/home-following?home_radius=100&min_distance=500&limit=20`);
+      const res = await fetch(`/api/v1/surveillance/wifi/threats?min_distance_km=0.5&limit=100`);
+      return res.json();
+    },
+    refetchInterval: 30000,
+  });
+
+  // Fetch WiFi summary stats
+  const { data: wifiSummary, isLoading: summaryLoading } = useQuery({
+    queryKey: ['/api/v1/surveillance/wifi/summary'],
+    queryFn: async () => {
+      const res = await fetch('/api/v1/surveillance/wifi/summary');
       return res.json();
     },
     refetchInterval: 30000,
@@ -109,14 +119,16 @@ export default function SurveillancePage() {
   };
 
   const getThreatColor = (level: string) => {
-    switch (level.toLowerCase()) {
-      case 'critical':
+    switch (level?.toUpperCase()) {
+      case 'EXTREME':
+        return 'text-fuchsia-400 bg-fuchsia-500/20 border-fuchsia-500/30';
+      case 'CRITICAL':
         return 'text-red-400 bg-red-500/20 border-red-500/30';
-      case 'high':
+      case 'HIGH':
         return 'text-orange-400 bg-orange-500/20 border-orange-500/30';
-      case 'medium':
+      case 'MEDIUM':
         return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30';
-      case 'low':
+      case 'LOW':
         return 'text-blue-400 bg-blue-500/20 border-blue-500/30';
       default:
         return 'text-gray-400 bg-gray-500/20 border-gray-500/30';
@@ -190,11 +202,11 @@ export default function SurveillancePage() {
                   </div>
                   <div>
                     <p className="text-3xl metric-value mb-2 text-red-300">
-                      {statsData.high_risk_networks.toLocaleString()}
+                      {summaryLoading ? '...' : (wifiSummary?.data?.total_threats || statsData.high_risk_networks).toLocaleString()}
                     </p>
-                    <p className={`text-base font-semibold ${iconColors.danger.text} mb-1`}>High Risk</p>
+                    <p className={`text-base font-semibold ${iconColors.danger.text} mb-1`}>WiFi Threats</p>
                     <p className="text-sm !text-slate-700 dark:!text-slate-300 bg-red-500/20 border border-red-500/30 px-3 py-1 rounded-full">
-                      Suspicious patterns
+                      {wifiSummary?.data?.by_level?.extreme || 0} EXTREME · {wifiSummary?.data?.by_level?.high || 0} HIGH
                     </p>
                   </div>
                 </div>
@@ -289,10 +301,11 @@ export default function SurveillancePage() {
                       </div>
                     ) : threats?.data?.length > 0 ? (
                       <div className="space-y-3">
-                        {threats.data.slice(0, 5).map((threat: NetworkPattern, idx: number) => (
+                        {threats.data.slice(0, 5).map((threat: any, idx: number) => (
                           <div
                             key={idx}
-                            className="p-4 rounded-lg border border-slate-700/50 bg-slate-800/50 hover:bg-slate-800/80 transition-colors"
+                            className="p-4 rounded-lg border border-slate-700/50 bg-slate-800/50 hover:bg-slate-800/80 transition-colors cursor-pointer"
+                            onClick={() => setSelectedTab('threats')}
                           >
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex-1">
@@ -311,12 +324,12 @@ export default function SurveillancePage() {
                                 <span className="text-slate-300 ml-1">{threat.max_distance_km}km</span>
                               </div>
                               <div>
-                                <span className="text-slate-400">Locations:</span>
-                                <span className="text-slate-300 ml-1">{threat.distinct_locations}</span>
+                                <span className="text-slate-400">At Home:</span>
+                                <span className="text-green-300 ml-1">{threat.home_sightings}</span>
                               </div>
                               <div>
-                                <span className="text-slate-400">Score:</span>
-                                <span className="text-slate-300 ml-1">{threat.suspicion_score}</span>
+                                <span className="text-slate-400">Away:</span>
+                                <span className="text-red-300 ml-1">{threat.away_sightings}</span>
                               </div>
                             </div>
                           </div>
@@ -324,7 +337,8 @@ export default function SurveillancePage() {
                       </div>
                     ) : (
                       <div className="text-center py-8 text-slate-400">
-                        No threats detected
+                        <Shield className="h-12 w-12 mx-auto mb-2 text-green-500 opacity-50" />
+                        <p className="text-sm">No threats detected</p>
                       </div>
                     )}
                   </CardContent>
@@ -553,94 +567,153 @@ export default function SurveillancePage() {
 
             {/* Threats Tab */}
             <TabsContent value="threats" className="space-y-6">
-              <Card className="premium-card">
-                <CardHeader>
-                  <CardTitle className="text-slate-300 flex items-center gap-2">
-                    <AlertTriangle className={`h-5 w-5 ${iconColors.danger.text}`} />
-                    Active Surveillance Threats
-                  </CardTitle>
-                  <CardDescription className="text-slate-400">
-                    Networks exhibiting suspicious patterns following your home location
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {threatsLoading ? (
-                    <div className="space-y-3">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-24 bg-slate-800/50 rounded-lg animate-pulse" />
-                      ))}
-                    </div>
-                  ) : threats?.data?.length > 0 ? (
-                    <div className="space-y-4">
-                      {threats.data.map((threat: NetworkPattern, idx: number) => (
-                        <div
-                          key={idx}
-                          className={`p-6 rounded-lg border-2 transition-all ${
-                            threat.threat_level === 'CRITICAL'
-                              ? 'border-red-500/50 bg-red-500/10'
-                              : threat.threat_level === 'HIGH'
-                              ? 'border-orange-500/50 bg-orange-500/10'
-                              : 'border-yellow-500/50 bg-yellow-500/10'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <AlertTriangle className={`h-6 w-6 ${iconColors.danger.text}`} />
-                                <h3 className="text-xl font-bold text-slate-100">
-                                  {threat.ssid || 'Hidden Network'}
-                                </h3>
-                                {threat.is_consumer_pattern && (
-                                  <Badge className="bg-red-500/30 text-red-300 border-red-500/50">
-                                    SUSPICIOUS
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-sm text-slate-300 font-mono mb-3">{threat.bssid}</p>
-                              <p className="text-sm text-slate-400">
-                                This network has been detected both near your home and at {threat.distinct_locations - 1}
-                                {' '}distant location(s) up to {threat.max_distance_km} km away.
-                                {threat.is_consumer_pattern && ' Consumer SSIDs should not appear at multiple locations.'}
-                              </p>
+              {threatsLoading ? (
+                <div className="space-y-6">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-96 bg-slate-800/50 rounded-lg animate-pulse premium-card" />
+                  ))}
+                </div>
+              ) : threats?.data?.length > 0 ? (
+                <div className="space-y-6">
+                  {threats.data.map((threat: any, idx: number) => (
+                    <Card
+                      key={idx}
+                      className={`premium-card border-2 transition-all ${
+                        threat.threat_level === 'EXTREME'
+                          ? 'border-fuchsia-500/50 bg-fuchsia-500/5'
+                          : threat.threat_level === 'CRITICAL'
+                          ? 'border-red-500/50 bg-red-500/5'
+                          : threat.threat_level === 'HIGH'
+                          ? 'border-orange-500/50 bg-orange-500/5'
+                          : threat.threat_level === 'MEDIUM'
+                          ? 'border-yellow-500/50 bg-yellow-500/5'
+                          : 'border-blue-500/50 bg-blue-500/5'
+                      }`}
+                    >
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <AlertTriangle className={`h-6 w-6 ${iconColors.danger.text}`} />
+                              <CardTitle className="text-2xl text-slate-100">
+                                {threat.ssid || 'Hidden Network'}
+                              </CardTitle>
+                              {threat.is_mobile_hotspot && (
+                                <Badge className="bg-purple-500/30 text-purple-300 border-purple-500/50">
+                                  Mobile Hotspot
+                                </Badge>
+                              )}
                             </div>
-                            <Badge className={`${getThreatColor(threat.threat_level)} text-lg px-4 py-2`}>
-                              {threat.threat_level}
-                            </Badge>
+                            <p className="text-sm text-slate-400 font-mono">{threat.bssid}</p>
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                            <div className="p-4 rounded-lg bg-slate-900/70 border border-slate-700/50">
-                              <p className="text-xs text-slate-400 mb-1">Suspicion Score</p>
-                              <p className="text-2xl font-bold text-red-300">{threat.suspicion_score}</p>
-                            </div>
-                            <div className="p-4 rounded-lg bg-slate-900/70 border border-slate-700/50">
-                              <p className="text-xs text-slate-400 mb-1">Observations</p>
-                              <p className="text-lg font-bold text-white">{threat.total_observations}</p>
-                            </div>
-                            <div className="p-4 rounded-lg bg-slate-900/70 border border-slate-700/50">
-                              <p className="text-xs text-slate-400 mb-1">Distinct Locations</p>
-                              <p className="text-lg font-bold text-white">{threat.distinct_locations}</p>
-                            </div>
-                            <div className="p-4 rounded-lg bg-slate-900/70 border border-slate-700/50">
-                              <p className="text-xs text-slate-400 mb-1">Max Distance</p>
-                              <p className="text-lg font-bold text-white">{threat.max_distance_km} km</p>
-                            </div>
-                            <div className="p-4 rounded-lg bg-slate-900/70 border border-slate-700/50">
-                              <p className="text-xs text-slate-400 mb-1">Type</p>
-                              <p className="text-sm font-bold text-white uppercase">{threat.type || 'WiFi'}</p>
-                            </div>
+                          <Badge className={`${getThreatColor(threat.threat_level)} text-lg px-4 py-2`}>
+                            {threat.threat_level}
+                          </Badge>
+                        </div>
+                        <CardDescription className="text-slate-300 mt-3">
+                          {threat.threat_description}
+                        </CardDescription>
+                      </CardHeader>
+
+                      <CardContent className="space-y-6">
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                          <div className="p-4 rounded-lg bg-slate-900/70 border border-slate-700/50">
+                            <p className="text-xs text-slate-400 mb-1">Radio Band</p>
+                            <p className="text-lg font-bold text-white">{threat.radio_band || 'Unknown'}</p>
+                          </div>
+                          <div className="p-4 rounded-lg bg-slate-900/70 border border-slate-700/50">
+                            <p className="text-xs text-slate-400 mb-1">Observations</p>
+                            <p className="text-lg font-bold text-white">{threat.total_sightings}</p>
+                          </div>
+                          <div className="p-4 rounded-lg bg-slate-900/70 border border-slate-700/50">
+                            <p className="text-xs text-slate-400 mb-1">At Home</p>
+                            <p className="text-lg font-bold text-green-300">{threat.home_sightings}</p>
+                          </div>
+                          <div className="p-4 rounded-lg bg-slate-900/70 border border-slate-700/50">
+                            <p className="text-xs text-slate-400 mb-1">Away</p>
+                            <p className="text-lg font-bold text-red-300">{threat.away_sightings}</p>
+                          </div>
+                          <div className="p-4 rounded-lg bg-slate-900/70 border border-slate-700/50">
+                            <p className="text-xs text-slate-400 mb-1">Max Distance</p>
+                            <p className="text-lg font-bold text-white">{threat.max_distance_km} km</p>
+                          </div>
+                          <div className="p-4 rounded-lg bg-slate-900/70 border border-slate-700/50">
+                            <p className="text-xs text-slate-400 mb-1">Confidence</p>
+                            <p className="text-lg font-bold text-white">{(threat.confidence_score * 100).toFixed(0)}%</p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-16 text-slate-400">
-                      <Shield className="h-16 w-16 mx-auto mb-4 text-green-500 opacity-50" />
-                      <p className="text-lg font-semibold mb-2 text-green-400">No Active Threats</p>
-                      <p className="text-sm">No suspicious surveillance patterns detected at this time</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+
+                        {/* Embedded Map showing all observations */}
+                        {threat.observations && threat.observations.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                              <MapPin className="h-4 w-4" />
+                              Observation Locations ({threat.observations.length} points)
+                            </h4>
+                            <div className="rounded-lg overflow-hidden border border-slate-700/50 bg-slate-900/50">
+                              <div className="h-96 relative">
+                                <iframe
+                                  src={`/visualization?bssid=${encodeURIComponent(threat.bssid)}&fullscreen=0&showControls=1`}
+                                  className="w-full h-full border-0"
+                                  title={`Map for ${threat.bssid}`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Observations Table */}
+                        {threat.observations && threat.observations.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-slate-300">Detection History</h4>
+                            <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-700/50 bg-slate-900/50">
+                              <table className="w-full text-sm">
+                                <thead className="sticky top-0 bg-slate-800 border-b border-slate-700">
+                                  <tr>
+                                    <th className="px-4 py-2 text-left text-slate-400">Time</th>
+                                    <th className="px-4 py-2 text-left text-slate-400">Location</th>
+                                    <th className="px-4 py-2 text-right text-slate-400">Distance from Home</th>
+                                    <th className="px-4 py-2 text-right text-slate-400">Signal</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-700/50">
+                                  {threat.observations.map((obs: any, obsIdx: number) => (
+                                    <tr key={obsIdx} className="hover:bg-slate-800/50">
+                                      <td className="px-4 py-2 text-slate-300 font-mono text-xs">
+                                        {obs.observed_at ? new Date(obs.observed_at).toLocaleString() : 'Unknown'}
+                                      </td>
+                                      <td className="px-4 py-2 text-slate-300 font-mono text-xs">
+                                        {obs.latitude.toFixed(6)}, {obs.longitude.toFixed(6)}
+                                      </td>
+                                      <td className={`px-4 py-2 text-right font-semibold ${
+                                        parseFloat(obs.distance_from_home_km) < 0.5 ? 'text-green-400' : 'text-red-400'
+                                      }`}>
+                                        {obs.distance_from_home_km} km
+                                      </td>
+                                      <td className="px-4 py-2 text-right text-slate-300">
+                                        {obs.signal_strength} dBm
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="premium-card">
+                  <CardContent className="text-center py-16 text-slate-400">
+                    <Shield className="h-16 w-16 mx-auto mb-4 text-green-500 opacity-50" />
+                    <p className="text-lg font-semibold mb-2 text-green-400">No Active Threats</p>
+                    <p className="text-sm">No suspicious WiFi surveillance patterns detected at this time</p>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* Analytics Tab */}
