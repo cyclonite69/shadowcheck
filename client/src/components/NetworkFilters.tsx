@@ -95,6 +95,11 @@ export function NetworkFilters({ filters, onChange, resultCount, totalCount }: N
           onChange={(e) => onChange({ ...filters, search: e.target.value })}
           className="bg-slate-900/50 border-slate-700 text-slate-200 placeholder:text-slate-500"
         />
+        {filters.search && (
+          <p className="text-xs text-slate-500 italic">
+            Search debounced (300ms delay)
+          </p>
+        )}
       </div>
 
       {/* Network Types */}
