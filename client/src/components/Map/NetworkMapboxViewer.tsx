@@ -58,6 +58,7 @@ export function NetworkMapboxViewer({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const hasPerformedInitialFit = useRef(false); // Track if we've done initial fit bounds
 
   // Initialize map
   useEffect(() => {
@@ -334,8 +335,8 @@ export function NetworkMapboxViewer({
       currentMap.getCanvas().style.cursor = '';
     });
 
-    // Fit bounds to data
-    if (processedFeatures.length > 0) {
+    // Fit bounds to data ONLY on initial load (not on every filter change)
+    if (processedFeatures.length > 0 && !hasPerformedInitialFit.current) {
       const coords = processedFeatures.map(f => f.geometry.coordinates);
       if (coords.length === 1) {
         currentMap.flyTo({ center: coords[0], zoom: 15, duration: 800 });
@@ -350,6 +351,7 @@ export function NetworkMapboxViewer({
           maxZoom: 17
         });
       }
+      hasPerformedInitialFit.current = true; // Mark that we've done the initial fit
     }
 
     return () => {
