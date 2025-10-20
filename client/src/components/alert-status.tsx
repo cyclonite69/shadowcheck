@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bell, AlertTriangle, AlertCircle, Info, RefreshCw, ExternalLink, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getIconContainerClasses, getIconTextColor } from '@/lib/iconColors';
 
 interface Alert {
   labels: {
@@ -130,8 +131,8 @@ export function AlertStatus() {
       <div className="premium-card p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="icon-container w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-orange-500/30">
-              <Bell className="h-5 w-5 text-white" />
+            <div className={getIconContainerClasses('special')}>
+              <Bell className={`h-5 w-5 ${getIconTextColor('special')}`} />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-slate-100">Live Alert Status</h3>

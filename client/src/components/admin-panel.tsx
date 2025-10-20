@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Shield, Database, MemoryStick, Plug, Activity, Server, BarChart3, FileText, Bell, ExternalLink, Copy, Eye, EyeOff, Settings } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { iconColors } from '@/lib/iconColors';
+import { iconColors, getIconContainerClasses, getIconTextColor } from '@/lib/iconColors';
 
 export function AdminPanel() {
   const [endpointsOpen, setEndpointsOpen] = useState(false);
@@ -40,13 +40,24 @@ export function AdminPanel() {
   };
 
   const endpoints = [
-    { path: "GET /api/v1/health", active: true },
-    { path: "GET /api/v1/status", active: systemStatus?.database.connected || false },
-    { path: "GET /api/v1/networks", active: systemStatus?.database.connected || false },
-    { path: "GET /api/v1/within", active: systemStatus?.database.connected || false },
-    { path: "GET /api/v1/networks", active: systemStatus?.database.connected || false },
-    { path: "GET /api/v1/locations", active: systemStatus?.database.connected || false },
-    { path: "GET /api/v1/visualize", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/health", description: "Health check endpoint", active: true },
+    { path: "GET /api/v1/status", description: "System status information", active: true },
+    { path: "GET /api/v1/version", description: "API version information", active: true },
+    { path: "GET /api/v1/config", description: "Configuration data", active: true },
+    { path: "GET /api/v1/metrics", description: "System metrics", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/networks", description: "Network observations", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/within", description: "Networks within radius", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/visualize", description: "Visualization data", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/analytics", description: "Analytics overview", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/signal-strength", description: "Signal strength distribution", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/security-analysis", description: "Security analysis", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/timeline", description: "Network timeline data", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/radio-stats", description: "Radio type statistics", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/surveillance/stats", description: "Surveillance statistics", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/surveillance/location-visits", description: "Location visit patterns", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/surveillance/network-patterns", description: "Network behavior patterns", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/surveillance/home-following", description: "Home following detection", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/surveillance/network-timeline/:bssid", description: "Network timeline by BSSID", active: systemStatus?.database.connected || false },
   ];
 
   return (
@@ -55,8 +66,8 @@ export function AdminPanel() {
         <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
           {/* Page Title */}
           <div className="flex items-center gap-4 mb-2">
-            <div className="icon-container w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-orange-500/30">
-              <Shield className="h-6 w-6 text-white" />
+            <div className={`${getIconContainerClasses('special')} w-12 h-12`}>
+              <Shield className="h-6 w-6" />
             </div>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(59,130,246,0.5)]">
@@ -105,8 +116,8 @@ export function AdminPanel() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="premium-card p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="icon-container w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/30">
-                  <Database className="h-6 w-6 text-white" />
+                <div className={`${getIconContainerClasses('info')} w-12 h-12`}>
+                  <Database className="h-6 w-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -129,8 +140,8 @@ export function AdminPanel() {
 
             <div className="premium-card p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="icon-container w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-500/30">
-                  <MemoryStick className="h-6 w-6 text-white" />
+                <div className={`${getIconContainerClasses('secondary')} w-12 h-12`}>
+                  <MemoryStick className="h-6 w-6" />
                 </div>
                 <div>
                   <span className="font-semibold text-lg text-slate-100">Memory Usage</span>
@@ -153,19 +164,22 @@ export function AdminPanel() {
               <AccordionItem value="api-endpoints" className="border-0">
                 <AccordionTrigger className="px-6 py-4 hover:no-underline">
                   <div className="flex items-center gap-3">
-                    <div className="icon-container w-10 h-10 bg-gradient-to-br from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/30">
-                      <Plug className="h-5 w-5 text-white" />
+                    <div className={getIconContainerClasses('warning')}>
+                      <Plug className={`h-5 w-5 ${getIconTextColor('warning')}`} />
                     </div>
                     <span className="font-semibold text-lg text-slate-100">API Endpoint Status</span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-6 pb-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-2 max-h-[600px] overflow-y-auto">
                     {endpoints.map((endpoint, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-slate-600/50 transition-colors">
-                        <span className="text-sm font-mono text-slate-300">{endpoint.path}</span>
-                        <Badge variant={endpoint.active ? "default" : "destructive"} className="text-xs">
-                          {endpoint.active ? "Active" : "Inactive"}
+                      <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-slate-600/50 transition-colors gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-mono text-slate-300 truncate">{endpoint.path}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{endpoint.description}</p>
+                        </div>
+                        <Badge variant={endpoint.active ? "default" : "destructive"} className="text-xs shrink-0">
+                          {endpoint.active ? "Active" : "DB Required"}
                         </Badge>
                       </div>
                     ))}
@@ -199,8 +213,8 @@ export function AdminPanel() {
             <div className="p-6 border-b border-slate-700/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="icon-container w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-orange-500/30">
-                    <BarChart3 className="h-5 w-5 text-white" />
+                  <div className={getIconContainerClasses('special')}>
+                    <BarChart3 className={`h-5 w-5 ${getIconTextColor('special')}`} />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-slate-100">Grafana Dashboard</h3>
@@ -270,8 +284,8 @@ export function AdminPanel() {
             <div className="p-6 border-b border-slate-700/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="icon-container w-10 h-10 bg-gradient-to-br from-red-500 to-orange-600 shadow-lg shadow-red-500/30">
-                    <Activity className="h-5 w-5 text-white" />
+                  <div className={getIconContainerClasses('danger')}>
+                    <Activity className={`h-5 w-5 ${getIconTextColor('danger')}`} />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-slate-100">Prometheus Metrics</h3>
@@ -311,8 +325,8 @@ export function AdminPanel() {
             <div className="p-6 border-b border-slate-700/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="icon-container w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 shadow-lg shadow-blue-500/30">
-                    <Settings className="h-5 w-5 text-white" />
+                  <div className={getIconContainerClasses('info')}>
+                    <Settings className={`h-5 w-5 ${getIconTextColor('info')}`} />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-slate-100">pgAdmin Database Manager</h3>
@@ -374,8 +388,8 @@ export function AdminPanel() {
             <div className="p-6 border-b border-slate-700/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="icon-container w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/30">
-                    <FileText className="h-5 w-5 text-white" />
+                  <div className={getIconContainerClasses('success')}>
+                    <FileText className={`h-5 w-5 ${getIconTextColor('success')}`} />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-slate-100">Loki Log Aggregation</h3>
@@ -427,8 +441,8 @@ export function AdminPanel() {
           <div className="premium-card">
             <div className="p-6 border-b border-slate-700/50">
               <div className="flex items-center gap-3">
-                <div className="icon-container w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-600 shadow-lg shadow-yellow-500/30">
-                  <Bell className="h-5 w-5 text-white" />
+                <div className={getIconContainerClasses('warning')}>
+                  <Bell className={`h-5 w-5 ${getIconTextColor('warning')}`} />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-slate-100">Configured Alert Rules</h3>

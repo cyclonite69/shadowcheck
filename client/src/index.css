@@ -322,8 +322,8 @@ html:not(.dark) .premium-card {
   width: 64px;
   height: 64px;
   border-radius: 18px;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(51, 65, 85, 0.8) 100%);
-  box-shadow: 
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.3) 0%, rgba(51, 65, 85, 0.2) 100%);
+  box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.15),
     0 1px 0 rgba(255, 255, 255, 0.08) inset,
     0 2px 4px rgba(0, 0, 0, 0.08);
@@ -331,6 +331,11 @@ html:not(.dark) .premium-card {
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
+}
+
+/* Icons inherit color from parent gradient backgrounds */
+.icon-container svg {
+  stroke: currentColor;
 }
 
 .dark .icon-container {
