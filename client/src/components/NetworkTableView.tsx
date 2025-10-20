@@ -141,15 +141,17 @@ export function NetworkTableView({ networks, selectedNetworkId, onRowClick }: Ne
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800">
-            {displayedNetworks.map((network) => {
+            {displayedNetworks.map((network, index) => {
               const networkId = getNetworkId(network);
               const isSelected = selectedNetworkId === networkId;
               const props = network.properties;
               const signal = props.signal_strength ?? props.signal;
+              // Create unique key using BSSID + timestamp + index to handle duplicate observations
+              const uniqueKey = `${networkId}-${props.observed_at || props.seen || ''}-${index}`;
 
               return (
                 <tr
-                  key={networkId}
+                  key={uniqueKey}
                   id={`network-row-${networkId}`}
                   ref={isSelected ? selectedRowRef : null}
                   onClick={() => onRowClick?.(network)}
