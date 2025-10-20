@@ -53,7 +53,7 @@ export function UnifiedNetworkView() {
   const { data: networksResponse, isLoading, isFetching } = useQuery({
     queryKey: ['/api/v1/networks', debouncedSearch, filters.radioTypes, filters.signalRange, filters.dateRange],
     queryFn: async () => {
-      const res = await fetch('/api/v1/networks?limit=200000&group_by_bssid=false');
+      const res = await fetch('/api/v1/networks?limit=500000&group_by_bssid=false');
       const json = await res.json();
       if (!json.ok) return [];
 
