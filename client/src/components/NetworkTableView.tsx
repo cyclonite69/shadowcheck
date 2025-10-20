@@ -4,7 +4,7 @@
  */
 
 import { useMemo, useEffect, useRef } from 'react';
-import { Wifi, Bluetooth, Signal, Shield, ShieldAlert, ShieldCheck, Radio } from 'lucide-react';
+import { Wifi, Bluetooth, Signal, Shield, ShieldAlert, ShieldCheck, Radio, Smartphone } from 'lucide-react';
 import { formatForensicsTime } from '@/lib/dateUtils';
 import { parseWiFiSecurity, parseNonWiFiSecurity, getSecurityLevelColor } from '@/lib/securityUtils';
 import { iconColors } from '@/lib/iconColors';
@@ -65,8 +65,11 @@ export function NetworkTableView({ networks, selectedNetworkId, onRowClick }: Ne
       case 'B':
         return <Bluetooth className={`h-4 w-4 ${iconColors.secondary.text}`} />;
       case 'E':
-      case 'L':
         return <Signal className={`h-4 w-4 ${iconColors.warning.text}`} />;
+      case 'L':
+        return <Smartphone className={`h-4 w-4 ${iconColors.success.text}`} />;
+      case 'G':
+        return <Radio className="h-4 w-4 text-slate-400" />;
       default:
         return <Radio className="h-4 w-4 text-slate-400" />;
     }
