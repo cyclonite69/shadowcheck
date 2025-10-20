@@ -36,6 +36,7 @@ export function UnifiedNetworkView() {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [isRadiusSearchMode, setIsRadiusSearchMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // Debounce search input (300ms delay)
@@ -204,16 +205,64 @@ export function UnifiedNetworkView() {
 
   return (
     <div className={`flex w-full bg-slate-900 ${isFullscreen ? 'fixed inset-0 z-50' : 'h-[calc(100vh-12rem)]'}`}>
-      {/* Left Sidebar: Filter Panel (hidden in fullscreen) */}
+      {/* Mobile Filter Toggle Button */}
       {!isFullscreen && (
-        <div className="w-80 border-r border-slate-700 bg-slate-800/50 overflow-y-auto">
-          <NetworkFilters
-            filters={filters}
-            onChange={setFilters}
-            resultCount={filteredNetworks.length}
-            totalCount={networksResponse?.length || 0}
-          />
-        </div>
+        <button
+          onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
+          className="md:hidden fixed bottom-4 left-4 z-20 px-4 py-3 rounded-lg bg-blue-600 text-white font-medium shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          Filters {filteredNetworks.length !== (networksResponse?.length || 0) && `(${filteredNetworks.length})`}
+        </button>
+      )}
+
+      {/* Left Sidebar: Filter Panel (responsive - slide in on mobile) */}
+      {!isFullscreen && (
+        <>
+          {/* Mobile Backdrop */}
+          {isMobileFilterOpen && (
+            <div
+              className="md:hidden fixed inset-0 bg-black/50 z-30"
+              onClick={() => setIsMobileFilterOpen(false)}
+            />
+          )}
+
+          {/* Filter Sidebar */}
+          <div className={`
+            w-80 border-r border-slate-700 bg-slate-800/50 overflow-y-auto z-40
+            md:relative md:translate-x-0
+            fixed inset-y-0 left-0 transition-transform duration-300
+            ${isMobileFilterOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          `}>
+            {/* Mobile Close Button */}
+            <div className="md:hidden sticky top-0 bg-slate-800 border-b border-slate-700 p-3 flex justify-between items-center z-10">
+              <h3 className="text-sm font-semibold text-slate-200">Filters</h3>
+              <button
+                onClick={() => setIsMobileFilterOpen(false)}
+                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <NetworkFilters
+              filters={filters}
+              onChange={(newFilters) => {
+                setFilters(newFilters);
+                // Auto-close on mobile when filter changes (except search which uses debouncing)
+                if (window.innerWidth < 768 && newFilters.search === filters.search) {
+                  setTimeout(() => setIsMobileFilterOpen(false), 100);
+                }
+              }}
+              resultCount={filteredNetworks.length}
+              totalCount={networksResponse?.length || 0}
+            />
+          </div>
+        </>
       )}
 
       {/* Right Side: Map + Table Split View */}
@@ -232,7 +281,7 @@ export function UnifiedNetworkView() {
               radiusSearch={filters.radiusSearch}
             />
 
-            {/* Map Tools Overlay - Phase 4 enhancement */}
+            {/* Map Tools Overlay - Responsive positioning */}
             <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
               {/* Network Count */}
               <div className="text-xs bg-slate-800/90 backdrop-blur-sm px-3 py-2 rounded-lg border border-slate-700 text-slate-300">
@@ -245,28 +294,28 @@ export function UnifiedNetworkView() {
                 )}
               </div>
 
-              {/* Tool Buttons */}
+              {/* Tool Buttons - Touch-friendly sizing */}
               <div className="flex flex-col gap-2">
                 {/* Radius Search Tool */}
                 <button
                   onClick={() => setIsRadiusSearchMode(!isRadiusSearchMode)}
-                  className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                  className={`px-3 py-2 md:py-2 rounded-lg text-xs md:text-xs font-medium transition-all touch-manipulation ${
                     isRadiusSearchMode
                       ? 'bg-blue-600 text-white border-2 border-blue-400'
-                      : 'bg-slate-800/90 text-slate-300 border border-slate-700 hover:bg-slate-700'
-                  } backdrop-blur-sm`}
+                      : 'bg-slate-800/90 text-slate-300 border border-slate-700 hover:bg-slate-700 active:bg-slate-600'
+                  } backdrop-blur-sm min-h-[44px] md:min-h-0`}
                   title="Click map to search by radius"
                 >
-                  {isRadiusSearchMode ? '📍 Click Map' : '🎯 Radius Search'}
+                  {isRadiusSearchMode ? '📍 Click Map' : '🎯 Radius'}
                 </button>
 
                 {/* Fullscreen Toggle */}
                 <button
                   onClick={() => setIsFullscreen(!isFullscreen)}
-                  className="px-3 py-2 rounded-lg text-xs font-medium bg-slate-800/90 text-slate-300 border border-slate-700 hover:bg-slate-700 backdrop-blur-sm transition-all"
+                  className="px-3 py-2 md:py-2 rounded-lg text-xs md:text-xs font-medium bg-slate-800/90 text-slate-300 border border-slate-700 hover:bg-slate-700 active:bg-slate-600 backdrop-blur-sm transition-all touch-manipulation min-h-[44px] md:min-h-0"
                   title={isFullscreen ? 'Exit Fullscreen (ESC)' : 'Fullscreen Mode'}
                 >
-                  {isFullscreen ? '🗙 Exit' : '⛶ Fullscreen'}
+                  {isFullscreen ? '🗙 Exit' : '⛶ Full'}
                 </button>
               </div>
             </div>
