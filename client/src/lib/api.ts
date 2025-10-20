@@ -200,5 +200,79 @@ export const api = {
   async getTimelineData(): Promise<any> {
     const res = await apiRequest("GET", "/api/v1/timeline");
     return res.json();
+  },
+
+  // WiFi Surveillance Detection API
+  async getWiFiThreats(options?: {
+    min_distance_km?: number;
+    home_radius_m?: number;
+    min_home_sightings?: number;
+    limit?: number;
+  }): Promise<any> {
+    const params = new URLSearchParams();
+    if (options?.min_distance_km !== undefined) params.append('min_distance_km', options.min_distance_km.toString());
+    if (options?.home_radius_m !== undefined) params.append('home_radius_m', options.home_radius_m.toString());
+    if (options?.min_home_sightings !== undefined) params.append('min_home_sightings', options.min_home_sightings.toString());
+    if (options?.limit) params.append('limit', options.limit.toString());
+
+    const queryString = params.toString();
+    const url = queryString ? `/api/v1/surveillance/wifi/threats?${queryString}` : '/api/v1/surveillance/wifi/threats';
+
+    const res = await apiRequest("GET", url);
+    return res.json();
+  },
+
+  async getWiFiSummary(min_distance_km?: number): Promise<any> {
+    const url = min_distance_km
+      ? `/api/v1/surveillance/wifi/summary?min_distance_km=${min_distance_km}`
+      : '/api/v1/surveillance/wifi/summary';
+    const res = await apiRequest("GET", url);
+    return res.json();
+  },
+
+  async getDetectionSettings(): Promise<any> {
+    const res = await apiRequest("GET", "/api/v1/surveillance/settings");
+    return res.json();
+  },
+
+  async updateDetectionSettings(settings: {
+    radio_type: string;
+    min_distance_km?: number;
+    max_distance_km?: number;
+    home_radius_m?: number;
+    min_home_sightings?: number;
+    min_away_sightings?: number;
+    confidence_threshold?: number;
+    threat_level_enabled?: Record<string, boolean>;
+  }): Promise<any> {
+    const res = await apiRequest("POST", "/api/v1/surveillance/settings", {
+      body: JSON.stringify(settings),
+    });
+    return res.json();
+  },
+
+  async recordThreatFeedback(feedback: {
+    bssid: string;
+    ssid?: string;
+    threat_level: string;
+    detected_distance_km: number;
+    user_rating: 'false_positive' | 'real_threat' | 'uncertain';
+    user_notes?: string;
+    whitelist_network?: boolean;
+  }): Promise<any> {
+    const res = await apiRequest("POST", "/api/v1/surveillance/feedback", {
+      body: JSON.stringify(feedback),
+    });
+    return res.json();
+  },
+
+  async adjustThresholds(): Promise<any> {
+    const res = await apiRequest("POST", "/api/v1/surveillance/learning/adjust");
+    return res.json();
+  },
+
+  async getFeedbackStats(): Promise<any> {
+    const res = await apiRequest("GET", "/api/v1/surveillance/feedback/stats");
+    return res.json();
   }
 };
