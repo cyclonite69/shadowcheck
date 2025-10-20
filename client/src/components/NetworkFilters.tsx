@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { X, MapPin, Wifi, Bluetooth, Radio, Signal } from 'lucide-react';
+import { X, MapPin, Wifi, Bluetooth, Radio, Signal, Smartphone } from 'lucide-react';
 import { iconColors } from '@/lib/iconColors';
 
 interface FilterState {
@@ -147,6 +147,36 @@ export function NetworkFilters({ filters, onChange, resultCount, totalCount }: N
             >
               <Bluetooth className={`w-4 h-4 ${iconColors.secondary.text}`} />
               Bluetooth Classic
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="filter-lte"
+              checked={filters.radioTypes.includes('L')}
+              onCheckedChange={(checked) => handleRadioTypeToggle('L', !!checked)}
+              className="border-slate-600 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+            />
+            <label
+              htmlFor="filter-lte"
+              className="text-sm text-slate-300 cursor-pointer flex items-center gap-2"
+            >
+              <Smartphone className={`w-4 h-4 ${iconColors.success.text}`} />
+              Cellular / LTE
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="filter-other"
+              checked={filters.radioTypes.includes('G')}
+              onCheckedChange={(checked) => handleRadioTypeToggle('G', !!checked)}
+              className="border-slate-600 data-[state=checked]:bg-slate-600 data-[state=checked]:border-slate-600"
+            />
+            <label
+              htmlFor="filter-other"
+              className="text-sm text-slate-300 cursor-pointer flex items-center gap-2"
+            >
+              <Radio className="w-4 h-4 text-slate-400" />
+              Other (G)
             </label>
           </div>
         </div>
