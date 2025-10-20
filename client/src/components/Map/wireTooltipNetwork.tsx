@@ -144,7 +144,13 @@ export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Op
     }
   };
   const clearRange = () => {
-    (map.getSource("range") as any)?.setData({ type: "FeatureCollection", features: [] });
+    // Check if map is still valid and has the source before trying to clear it
+    if (map && typeof map.getSource === 'function') {
+      const source = map.getSource("range");
+      if (source && typeof source.setData === 'function') {
+        source.setData({ type: "FeatureCollection", features: [] });
+      }
+    }
   };
 
   // HOVER → update rings only; keep tooltip if locked
