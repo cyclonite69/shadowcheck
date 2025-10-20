@@ -10,6 +10,7 @@ import { NetworkMapboxViewer } from '@/components/Map/NetworkMapboxViewer';
 import { NetworkTableView } from '@/components/NetworkTableView';
 import { NetworkFilters } from '@/components/NetworkFilters';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface FilterState {
   search: string;
@@ -35,6 +36,9 @@ export function UnifiedNetworkView() {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
+  // Debounce search input (300ms delay)
+  const debouncedSearch = useDebounce(filters.search, 300);
+
   // Fetch config for Mapbox token
   const { data: config } = useQuery({
     queryKey: ['/api/v1/config'],
@@ -45,8 +49,9 @@ export function UnifiedNetworkView() {
   });
 
   // Fetch ALL observations (not just unique networks)
-  const { data: networksResponse, isLoading } = useQuery({
-    queryKey: ['/api/v1/networks', filters],
+  // Use debounced search for query key to reduce API calls
+  const { data: networksResponse, isLoading, isFetching } = useQuery({
+    queryKey: ['/api/v1/networks', debouncedSearch, filters.radioTypes, filters.signalRange, filters.dateRange],
     queryFn: async () => {
       const res = await fetch('/api/v1/networks?limit=200000&group_by_bssid=false');
       const json = await res.json();
@@ -84,9 +89,9 @@ export function UnifiedNetworkView() {
 
     let filtered = networksResponse;
 
-    // Search filter
-    if (filters.search) {
-      const term = filters.search.toLowerCase();
+    // Search filter (use debounced value)
+    if (debouncedSearch) {
+      const term = debouncedSearch.toLowerCase();
       filtered = filtered.filter((network: any) => {
         const ssid = (network.properties.ssid || '').toLowerCase();
         const bssid = (network.properties.bssid || '').toLowerCase();
@@ -120,7 +125,7 @@ export function UnifiedNetworkView() {
     }
 
     return filtered;
-  }, [networksResponse, filters]);
+  }, [networksResponse, debouncedSearch, filters.radioTypes, filters.signalRange, filters.dateRange]);
 
   // Handle map network click → highlight table row (Phase 2)
   const handleNetworkClick = useCallback((network: any) => {
@@ -198,6 +203,12 @@ export function UnifiedNetworkView() {
             <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
               <div className="text-xs bg-slate-800/90 backdrop-blur-sm px-3 py-2 rounded-lg border border-slate-700 text-slate-300">
                 <div className="font-semibold">Networks: {filteredNetworks.length.toLocaleString()}</div>
+                {isFetching && (
+                  <div className="text-blue-400 text-xs mt-1 flex items-center gap-1">
+                    <div className="animate-spin h-3 w-3 border-2 border-blue-400 border-t-transparent rounded-full"></div>
+                    Updating...
+                  </div>
+                )}
               </div>
             </div>
           </div>
