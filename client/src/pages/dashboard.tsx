@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { EnhancedHeader } from "@/components/enhanced-header";
@@ -5,15 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'wouter';
-import { BarChart3, Wifi, MapPin, Shield, Activity, Zap, Radio, Bluetooth, Radar, Satellite, Target, Antenna } from 'lucide-react';
+import { BarChart3, Wifi, MapPin, Shield, Activity, Zap, Radio, Bluetooth, Radar, Satellite, Target, Antenna, AlertTriangle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { iconColors } from '@/lib/iconColors';
+import { SecurityStrength, getSecurityBadgeClass } from '@/lib/securityDecoder';
 
 export default function Dashboard() {
+  const [timelineRange, setTimelineRange] = useState<string>('24h');
+  const [showDistinctNetworks, setShowDistinctNetworks] = useState<boolean>(true);
 
   const { data: networks, isLoading: networksLoading } = useQuery({
     queryKey: ['/api/v1/networks'],
-    queryFn: () => api.getNetworks(10),
+    queryFn: () => api.getNetworks({ limit: 10 }),
     refetchInterval: 30000,
   });
 
@@ -42,8 +46,11 @@ export default function Dashboard() {
   });
 
   const { data: timelineData } = useQuery({
-    queryKey: ['/api/v1/timeline'],
-    queryFn: () => api.getTimelineData(),
+    queryKey: ['/api/v1/timeline', timelineRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/timeline?range=${timelineRange}&granularity=auto`);
+      return res.json();
+    },
     refetchInterval: 30000,
   });
 
@@ -64,43 +71,45 @@ export default function Dashboard() {
   const bluetoothStats = getRadioStats('bluetooth');
   const bleStats = getRadioStats('ble');
 
-  // Transform timeline data to cover full 24 hours
+  // Transform timeline data for charting (handles all granularities)
   const transformTimelineData = () => {
     const rawData = timelineData?.data || [];
+    if (rawData.length === 0) return [];
 
-    // Create 24 hour slots (0-23)
-    const hours = Array.from({ length: 24 }, (_, i) => {
-      const hourStr = i.toString().padStart(2, '0') + ':00';
-      return {
-        hour: hourStr,
-        wifi: 0,
-        cellular: 0,
-        bluetooth: 0,
-        ble: 0
-      };
-    });
+    // Group data by time bucket
+    const bucketMap = new Map<string, any>();
 
-    // Fill in actual data
     rawData.forEach((item: any) => {
-      const hourDate = new Date(item.hour);
-      const hourIndex = hourDate.getHours();
-      const radioType = item.radio_type?.toLowerCase() || '';
-      const count = Number(item.detection_count) || 0;
+      const bucket = item.time_bucket;
+      if (!bucketMap.has(bucket)) {
+        bucketMap.set(bucket, {
+          time_bucket: bucket,
+          wifi: 0,
+          cellular: 0,
+          bluetooth: 0,
+          ble: 0
+        });
+      }
 
-      if (hourIndex >= 0 && hourIndex < 24) {
-        if (radioType === 'wifi') {
-          hours[hourIndex].wifi += count;
-        } else if (radioType === 'cellular') {
-          hours[hourIndex].cellular += count;
-        } else if (radioType === 'bluetooth') {
-          hours[hourIndex].bluetooth += count;
-        } else if (radioType === 'ble') {
-          hours[hourIndex].ble += count;
-        }
+      const bucketData = bucketMap.get(bucket)!;
+      const radioType = item.radio_type?.toLowerCase() || '';
+      const count = Number(item.unique_networks) || 0;
+
+      if (radioType === 'wifi') {
+        bucketData.wifi += count;
+      } else if (radioType === 'cellular') {
+        bucketData.cellular += count;
+      } else if (radioType === 'bluetooth') {
+        bucketData.bluetooth += count;
+      } else if (radioType === 'ble') {
+        bucketData.ble += count;
       }
     });
 
-    return hours;
+    // Convert to array and sort by time
+    return Array.from(bucketMap.values()).sort((a, b) =>
+      new Date(a.time_bucket).getTime() - new Date(b.time_bucket).getTime()
+    );
   };
 
   const timelineChartData = transformTimelineData();
@@ -263,16 +272,210 @@ export default function Dashboard() {
           </div>
           </div>
 
-          {/* Security Analysis with Pie Chart */}
+          {/* Security Strength Analysis */}
           <div className="premium-card">
           <CardHeader>
             <CardTitle className="text-slate-300 flex items-center gap-2">
               <Shield className={`h-5 w-5 ${iconColors.danger.text}`} />
-              Network Security Breakdown
+              Security Strength Distribution
             </CardTitle>
             <CardDescription className="text-slate-400">
-              Encryption and security analysis of detected networks
+              WiFi network security analysis by encryption strength
             </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {securityAnalysis?.data ? (
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+                  {/* Pie Chart */}
+                  <div className="flex justify-center">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={[
+                            {
+                              name: 'Excellent',
+                              value: securityAnalysis.data.categories[SecurityStrength.EXCELLENT] || 0,
+                              color: '#10b981'
+                            },
+                            {
+                              name: 'Good',
+                              value: securityAnalysis.data.categories[SecurityStrength.GOOD] || 0,
+                              color: '#3b82f6'
+                            },
+                            {
+                              name: 'Moderate',
+                              value: securityAnalysis.data.categories[SecurityStrength.MODERATE] || 0,
+                              color: '#f59e0b'
+                            },
+                            {
+                              name: 'Weak',
+                              value: securityAnalysis.data.categories[SecurityStrength.WEAK] || 0,
+                              color: '#f97316'
+                            },
+                            {
+                              name: 'Vulnerable',
+                              value: securityAnalysis.data.categories[SecurityStrength.VULNERABLE] || 0,
+                              color: '#ef4444'
+                            },
+                            {
+                              name: 'Open',
+                              value: securityAnalysis.data.categories[SecurityStrength.OPEN] || 0,
+                              color: '#dc2626'
+                            }
+                          ].filter(item => item.value > 0)}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={120}
+                          paddingAngle={2}
+                          dataKey="value"
+                        >
+                          {[
+                            { color: '#10b981' },
+                            { color: '#3b82f6' },
+                            { color: '#f59e0b' },
+                            { color: '#f97316' },
+                            { color: '#ef4444' },
+                            { color: '#dc2626' }
+                          ].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#1e293b',
+                            border: '1px solid #475569',
+                            borderRadius: '8px',
+                            color: '#e2e8f0'
+                          }}
+                        />
+                        <Legend wrapperStyle={{ color: '#e2e8f0' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Security Score Summary */}
+                  <div className="space-y-4">
+                    <div className="text-center p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/20">
+                      <p className="text-5xl font-bold text-blue-300 mb-2 font-mono">
+                        {securityAnalysis.data.summary.security_score}
+                      </p>
+                      <p className="text-sm text-slate-300 mb-1">Overall Security Score</p>
+                      <p className="text-xs text-slate-400">Out of 100</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="text-center p-4 bg-green-500/10 rounded-xl border border-green-500/20">
+                        <p className="text-2xl font-bold text-green-300 mb-1 font-mono">
+                          {securityAnalysis.data.summary.secure_networks.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-slate-300">Secure Networks</p>
+                        <p className="text-xs text-green-400 mt-1">Excellent/Good</p>
+                      </div>
+                      <div className="text-center p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+                        <p className="text-2xl font-bold text-red-300 mb-1 font-mono">
+                          {securityAnalysis.data.summary.at_risk_networks.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-slate-300">At-Risk Networks</p>
+                        <p className="text-xs text-red-400 mt-1">Weak/Vulnerable/Open</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Security Strength Breakdown */}
+                <div className="space-y-3">
+                  {Object.entries(securityAnalysis.data.categories).map(([strength, count]) => {
+                    const total = securityAnalysis.data.total_networks || 1;
+                    const percentage = ((count as number / total) * 100).toFixed(1);
+                    const colors = {
+                      [SecurityStrength.EXCELLENT]: { bg: 'bg-green-500/10', border: 'border-green-500/20', text: 'text-green-300', bar: 'bg-green-500' },
+                      [SecurityStrength.GOOD]: { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-300', bar: 'bg-blue-500' },
+                      [SecurityStrength.MODERATE]: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-300', bar: 'bg-yellow-500' },
+                      [SecurityStrength.WEAK]: { bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-300', bar: 'bg-orange-500' },
+                      [SecurityStrength.VULNERABLE]: { bg: 'bg-red-500/10', border: 'border-red-500/20', text: 'text-red-300', bar: 'bg-red-500' },
+                      [SecurityStrength.OPEN]: { bg: 'bg-red-600/10', border: 'border-red-600/20', text: 'text-red-300', bar: 'bg-red-600' }
+                    };
+                    const style = colors[strength as SecurityStrength] || colors[SecurityStrength.MODERATE];
+
+                    if ((count as number) === 0) return null;
+
+                    return (
+                      <div
+                        key={strength}
+                        className={`flex items-center justify-between p-4 rounded-lg border ${style.border} ${style.bg}`}
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <Badge className={`${getSecurityBadgeClass(strength as SecurityStrength)} border text-xs px-2`}>
+                            {strength}
+                          </Badge>
+                          <div className="flex-1">
+                            <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                              <div
+                                className={`h-2 ${style.bar} transition-all`}
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right ml-4">
+                          <p className={`text-lg font-bold ${style.text} font-mono`}>
+                            {(count as number).toLocaleString()}
+                          </p>
+                          <p className="text-xs text-slate-400">{percentage}%</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* At-Risk Warning */}
+                {securityAnalysis.data.summary.at_risk_networks > 0 && (
+                  <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-red-300 mb-1">
+                        Security Alert
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {securityAnalysis.data.summary.at_risk_networks} networks detected with weak or no encryption.
+                        Consider upgrading to WPA2 or WPA3 for better security.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="space-y-4">
+                <Skeleton className="h-[300px] w-full" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            )}
+          </CardContent>
+          </div>
+
+          {/* Network Type Breakdown Chart */}
+          <div className="premium-card">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-slate-300 flex items-center gap-2">
+                  <Radar className={`h-5 w-5 ${iconColors.info.text}`} />
+                  Radio Type Distribution
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Breakdown of detected wireless protocols and radio frequencies
+                </CardDescription>
+              </div>
+              <button
+                onClick={() => setShowDistinctNetworks(!showDistinctNetworks)}
+                className="px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600 text-sm text-slate-300 transition-colors"
+              >
+                {showDistinctNetworks ? 'Show Total Observed' : 'Show Distinct Networks'}
+              </button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
@@ -280,45 +483,28 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      data={(() => {
-                        const rawData = securityAnalysis?.data || [];
-                        const consolidated: { [key: string]: { name: string; value: number; color: string } } = {};
-
-                        rawData.forEach((item: any) => {
-                          const security = item.security?.toLowerCase() || '';
-                          let key = '';
-
-                          if (security.includes('wpa3')) {
-                            key = 'WPA3';
-                          } else if (security.includes('wpa2')) {
-                            key = 'WPA2';
-                          } else if (security.includes('wpa') && !security.includes('wpa2') && !security.includes('wpa3')) {
-                            key = 'WPA';
-                          } else if (security.includes('wep')) {
-                            key = 'WEP';
-                          } else if (security === 'open network' || !security || security === '[ess]') {
-                            key = 'Open';
-                          } else {
-                            key = 'Other';
-                          }
-
-                          if (!consolidated[key]) {
-                            consolidated[key] = {
-                              name: key,
-                              value: 0,
-                              color:
-                                key === 'WPA3' ? '#10b981' :
-                                key === 'WPA2' ? '#3b82f6' :
-                                key === 'WPA' ? '#8b5cf6' :
-                                key === 'WEP' ? '#f59e0b' :
-                                key === 'Open' ? '#ef4444' : '#9ca3af'
-                            };
-                          }
-                          consolidated[key].value += item.network_count;
-                        });
-
-                        return Object.values(consolidated).sort((a, b) => b.value - a.value).slice(0, 4);
-                      })()}
+                      data={[
+                        {
+                          name: 'WiFi Networks',
+                          value: showDistinctNetworks ? wifiStats.networks : wifiStats.observations,
+                          color: '#3b82f6'
+                        },
+                        {
+                          name: 'Cellular Towers',
+                          value: showDistinctNetworks ? cellularStats.networks : cellularStats.observations,
+                          color: '#10b981'
+                        },
+                        {
+                          name: 'Bluetooth Devices',
+                          value: showDistinctNetworks ? bluetoothStats.networks : bluetoothStats.observations,
+                          color: '#a855f7'
+                        },
+                        {
+                          name: 'BLE Beacons',
+                          value: showDistinctNetworks ? bleStats.networks : bleStats.observations,
+                          color: '#f59e0b'
+                        }
+                      ]}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -326,47 +512,9 @@ export default function Dashboard() {
                       paddingAngle={2}
                       dataKey="value"
                     >
-                      {(() => {
-                        const rawData = securityAnalysis?.data || [];
-                        const consolidated: { [key: string]: { name: string; value: number; color: string } } = {};
-
-                        rawData.forEach((item: any) => {
-                          const security = item.security?.toLowerCase() || '';
-                          let key = '';
-
-                          if (security.includes('wpa3')) {
-                            key = 'WPA3';
-                          } else if (security.includes('wpa2')) {
-                            key = 'WPA2';
-                          } else if (security.includes('wpa') && !security.includes('wpa2') && !security.includes('wpa3')) {
-                            key = 'WPA';
-                          } else if (security.includes('wep')) {
-                            key = 'WEP';
-                          } else if (security === 'open network' || !security || security === '[ess]') {
-                            key = 'Open';
-                          } else {
-                            key = 'Other';
-                          }
-
-                          if (!consolidated[key]) {
-                            consolidated[key] = {
-                              name: key,
-                              value: 0,
-                              color:
-                                key === 'WPA3' ? '#10b981' :
-                                key === 'WPA2' ? '#3b82f6' :
-                                key === 'WPA' ? '#8b5cf6' :
-                                key === 'WEP' ? '#f59e0b' :
-                                key === 'Open' ? '#ef4444' : '#9ca3af'
-                            };
-                          }
-                          consolidated[key].value += item.network_count;
-                        });
-
-                        return Object.values(consolidated).sort((a, b) => b.value - a.value).slice(0, 4).map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ));
-                      })()}
+                      {[{ color: '#3b82f6' }, { color: '#10b981' }, { color: '#a855f7' }, { color: '#f59e0b' }].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
                     </Pie>
                     <Tooltip
                       contentStyle={{
@@ -383,197 +531,49 @@ export default function Dashboard() {
                 </ResponsiveContainer>
               </div>
               <div className="space-y-4">
-                {(() => {
-                  const rawData = securityAnalysis?.data || [];
-                  const consolidated: { [key: string]: { name: string; value: number; color: string; percentage: number } } = {};
-                  let total = 0;
-
-                  rawData.forEach((item: any) => {
-                    const security = item.security?.toLowerCase() || '';
-                    let key = '';
-
-                    if (security.includes('wpa3')) {
-                      key = 'WPA3';
-                    } else if (security.includes('wpa2')) {
-                      key = 'WPA2';
-                    } else if (security.includes('wpa') && !security.includes('wpa2') && !security.includes('wpa3')) {
-                      key = 'WPA';
-                    } else if (security.includes('wep')) {
-                      key = 'WEP';
-                    } else if (security === 'open network' || !security || security === '[ess]') {
-                      key = 'Open';
-                    } else {
-                      key = 'Other';
-                    }
-
-                    if (!consolidated[key]) {
-                      consolidated[key] = {
-                        name: key,
-                        value: 0,
-                        color:
-                          key === 'WPA3' ? '#10b981' :
-                          key === 'WPA2' ? '#3b82f6' :
-                          key === 'WPA' ? '#8b5cf6' :
-                          key === 'WEP' ? '#f59e0b' :
-                          key === 'Open' ? '#ef4444' : '#9ca3af',
-                        percentage: 0
-                      };
-                    }
-                    consolidated[key].value += item.network_count;
-                    total += item.network_count;
-                  });
-
-                  Object.values(consolidated).forEach(item => {
-                    item.percentage = (item.value / total) * 100;
-                  });
-
-                  return Object.values(consolidated).sort((a, b) => b.value - a.value).slice(0, 4).map((item: any, index: number) => {
-                    const bgColor =
-                      item.name === 'WPA3' ? 'bg-green-500/10 border-green-500/20' :
-                      item.name === 'WPA2' ? 'bg-blue-500/10 border-blue-500/20' :
-                      item.name === 'WPA' ? 'bg-purple-500/10 border-purple-500/20' :
-                      item.name === 'WEP' ? 'bg-orange-500/10 border-orange-500/20' :
-                      'bg-red-500/10 border-red-500/20';
-                    const textColor =
-                      item.name === 'WPA3' ? 'text-green-300' :
-                      item.name === 'WPA2' ? 'text-blue-300' :
-                      item.name === 'WPA' ? 'text-purple-300' :
-                      item.name === 'WEP' ? 'text-orange-300' :
-                      'text-red-300';
-                    const accentColor =
-                      item.name === 'WPA3' ? 'text-green-400' :
-                      item.name === 'WPA2' ? 'text-blue-400' :
-                      item.name === 'WPA' ? 'text-purple-400' :
-                      item.name === 'WEP' ? 'text-orange-400' :
-                      'text-red-400';
-
-                    return (
-                      <div key={index} className={`text-center p-4 ${bgColor} rounded-xl border`}>
-                        <p className={`text-3xl font-bold ${textColor} mb-2 font-mono`}>
-                          {item.value?.toLocaleString() || 0}
-                        </p>
-                        <p className="text-sm text-slate-300">{item.name}</p>
-                        <p className={`text-xs ${accentColor} mt-1`}>{item.percentage?.toFixed(1)}% of total</p>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
-            <div className="space-y-3">
-              {(securityAnalysis?.data || []).slice(0, 8).map((item: any, index: number) => {
-                const count = Number(item.network_count) || 0;
-                return (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border/30 bg-background/40"
-                    data-testid={`security-${item.security?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'unknown'}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        item.security?.includes('WPA3') ? 'bg-green-500' :
-                        item.security?.includes('WPA2') ? 'bg-blue-500' :
-                        item.security?.includes('WPA') ? 'bg-yellow-500' :
-                        item.security?.includes('WEP') ? 'bg-orange-500' :
-                        item.security === '[ESS]' || !item.security ? 'bg-red-500' : 'bg-gray-500'
-                      }`}></div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {item.security_level || 'Unknown Security'}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                          {item.security || 'Unknown'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-foreground">
-                        {count.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.percentage?.toFixed(1)}%
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-              {(!securityAnalysis?.data || securityAnalysis.data.length === 0) && (
-                <div className="col-span-full text-center py-4">
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              )}
-            </div>
-          </CardContent>
-          </div>
-
-          {/* Network Type Breakdown Chart */}
-          <div className="premium-card">
-          <CardHeader>
-            <CardTitle className="text-slate-300 flex items-center gap-2">
-              <Radar className={`h-5 w-5 ${iconColors.info.text}`} />
-              Radio Type Distribution
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              Breakdown of detected wireless protocols and radio frequencies
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
-              <div className="flex justify-center">
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'WiFi Networks', value: wifiStats.observations, color: '#3b82f6' },
-                        { name: 'Cellular Towers', value: cellularStats.observations, color: '#10b981' },
-                        { name: 'Bluetooth Devices', value: bluetoothStats.observations, color: '#a855f7' },
-                        { name: 'BLE Beacons', value: bleStats.observations, color: '#f59e0b' }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={120}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {[{ color: '#3b82f6' }, { color: '#10b981' }, { color: '#a855f7' }, { color: '#f59e0b' }].map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1e293b', 
-                        border: '1px solid #475569',
-                        borderRadius: '8px',
-                        color: '#e2e8f0'
-                      }}
-                    />
-                    <Legend 
-                      wrapperStyle={{ color: '#e2e8f0' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-4">
                 <div className="text-center p-4 bg-blue-500/10 rounded-xl border border-blue-500/20">
-                  <p className="text-3xl font-bold text-blue-300 mb-2 font-mono">{wifiStats.observations.toLocaleString()}</p>
+                  <p className="text-3xl font-bold text-blue-300 mb-2 font-mono">
+                    {(showDistinctNetworks ? wifiStats.networks : wifiStats.observations).toLocaleString()}
+                  </p>
                   <p className="text-sm text-slate-300">WiFi Networks</p>
-                  <p className="text-xs text-blue-400 mt-1">{wifiStats.networks.toLocaleString()} unique networks</p>
+                  <p className="text-xs text-blue-400 mt-1">
+                    {showDistinctNetworks
+                      ? `${wifiStats.observations.toLocaleString()} total observations`
+                      : `${wifiStats.networks.toLocaleString()} unique networks`}
+                  </p>
                 </div>
                 <div className="text-center p-4 bg-green-500/10 rounded-xl border border-green-500/20">
-                  <p className="text-3xl font-bold text-green-300 mb-2 font-mono">{cellularStats.observations.toLocaleString()}</p>
+                  <p className="text-3xl font-bold text-green-300 mb-2 font-mono">
+                    {(showDistinctNetworks ? cellularStats.networks : cellularStats.observations).toLocaleString()}
+                  </p>
                   <p className="text-sm text-slate-300">Cellular Towers</p>
-                  <p className="text-xs text-green-400 mt-1">{cellularStats.networks.toLocaleString()} unique towers</p>
+                  <p className="text-xs text-green-400 mt-1">
+                    {showDistinctNetworks
+                      ? `${cellularStats.observations.toLocaleString()} total observations`
+                      : `${cellularStats.networks.toLocaleString()} unique towers`}
+                  </p>
                 </div>
                 <div className="text-center p-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
-                  <p className="text-3xl font-bold text-purple-300 mb-2 font-mono">{bluetoothStats.observations.toLocaleString()}</p>
+                  <p className="text-3xl font-bold text-purple-300 mb-2 font-mono">
+                    {(showDistinctNetworks ? bluetoothStats.networks : bluetoothStats.observations).toLocaleString()}
+                  </p>
                   <p className="text-sm text-slate-300">Bluetooth Devices</p>
-                  <p className="text-xs text-purple-400 mt-1">{bluetoothStats.networks.toLocaleString()} unique devices</p>
+                  <p className="text-xs text-purple-400 mt-1">
+                    {showDistinctNetworks
+                      ? `${bluetoothStats.observations.toLocaleString()} total observations`
+                      : `${bluetoothStats.networks.toLocaleString()} unique devices`}
+                  </p>
                 </div>
                 <div className="text-center p-4 bg-orange-500/10 rounded-xl border border-orange-500/20">
-                  <p className="text-3xl font-bold text-orange-300 mb-2 font-mono">{bleStats.observations.toLocaleString()}</p>
+                  <p className="text-3xl font-bold text-orange-300 mb-2 font-mono">
+                    {(showDistinctNetworks ? bleStats.networks : bleStats.observations).toLocaleString()}
+                  </p>
                   <p className="text-sm text-slate-300">BLE Beacons</p>
-                  <p className="text-xs text-orange-400 mt-1">{bleStats.networks.toLocaleString()} unique beacons</p>
+                  <p className="text-xs text-orange-400 mt-1">
+                    {showDistinctNetworks
+                      ? `${bleStats.observations.toLocaleString()} total observations`
+                      : `${bleStats.networks.toLocaleString()} unique beacons`}
+                  </p>
                 </div>
               </div>
             </div>
@@ -650,13 +650,36 @@ export default function Dashboard() {
           {/* Network Activity Timeline - Line Chart */}
           <div className="premium-card">
           <CardHeader>
-            <CardTitle className="text-slate-300 flex items-center gap-2">
-              <Zap className={`h-5 w-5 ${iconColors.warning.text}`} />
-              Network Detection Timeline
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              Trend of network detections over the past 24 hours
-            </CardDescription>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <CardTitle className="text-slate-300 flex items-center gap-2">
+                  <Zap className={`h-5 w-5 ${iconColors.warning.text}`} />
+                  Network Detection Timeline
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Trend of unique network detections over selected time range
+                </CardDescription>
+              </div>
+              {/* Time Range Selector */}
+              <div className="flex flex-wrap gap-2">
+                {['1h', '6h', '12h', '24h', '7d', '30d', '6mo', '1y', 'all'].map(range => (
+                  <button
+                    key={range}
+                    onClick={() => setTimelineRange(range)}
+                    className={`px-3 py-1 text-sm rounded transition-colors ${
+                      timelineRange === range
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    {range === 'all' ? 'All Time' :
+                     range === '6mo' ? '6 Months' :
+                     range === '1y' ? '1 Year' :
+                     range.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -667,9 +690,19 @@ export default function Dashboard() {
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                   <XAxis
-                    dataKey="hour"
+                    dataKey="time_bucket"
                     stroke="#94a3b8"
                     style={{ fontSize: '12px' }}
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
+                      if (timelineRange === '1h' || timelineRange === '6h' || timelineRange === '12h' || timelineRange === '24h') {
+                        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                      } else if (timelineRange === '7d' || timelineRange === '30d') {
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      } else {
+                        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+                      }
+                    }}
                     interval={1}
                   />
                   <YAxis
