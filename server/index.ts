@@ -8,6 +8,7 @@ import { registerShutdownHandlers } from "./utils/shutdown";
 import healthRouter from "./routes/health";
 import visualizeRouter from "./routes/visualize";
 import surveillanceRouter from "./routes/surveillance";
+import pipelinesRouter from "./routes/pipelines";
 import { db as dbConnection } from "./db/connection";
 
 const { Pool } = pg;
@@ -73,6 +74,7 @@ const calculateChannel = (frequency: number | null | undefined): number | null =
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/visualize", visualizeRouter);
 app.use("/api/v1/surveillance", surveillanceRouter);
+app.use("/api/v1/pipelines", pipelinesRouter);
 
 // Legacy health endpoint for backward compatibility
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
@@ -442,6 +444,77 @@ app.get("/api/v1/analytics", async (_req, res) => {
 });
 
 /**
+ * GET /api/v1/security-analysis
+ * Analyze security strength distribution across all WiFi networks
+ */
+app.get("/api/v1/security-analysis", async (_req, res) => {
+  try {
+    const { parseCapabilities, categorizeNetworksBySecurity, SecurityStrength } = await import('./utils/securityAnalysis.js');
+
+    // Get all WiFi networks with capabilities
+    const query = `
+      SELECT DISTINCT ON (bssid)
+        bssid,
+        ssid,
+        capabilities,
+        frequency
+      FROM app.networks_legacy
+      WHERE type = 'W'
+      ORDER BY bssid, lasttime DESC
+    `;
+
+    const result = await pool.query(query);
+    const networks = result.rows;
+
+    // Categorize by security strength
+    const categories = categorizeNetworksBySecurity(networks);
+
+    // Get some example networks for each category
+    const examples: Record<string, any[]> = {
+      [SecurityStrength.EXCELLENT]: [],
+      [SecurityStrength.GOOD]: [],
+      [SecurityStrength.MODERATE]: [],
+      [SecurityStrength.WEAK]: [],
+      [SecurityStrength.VULNERABLE]: [],
+      [SecurityStrength.OPEN]: []
+    };
+
+    networks.forEach(network => {
+      const analysis = parseCapabilities(network.capabilities);
+      if (examples[analysis.strength].length < 5) {
+        examples[analysis.strength].push({
+          bssid: network.bssid,
+          ssid: network.ssid || '<hidden>',
+          analysis
+        });
+      }
+    });
+
+    res.json({
+      ok: true,
+      data: {
+        total_networks: networks.length,
+        categories,
+        examples,
+        summary: {
+          secure_networks: categories[SecurityStrength.EXCELLENT] + categories[SecurityStrength.GOOD],
+          at_risk_networks: categories[SecurityStrength.WEAK] + categories[SecurityStrength.VULNERABLE] + categories[SecurityStrength.OPEN],
+          security_score: Math.round(
+            ((categories[SecurityStrength.EXCELLENT] * 100 +
+              categories[SecurityStrength.GOOD] * 75 +
+              categories[SecurityStrength.MODERATE] * 50 +
+              categories[SecurityStrength.WEAK] * 25) / networks.length) || 0
+          )
+        }
+      }
+    });
+  } catch (err) {
+    console.error('[/api/v1/security-analysis] error:', err);
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+/**
  * GET /api/v1/signal-strength
  * Signal strength distribution from locations_legacy
  */
@@ -549,50 +622,100 @@ app.get("/api/v1/security-analysis", async (_req, res) => {
 
 /**
  * GET /api/v1/timeline
- * Hourly detection counts for last 24 hours (using DISTINCT BSSIDs to avoid duplicates)
+ * Network detection timeline with flexible time ranges and auto-granularity
+ *
+ * Query Parameters:
+ * - range: 1h, 6h, 12h, 24h, 7d, 30d, 6mo, 1y, all (default: 24h)
+ * - granularity: auto, minute, hour, day, week, month (default: auto)
  */
-app.get("/api/v1/timeline", async (_req, res) => {
+app.get("/api/v1/timeline", async (req, res) => {
   try {
+    const range = (req.query.range as string) || '24h';
+    let granularity = (req.query.granularity as string) || 'auto';
+
+    // Calculate time range in milliseconds
+    let rangeMs: number | null = null;
+    switch (range) {
+      case '1h': rangeMs = 1 * 60 * 60 * 1000; break;
+      case '6h': rangeMs = 6 * 60 * 60 * 1000; break;
+      case '12h': rangeMs = 12 * 60 * 60 * 1000; break;
+      case '24h': rangeMs = 24 * 60 * 60 * 1000; break;
+      case '7d': rangeMs = 7 * 24 * 60 * 60 * 1000; break;
+      case '30d': rangeMs = 30 * 24 * 60 * 60 * 1000; break;
+      case '6mo': rangeMs = 180 * 24 * 60 * 60 * 1000; break;
+      case '1y': rangeMs = 365 * 24 * 60 * 60 * 1000; break;
+      case 'all': rangeMs = null; break;
+      default: rangeMs = 24 * 60 * 60 * 1000; // default to 24h
+    }
+
+    // Auto-select granularity based on range
+    if (granularity === 'auto') {
+      if (range === '1h') granularity = 'minute';
+      else if (range === '6h' || range === '12h') granularity = 'hour';
+      else if (range === '24h') granularity = 'hour';
+      else if (range === '7d') granularity = 'day';
+      else if (range === '30d') granularity = 'day';
+      else if (range === '6mo') granularity = 'week';
+      else if (range === '1y') granularity = 'month';
+      else granularity = 'month'; // for 'all'
+    }
+
+    // Map granularity to PostgreSQL DATE_TRUNC value
+    const truncValue = granularity === 'minute' ? 'minute' :
+                      granularity === 'hour' ? 'hour' :
+                      granularity === 'day' ? 'day' :
+                      granularity === 'week' ? 'week' :
+                      'month';
+
     const query = `
       WITH time_bounds AS (
         SELECT
           MAX(time) as max_time,
-          MAX(time) - (24 * 60 * 60 * 1000) as min_time
+          ${rangeMs === null ? 'MIN(time)' : `MAX(time) - ${rangeMs}`} as min_time
         FROM app.locations_legacy
         WHERE time IS NOT NULL
       ),
-      hourly_data AS (
+      bucketed_data AS (
         SELECT
-          DATE_TRUNC('hour', TO_TIMESTAMP(l.time / 1000)) as hour,
+          DATE_TRUNC('${truncValue}', TO_TIMESTAMP(l.time / 1000)) as time_bucket,
           CASE
             WHEN n.type = 'C' OR n.bssid ~ '^[0-9]+_[0-9]+_[0-9]+$' THEN 'cellular'
             WHEN n.type = 'B' THEN 'bluetooth'
             WHEN n.frequency = 0 OR n.frequency BETWEEN 1 AND 500 THEN 'ble'
             ELSE 'wifi'
           END as radio_type,
-          COUNT(DISTINCT l.bssid) as detection_count
+          COUNT(DISTINCT l.bssid) as unique_networks,
+          COUNT(*) as total_detections
         FROM app.locations_legacy l
         LEFT JOIN app.networks_legacy n ON l.bssid = n.bssid
         CROSS JOIN time_bounds tb
         WHERE l.time >= tb.min_time AND l.time <= tb.max_time
-        GROUP BY hour, radio_type
+          AND l.time IS NOT NULL
+        GROUP BY time_bucket, radio_type
       )
       SELECT
-        hour,
+        time_bucket,
         radio_type,
-        SUM(detection_count) as detection_count
-      FROM hourly_data
-      GROUP BY hour, radio_type
-      ORDER BY hour ASC
+        SUM(unique_networks) as unique_networks,
+        SUM(total_detections) as total_detections
+      FROM bucketed_data
+      GROUP BY time_bucket, radio_type
+      ORDER BY time_bucket ASC
     `;
 
     const result = await pool.query(query);
     res.json({
       ok: true,
+      parameters: {
+        range,
+        granularity,
+        rangeMs
+      },
       data: result.rows.map(row => ({
-        hour: row.hour,
+        time_bucket: row.time_bucket,
         radio_type: row.radio_type,
-        detection_count: Number(row.detection_count) || 0
+        unique_networks: Number(row.unique_networks) || 0,
+        total_detections: Number(row.total_detections) || 0
       }))
     });
   } catch (err) {
