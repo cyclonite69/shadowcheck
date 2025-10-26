@@ -137,7 +137,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as value FROM app.locations_legacy WHERE time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '24 hours') * 1000;",
+          "rawSql": "SELECT COUNT(*) as value FROM app.locations_legacy WHERE time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days') * 1000;",
           "refId": "A"
         }
       ],
@@ -361,7 +361,7 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT TO_TIMESTAMP((time / 1000 / 300)::bigint * 300) as time, COUNT(*) as observations FROM app.locations_legacy WHERE time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '6 hours') * 1000 GROUP BY (time / 1000 / 300)::bigint ORDER BY time;",
+          "rawSql": "SELECT TO_TIMESTAMP((time / 1000 / 300)::bigint * 300) as time, COUNT(*) as observations FROM app.locations_legacy WHERE time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days') * 1000 GROUP BY (time / 1000 / 300)::bigint ORDER BY time;",
           "refId": "A"
         }
       ],
@@ -524,7 +524,7 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT TO_TIMESTAMP((l.time / 1000 / 600)::bigint * 600) as time, n.type as metric, COUNT(*) as value FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE l.time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '6 hours') * 1000 AND n.type IS NOT NULL GROUP BY (l.time / 1000 / 600)::bigint, n.type ORDER BY time;",
+          "rawSql": "SELECT TO_TIMESTAMP((l.time / 1000 / 600)::bigint * 600) as time, n.type as metric, COUNT(*) as value FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE l.time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days') * 1000 AND n.type IS NOT NULL GROUP BY (l.time / 1000 / 600)::bigint, n.type ORDER BY time;",
           "refId": "A"
         }
       ],
@@ -581,11 +581,11 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT n.type as metric, COUNT(*) as value FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE l.time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '24 hours') * 1000 AND n.type IS NOT NULL GROUP BY n.type ORDER BY value DESC;",
+          "rawSql": "SELECT n.type as metric, COUNT(*) as value FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE l.time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days') * 1000 AND n.type IS NOT NULL GROUP BY n.type ORDER BY value DESC;",
           "refId": "A"
         }
       ],
-      "title": "Radio Type Distribution (24h)",
+      "title": "Radio Type Distribution (30d)",
       "type": "piechart"
     },
     {
@@ -968,11 +968,11 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT n.type as radio_type, COUNT(*) as observations, COUNT(DISTINCT l.bssid) as unique_networks, ROUND(AVG(l.level)::numeric, 2) as avg_signal, COUNT(*) FILTER (WHERE l.lat IS NOT NULL AND l.lon IS NOT NULL) as geolocated FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE l.time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '24 hours') * 1000 AND n.type IS NOT NULL GROUP BY n.type ORDER BY observations DESC;",
+          "rawSql": "SELECT n.type as radio_type, COUNT(*) as observations, COUNT(DISTINCT l.bssid) as unique_networks, ROUND(AVG(l.level)::numeric, 2) as avg_signal, COUNT(*) FILTER (WHERE l.lat IS NOT NULL AND l.lon IS NOT NULL) as geolocated FROM app.locations_legacy l JOIN app.networks_legacy n ON l.bssid = n.bssid WHERE l.time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days') * 1000 AND n.type IS NOT NULL GROUP BY n.type ORDER BY observations DESC;",
           "refId": "A"
         }
       ],
-      "title": "Radio Type Summary (24h)",
+      "title": "Radio Type Summary (30d)",
       "type": "table"
     },
     {
@@ -1030,11 +1030,11 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT CASE WHEN frequency >= 5900 THEN '6 GHz' WHEN frequency >= 4900 THEN '5 GHz' WHEN frequency >= 2300 THEN '2.4 GHz' WHEN frequency >= 700 THEN 'Cellular' ELSE 'Unknown' END as frequency_band, COUNT(*) as observations, COUNT(DISTINCT n.bssid) as unique_networks, ROUND(AVG(l.level)::numeric, 2) as avg_signal FROM app.networks_legacy n JOIN app.locations_legacy l ON n.bssid = l.bssid WHERE l.time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '24 hours') * 1000 AND n.frequency IS NOT NULL GROUP BY frequency_band ORDER BY observations DESC;",
+          "rawSql": "SELECT CASE WHEN frequency >= 5900 THEN '6 GHz' WHEN frequency >= 4900 THEN '5 GHz' WHEN frequency >= 2300 THEN '2.4 GHz' WHEN frequency >= 700 THEN 'Cellular' ELSE 'Unknown' END as frequency_band, COUNT(*) as observations, COUNT(DISTINCT n.bssid) as unique_networks, ROUND(AVG(l.level)::numeric, 2) as avg_signal FROM app.networks_legacy n JOIN app.locations_legacy l ON n.bssid = l.bssid WHERE l.time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days') * 1000 AND n.frequency IS NOT NULL GROUP BY frequency_band ORDER BY observations DESC;",
           "refId": "A"
         }
       ],
-      "title": "Frequency Band Distribution (24h)",
+      "title": "Frequency Band Distribution (30d)",
       "type": "table"
     },
     {
@@ -1104,7 +1104,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT CONCAT(ROUND(lat::numeric, 4), ',', ROUND(lon::numeric, 4))) as value FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL AND time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '24 hours') * 1000;",
+          "rawSql": "SELECT COUNT(DISTINCT CONCAT(ROUND(lat::numeric, 4), ',', ROUND(lon::numeric, 4))) as value FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL AND time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days') * 1000;",
           "refId": "A"
         }
       ],
@@ -1173,7 +1173,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND((COUNT(*) FILTER (WHERE lat IS NULL OR lon IS NULL)::numeric / NULLIF(COUNT(*), 0) * 100), 2) as value FROM app.locations_legacy WHERE time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '24 hours') * 1000;",
+          "rawSql": "SELECT ROUND((COUNT(*) FILTER (WHERE lat IS NULL OR lon IS NULL)::numeric / NULLIF(COUNT(*), 0) * 100), 2) as value FROM app.locations_legacy WHERE time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days') * 1000;",
           "refId": "A"
         }
       ],
@@ -1235,11 +1235,11 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND(lat::numeric, 2) as lat, ROUND(lon::numeric, 2) as lon, COUNT(*) as observations, COUNT(DISTINCT bssid) as unique_networks FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL AND time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '24 hours') * 1000 GROUP BY ROUND(lat::numeric, 2), ROUND(lon::numeric, 2) ORDER BY observations DESC LIMIT 10;",
+          "rawSql": "SELECT ROUND(lat::numeric, 2) as lat, ROUND(lon::numeric, 2) as lon, COUNT(*) as observations, COUNT(DISTINCT bssid) as unique_networks FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL AND time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days') * 1000 GROUP BY ROUND(lat::numeric, 2), ROUND(lon::numeric, 2) ORDER BY observations DESC LIMIT 10;",
           "refId": "A"
         }
       ],
-      "title": "Top Locations by Activity (24h)",
+      "title": "Top Locations by Activity (30d)",
       "type": "table"
     }
   ],

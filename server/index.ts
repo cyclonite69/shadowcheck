@@ -4,12 +4,14 @@ import cors from "cors";
 import { createServer } from "http";
 import pg from "pg";
 import { setupVite, log } from "./vite.js";
-import { registerShutdownHandlers } from "./utils/shutdown";
-import healthRouter from "./routes/health";
-import visualizeRouter from "./routes/visualize";
-import surveillanceRouter from "./routes/surveillance";
-import pipelinesRouter from "./routes/pipelines";
-import { db as dbConnection } from "./db/connection";
+import { registerShutdownHandlers } from "./utils/shutdown.js";
+import healthRouter from "./routes/health.js";
+import visualizeRouter from "./routes/visualize.js";
+import surveillanceRouter from "./routes/surveillance.js";
+import pipelinesRouter from "./routes/pipelines.js";
+import accessPointsRouter from "./routes/accessPoints.js";
+import wigleEnrichmentRouter from "./routes/wigleEnrichment.js";
+import { db as dbConnection } from "./db/connection.js";
 
 const { Pool } = pg;
 
@@ -75,6 +77,8 @@ app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/visualize", visualizeRouter);
 app.use("/api/v1/surveillance", surveillanceRouter);
 app.use("/api/v1/pipelines", pipelinesRouter);
+app.use("/api/v1/access-points", accessPointsRouter);
+app.use("/api/v1/wigle", wigleEnrichmentRouter);
 
 // Legacy health endpoint for backward compatibility
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
@@ -89,8 +93,15 @@ app.get("/healthz", (_req, res) => res.json({ ok: true }));
 app.get("/api/v1/networks", async (req, res) => {
   const distinctLatest = String(req.query.distinct_latest || "") === "1";
   const groupByBssid = String(req.query.group_by_bssid || "") === "1";
-  const limit = toInt(req.query.limit, 100);
+  // Cap limit at 10,000 to prevent memory exhaustion
+  const requestedLimit = toInt(req.query.limit, 100);
+  const limit = Math.min(requestedLimit, 10000);
   const offset = toInt(req.query.offset, 0);
+
+  // Warn if limit was capped
+  if (requestedLimit > 10000) {
+    log(`Warning: Requested limit ${requestedLimit} capped at 10000`);
+  }
 
   // Filter parameters
   const search = String(req.query.search || "").toLowerCase();
@@ -160,10 +171,12 @@ app.get("/api/v1/networks", async (req, res) => {
           lo.time,
           g.observation_count,
           TO_TIMESTAMP(lo.time::bigint / 1000) as observed_at,
+          m.organization_name as manufacturer,
           COUNT(*) OVER() AS total_count
         FROM grouped_observations g
         LEFT JOIN latest_networks n ON g.bssid = n.bssid
         LEFT JOIN latest_observations lo ON g.bssid = lo.bssid
+        LEFT JOIN app.radio_manufacturers m ON UPPER(REPLACE(SUBSTRING(g.bssid, 1, 8), ':', '')) = m.oui_prefix_24bit
         ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
         ORDER BY lo.time DESC NULLS LAST
         LIMIT $${params.length - 1} OFFSET $${params.length};
@@ -195,7 +208,8 @@ app.get("/api/v1/networks", async (req, res) => {
             observed_at: networkData.observed_at?.toISOString() || networkData.time,
             signal_strength: networkData.signal_strength,
             observation_count: Number(networkData.observation_count) || 0,
-            type: networkData.type
+            type: networkData.type,
+            manufacturer: networkData.manufacturer || null
           };
         })
       });

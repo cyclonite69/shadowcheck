@@ -1,0 +1,21 @@
+apiVersion: 1
+
+datasources:
+  - name: PostgreSQL
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: shadowcheck_postgres_18:5432
+    database: shadowcheck
+    user: shadowcheck_user
+    secureJsonData:
+      password: 'DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8='
+    jsonData:
+      sslmode: 'disable'
+      postgresVersion: 1800
+      timescaledb: false
+      maxOpenConns: 100
+      maxIdleConns: 100
+      connMaxLifetime: 14400
+    editable: true
+    isDefault: false
+    version: 1

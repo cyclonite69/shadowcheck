@@ -7,6 +7,8 @@ import { DatabaseStatus } from "./database-status";
 import { PrometheusQuery } from "./prometheus-query";
 import { AlertStatus } from "./alert-status";
 import { GrafanaDashboard } from "./grafana-dashboard";
+import { PipelinesPanel } from "./pipelines-panel";
+import { OrphanedNetworksPanel } from "./OrphanedNetworksPanel";
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -22,7 +24,18 @@ export function AdminPanel() {
 
   const handleOpenTool = (toolName: string, url: string) => {
     console.log(`🚀 Opening ${toolName}...`, url);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    toast({
+      title: `Opening ${toolName}`,
+      description: `Launching ${url} in a new tab...`,
+    });
+    const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!newWindow) {
+      toast({
+        title: 'Pop-up blocked',
+        description: 'Please allow pop-ups for this site to open external tools.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const { data: systemStatus } = useQuery({
@@ -81,10 +94,14 @@ export function AdminPanel() {
 
       <Tabs defaultValue="system" className="w-full">
         <div className="premium-card p-2 mb-6">
-          <TabsList className="grid w-full grid-cols-6 bg-transparent gap-2">
+          <TabsList className="grid w-full grid-cols-7 bg-transparent gap-2">
             <TabsTrigger value="system" data-testid="tab-system" className="premium-card hover:scale-105 flex items-center gap-2">
               <Activity className={`h-4 w-4 ${iconColors.success.text}`} />
               <span className="hidden lg:inline">System</span>
+            </TabsTrigger>
+            <TabsTrigger value="pipelines" data-testid="tab-pipelines" className="premium-card hover:scale-105 flex items-center gap-2">
+              <Database className={`h-4 w-4 ${iconColors.primary.text}`} />
+              <span className="hidden lg:inline">Pipelines</span>
             </TabsTrigger>
             <TabsTrigger value="api" data-testid="tab-api" className="premium-card hover:scale-105 flex items-center gap-2">
               <Plug className={`h-4 w-4 ${iconColors.warning.text}`} />
@@ -190,12 +207,17 @@ export function AdminPanel() {
           </div>
         </TabsContent>
 
+        <TabsContent value="pipelines" className="space-y-6">
+          <PipelinesPanel />
+        </TabsContent>
+
         <TabsContent value="api" className="space-y-6">
           <ApiTestPanel />
         </TabsContent>
 
         <TabsContent value="database" className="space-y-6">
           <DatabaseStatus />
+          <OrphanedNetworksPanel />
         </TabsContent>
 
         {/* Monitoring Tools Tab */}
