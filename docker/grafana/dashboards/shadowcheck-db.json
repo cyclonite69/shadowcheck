@@ -767,7 +767,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT schemaname as schema, tablename as table, pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size, n_live_tup as rows, n_tup_ins as inserts, n_tup_upd as updates, n_tup_del as deletes FROM pg_stat_user_tables ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC LIMIT 15;",
+          "rawSql": "SELECT schemaname as schema, relname as table, pg_size_pretty(pg_total_relation_size(schemaname||'.'||relname)) as size, n_live_tup as rows, n_tup_ins as inserts, n_tup_upd as updates, n_tup_del as deletes FROM pg_stat_user_tables ORDER BY pg_total_relation_size(schemaname||'.'||relname) DESC LIMIT 15;",
           "refId": "A"
         }
       ],
@@ -1310,7 +1310,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT schemaname as schema, tablename as table, n_live_tup as live_tuples, n_dead_tup as dead_tuples, last_vacuum, last_autovacuum, last_analyze, last_autoanalyze, vacuum_count, autovacuum_count FROM pg_stat_user_tables ORDER BY n_dead_tup DESC LIMIT 15;",
+          "rawSql": "SELECT schemaname as schema, relname as table, n_live_tup as live_tuples, n_dead_tup as dead_tuples, last_vacuum, last_autovacuum, last_analyze, last_autoanalyze, vacuum_count, autovacuum_count FROM pg_stat_user_tables ORDER BY n_dead_tup DESC LIMIT 15;",
           "refId": "A"
         }
       ],
