@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, BarChart3, Wifi, TrendingUp, Shield, Satellite, Zap, RefreshCw, Download, Server, Circle, Eye } from "lucide-react";
+import { Home, BarChart3, Wifi, TrendingUp, Shield, Satellite, Zap, Server, Circle, Eye, Globe } from "lucide-react";
 import { iconColors } from "@/lib/iconColors";
 
 export function Sidebar() {
@@ -8,9 +8,10 @@ export function Sidebar() {
   const navItems = [
     { href: "/", icon: Home, label: "Home", highlight: true, color: iconColors.primary },
     { href: "/dashboard", icon: BarChart3, label: "Dashboard", highlight: true, color: iconColors.info },
-    { href: "/networks", icon: Wifi, label: "Network Observations", highlight: true, color: iconColors.primary },
     { href: "/visualization", icon: TrendingUp, label: "Network Visualization", highlight: true, color: iconColors.success },
+    { href: "/access-points", icon: Satellite, label: "Access Points", highlight: true, color: iconColors.warning },
     { href: "/surveillance", icon: Eye, label: "Surveillance Intelligence", highlight: true, color: iconColors.special },
+    { href: "/wigle", icon: Globe, label: "WiGLE Data", highlight: true, color: iconColors.info },
     { href: "/admin", icon: Shield, label: "Admin Panel", highlight: true, color: iconColors.neutral },
   ];
 
@@ -65,24 +66,6 @@ export function Sidebar() {
               )}
             </Link>
           ))}
-        </div>
-        
-        {/* Quick Actions */}
-        <div className="mt-8">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2 cyber-text">
-            <Zap className={`h-4 w-4 ${iconColors.warning.text}`} />
-            Quick Actions
-          </h3>
-          <div className="space-y-2">
-            <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/50 hover:${iconColors.primary.border}/30 transition-all duration-200 text-left cyber-glow group`}>
-              <RefreshCw className={`h-4 w-4 ${iconColors.primary.text} group-hover:animate-spin`} />
-              <span className="text-xs text-slate-400 group-hover:text-slate-300">Refresh Data</span>
-            </button>
-            <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/50 hover:${iconColors.info.border}/30 transition-all duration-200 text-left cyber-glow group`}>
-              <Download className={`h-4 w-4 ${iconColors.info.text}`} />
-              <span className="text-xs text-slate-400 group-hover:text-slate-300">Export Data</span>
-            </button>
-          </div>
         </div>
       </nav>
 

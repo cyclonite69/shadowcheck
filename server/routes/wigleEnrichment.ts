@@ -421,4 +421,151 @@ router.get('/orphaned-networks', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/v1/wigle/networks
+ * Get all networks enriched from WiGLE API
+ *
+ * Query Parameters:
+ *   - limit: Max results (default: 100, max: 1000)
+ *   - offset: Pagination offset (default: 0)
+ */
+router.get('/networks', async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000);
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const pool = getPool();
+
+    const result = await pool.query(`
+      SELECT DISTINCT ON (bssid)
+        wigle_api_net_id,
+        bssid,
+        ssid,
+        frequency,
+        capabilities,
+        type,
+        lasttime,
+        lastlat,
+        lastlon,
+        trilat,
+        trilong,
+        channel,
+        qos,
+        country,
+        region,
+        city,
+        query_timestamp
+      FROM app.wigle_api_networks_staging
+      ORDER BY bssid, query_timestamp DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    const countResult = await pool.query(`
+      SELECT COUNT(DISTINCT bssid) as total
+      FROM app.wigle_api_networks_staging
+    `);
+
+    return res.json({
+      ok: true,
+      data: result.rows,
+      metadata: {
+        total: parseInt(countResult.rows[0].total),
+        limit,
+        offset,
+        returned: result.rows.length
+      }
+    });
+
+  } catch (error) {
+    console.error('[/wigle/networks] Error:', error);
+    return res.status(500).json({
+      ok: false,
+      error: 'Failed to fetch WiGLE networks',
+      detail: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+/**
+ * GET /api/v1/wigle/network/:bssid
+ * Get detailed network information including all location observations
+ */
+router.get('/network/:bssid', async (req: Request, res: Response) => {
+  try {
+    const { bssid } = req.params;
+    const pool = getPool();
+
+    // Get network metadata (most recent entry)
+    const networkResult = await pool.query(`
+      SELECT
+        wigle_api_net_id,
+        bssid,
+        ssid,
+        frequency,
+        capabilities,
+        type,
+        lasttime,
+        lastlat,
+        lastlon,
+        trilat,
+        trilong,
+        channel,
+        qos,
+        country,
+        region,
+        city,
+        query_timestamp,
+        query_params
+      FROM app.wigle_api_networks_staging
+      WHERE bssid = $1
+      ORDER BY query_timestamp DESC
+      LIMIT 1
+    `, [bssid.toUpperCase()]);
+
+    if (networkResult.rows.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Network not found in WiGLE data'
+      });
+    }
+
+    // Get all location observations
+    const locationsResult = await pool.query(`
+      SELECT
+        wigle_api_loc_id,
+        bssid,
+        lat,
+        lon,
+        altitude,
+        accuracy,
+        time,
+        signal_level,
+        query_timestamp
+      FROM app.wigle_api_locations_staging
+      WHERE bssid = $1
+      ORDER BY time DESC
+    `, [bssid.toUpperCase()]);
+
+    const network = networkResult.rows[0];
+    const locations = locationsResult.rows;
+
+    return res.json({
+      ok: true,
+      network: {
+        ...network,
+        observation_count: locations.length,
+        observations: locations
+      }
+    });
+
+  } catch (error) {
+    console.error('[/wigle/network/:bssid] Error:', error);
+    return res.status(500).json({
+      ok: false,
+      error: 'Failed to fetch network details',
+      detail: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
 export default router;
