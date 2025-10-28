@@ -11,6 +11,7 @@ import { NetworkTableView } from '@/components/NetworkTableView';
 import { NetworkFilters } from '@/components/NetworkFilters';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDebounce } from '@/hooks/useDebounce';
+import { UnifiedObservationModal, type ObservationData } from '@/components/UnifiedObservationModal';
 
 interface FilterState {
   search: string;
@@ -38,6 +39,10 @@ export function UnifiedNetworkView() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+
+  // Modal state for detailed security view
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedObservation, setSelectedObservation] = useState<ObservationData | null>(null);
 
   // Debounce search input (300ms delay)
   const debouncedSearch = useDebounce(filters.search, 300);
@@ -141,11 +146,30 @@ export function UnifiedNetworkView() {
     return networksResponse || [];
   }, [networksResponse]);
 
-  // Handle map network click → highlight table row (Phase 2)
+  // Handle map network click → open detailed security modal
   const handleNetworkClick = useCallback((network: any) => {
     const networkId = network.properties?.bssid || network.properties?.uid;
     setSelectedNetworkId(networkId);
-    // Scroll table to show this row
+
+    // Map network properties to ObservationData for modal
+    const observation: ObservationData = {
+      bssid: network.properties.bssid,
+      ssid: network.properties.ssid || null,
+      encryption: network.properties.encryption || 'unknown',
+      radio_technology: network.properties.radio_type || 'WiFi',
+      frequency_hz: network.properties.frequency ? parseFloat(network.properties.frequency) * 1_000_000 : undefined,
+      signal_strength_dbm: network.properties.signal_strength ? parseInt(network.properties.signal_strength) : undefined,
+      location: network.geometry?.coordinates ? {
+        lng: network.geometry.coordinates[0],
+        lat: network.geometry.coordinates[1]
+      } : undefined,
+      last_seen: network.properties.observed_at || network.properties.seen,
+    };
+
+    setSelectedObservation(observation);
+    setShowDetailModal(true);
+
+    // Also scroll table to show this row
     setTimeout(() => {
       const row = document.getElementById(`network-row-${networkId}`);
       row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -167,12 +191,30 @@ export function UnifiedNetworkView() {
     }
   }, [isRadiusSearchMode, filters]);
 
-  // Handle table row click → center map on location (Phase 2)
+  // Handle table row click → open detailed security modal
   const handleTableRowClick = useCallback((network: any) => {
     const networkId = network.properties?.bssid || network.properties?.uid;
     setSelectedNetworkId(networkId);
 
-    // Extract coordinates from network
+    // Map network properties to ObservationData for modal
+    const observation: ObservationData = {
+      bssid: network.properties.bssid,
+      ssid: network.properties.ssid || null,
+      encryption: network.properties.encryption || 'unknown',
+      radio_technology: network.properties.radio_type || 'WiFi',
+      frequency_hz: network.properties.frequency ? parseFloat(network.properties.frequency) * 1_000_000 : undefined,
+      signal_strength_dbm: network.properties.signal_strength ? parseInt(network.properties.signal_strength) : undefined,
+      location: network.geometry?.coordinates ? {
+        lng: network.geometry.coordinates[0],
+        lat: network.geometry.coordinates[1]
+      } : undefined,
+      last_seen: network.properties.observed_at || network.properties.seen,
+    };
+
+    setSelectedObservation(observation);
+    setShowDetailModal(true);
+
+    // Also center map on location
     const coords = network.geometry?.coordinates;
     if (coords && coords.length === 2) {
       setMapCenter([coords[0], coords[1]]);
@@ -339,6 +381,13 @@ export function UnifiedNetworkView() {
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {/* Unified Observation Modal - Security Intelligence Detail View */}
+      <UnifiedObservationModal
+        open={showDetailModal}
+        onOpenChange={setShowDetailModal}
+        observation={selectedObservation}
+      />
     </div>
   );
 }
