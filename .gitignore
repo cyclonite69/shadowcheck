@@ -42,3 +42,5 @@ monitoring/
 .DS_Store
 *.tmp
 *.temp
+*.kismet
+pipelines/kismet/*.kismet
