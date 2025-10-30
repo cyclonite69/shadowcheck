@@ -1,3 +1,44 @@
+# Sensitive files
+.pgpass
+secrets.txt
 secrets/
-node_modules
-node_modules
+.env
+.env.*
+gitleaks-report.json
+
+# Development artifacts  
+logs/
+output/
+backups/
+.pids/
+.claude/
+
+# Build artifacts
+node_modules/
+dist/
+*/dist/
+*/node_modules/
+*.log
+
+# Database
+*.dump
+*.backup
+db/
+docker/pgadmin/pgpassfile
+
+# IDE
+.vscode/
+.idea/
+
+# Pipeline data (potentially sensitive location data)
+pipelines/kml/*.kml
+pipelines/wigle_api/response_*.json
+pipelines/wigle_api/noresponse_*.json
+
+# Monitoring
+monitoring/
+
+# System files
+.DS_Store
+*.tmp
+*.temp
