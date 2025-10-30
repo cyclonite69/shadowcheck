@@ -44,3 +44,7 @@ monitoring/
 *.temp
 *.kismet
 pipelines/kismet/*.kismet
+scripts/*password*.sh
+scripts/*secrets*.sh
+client/client/
+docker/pgadmin/
