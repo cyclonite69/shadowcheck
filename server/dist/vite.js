@@ -22,8 +22,22 @@ export async function setupVite(app, server) {
         root: path.resolve(process.cwd(), "client"),
     });
     app.use(viteServer.middlewares);
+    // SPA fallback - serve index.html ONLY for HTML page requests
+    // Vite middleware above already handled all assets, modules, and HMR
     app.use("*", async (req, res, next) => {
         const url = req.originalUrl;
+        // If response was already sent by Vite middleware or API routes, skip
+        if (res.headersSent) {
+            return next();
+        }
+        // Only serve index.html for requests that look like page navigations
+        // (not assets, not API calls)
+        const isAssetRequest = /\.[a-z0-9]+$/i.test(url) && !url.endsWith('.html');
+        const isApiRequest = url.startsWith('/api/');
+        const isViteInternal = url.startsWith('/@');
+        if (isAssetRequest || isApiRequest || isViteInternal) {
+            return next();
+        }
         try {
             const clientPath = path.resolve(process.cwd(), "client", "index.html");
             let template = fs.readFileSync(clientPath, "utf-8");

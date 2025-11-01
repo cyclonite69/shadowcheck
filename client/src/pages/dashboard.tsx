@@ -9,11 +9,12 @@ import { Link } from 'wouter';
 import { BarChart3, Wifi, MapPin, Shield, Activity, Zap, Radio, Bluetooth, Radar, Satellite, Target, Antenna, AlertTriangle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { iconColors } from '@/lib/iconColors';
-import { SecurityStrength, getSecurityBadgeClass } from '@/lib/securityDecoder';
+import { SecurityStrength, getSecurityBadgeClass, SecurityType, categorizeNetworksByType, getSecurityTypeStyle } from '@/lib/securityDecoder';
 
 export default function Dashboard() {
   const [timelineRange, setTimelineRange] = useState<string>('24h');
   const [showDistinctNetworks, setShowDistinctNetworks] = useState<boolean>(true);
+  const [showDistinctSecurity, setShowDistinctSecurity] = useState<boolean>(true);
 
   const { data: networks, isLoading: networksLoading } = useQuery({
     queryKey: ['/api/v1/networks'],
@@ -272,19 +273,35 @@ export default function Dashboard() {
           </div>
           </div>
 
-          {/* Security Strength Analysis */}
+          {/* Security Type Analysis */}
           <div className="premium-card">
           <CardHeader>
-            <CardTitle className="text-slate-300 flex items-center gap-2">
-              <Shield className={`h-5 w-5 ${iconColors.danger.text}`} />
-              Security Strength Distribution
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              WiFi network security analysis by encryption strength
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-slate-300 flex items-center gap-2">
+                  <Shield className={`h-5 w-5 ${iconColors.danger.text}`} />
+                  Security Type Distribution
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  WiFi network security categorized by authentication type
+                </CardDescription>
+              </div>
+              <button
+                onClick={() => setShowDistinctSecurity(!showDistinctSecurity)}
+                className="px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600 text-sm text-slate-300 transition-colors"
+              >
+                {showDistinctSecurity ? 'Show Total Observed' : 'Show Distinct Networks'}
+              </button>
+            </div>
           </CardHeader>
           <CardContent>
-            {securityAnalysis?.data ? (
+            {securityAnalysis?.data ? (() => {
+              const typeCategories = categorizeNetworksByType(securityAnalysis.data, !showDistinctSecurity);
+              const total = showDistinctSecurity
+                ? (securityAnalysis.data.total_networks || 1)
+                : (securityAnalysis.data.total_observations || 1);
+
+              return (
               <>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
                   {/* Pie Chart */}
@@ -294,34 +311,29 @@ export default function Dashboard() {
                         <Pie
                           data={[
                             {
-                              name: 'Excellent',
-                              value: securityAnalysis.data.categories[SecurityStrength.EXCELLENT] || 0,
+                              name: SecurityType.ENTERPRISE,
+                              value: typeCategories[SecurityType.ENTERPRISE] || 0,
                               color: '#10b981'
                             },
                             {
-                              name: 'Good',
-                              value: securityAnalysis.data.categories[SecurityStrength.GOOD] || 0,
+                              name: SecurityType.PERSONAL_WPA3,
+                              value: typeCategories[SecurityType.PERSONAL_WPA3] || 0,
                               color: '#3b82f6'
                             },
                             {
-                              name: 'Moderate',
-                              value: securityAnalysis.data.categories[SecurityStrength.MODERATE] || 0,
+                              name: SecurityType.PERSONAL_WPA2,
+                              value: typeCategories[SecurityType.PERSONAL_WPA2] || 0,
                               color: '#f59e0b'
                             },
                             {
-                              name: 'Weak',
-                              value: securityAnalysis.data.categories[SecurityStrength.WEAK] || 0,
+                              name: SecurityType.LEGACY,
+                              value: typeCategories[SecurityType.LEGACY] || 0,
                               color: '#f97316'
                             },
                             {
-                              name: 'Vulnerable',
-                              value: securityAnalysis.data.categories[SecurityStrength.VULNERABLE] || 0,
+                              name: SecurityType.OPEN,
+                              value: typeCategories[SecurityType.OPEN] || 0,
                               color: '#ef4444'
-                            },
-                            {
-                              name: 'Open',
-                              value: securityAnalysis.data.categories[SecurityStrength.OPEN] || 0,
-                              color: '#dc2626'
                             }
                           ].filter(item => item.value > 0)}
                           cx="50%"
@@ -336,8 +348,7 @@ export default function Dashboard() {
                             { color: '#3b82f6' },
                             { color: '#f59e0b' },
                             { color: '#f97316' },
-                            { color: '#ef4444' },
-                            { color: '#dc2626' }
+                            { color: '#ef4444' }
                           ].map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
@@ -355,66 +366,42 @@ export default function Dashboard() {
                     </ResponsiveContainer>
                   </div>
 
-                  {/* Security Score Summary */}
-                  <div className="space-y-4">
+                  {/* Security Type Stats */}
+                  <div className="space-y-3">
                     <div className="text-center p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/20">
                       <p className="text-5xl font-bold text-blue-300 mb-2 font-mono">
-                        {securityAnalysis.data.summary.security_score}
+                        {total.toLocaleString()}
                       </p>
-                      <p className="text-sm text-slate-300 mb-1">Overall Security Score</p>
-                      <p className="text-xs text-slate-400">Out of 100</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="text-center p-4 bg-green-500/10 rounded-xl border border-green-500/20">
-                        <p className="text-2xl font-bold text-green-300 mb-1 font-mono">
-                          {securityAnalysis.data.summary.secure_networks.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-slate-300">Secure Networks</p>
-                        <p className="text-xs text-green-400 mt-1">Excellent/Good</p>
-                      </div>
-                      <div className="text-center p-4 bg-red-500/10 rounded-xl border border-red-500/20">
-                        <p className="text-2xl font-bold text-red-300 mb-1 font-mono">
-                          {securityAnalysis.data.summary.at_risk_networks.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-slate-300">At-Risk Networks</p>
-                        <p className="text-xs text-red-400 mt-1">Weak/Vulnerable/Open</p>
-                      </div>
+                      <p className="text-sm text-slate-300 mb-1">
+                        {showDistinctSecurity ? 'Distinct Networks' : 'Total Observations'}
+                      </p>
+                      <p className="text-xs text-slate-400">WiFi access points detected</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Security Strength Breakdown */}
+                {/* Security Type Breakdown */}
                 <div className="space-y-3">
-                  {Object.entries(securityAnalysis.data.categories).map(([strength, count]) => {
-                    const total = securityAnalysis.data.total_networks || 1;
+                  {Object.entries(typeCategories).map(([type, count]) => {
                     const percentage = ((count as number / total) * 100).toFixed(1);
-                    const colors = {
-                      [SecurityStrength.EXCELLENT]: { bg: 'bg-green-500/10', border: 'border-green-500/20', text: 'text-green-300', bar: 'bg-green-500' },
-                      [SecurityStrength.GOOD]: { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-300', bar: 'bg-blue-500' },
-                      [SecurityStrength.MODERATE]: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-300', bar: 'bg-yellow-500' },
-                      [SecurityStrength.WEAK]: { bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-300', bar: 'bg-orange-500' },
-                      [SecurityStrength.VULNERABLE]: { bg: 'bg-red-500/10', border: 'border-red-500/20', text: 'text-red-300', bar: 'bg-red-500' },
-                      [SecurityStrength.OPEN]: { bg: 'bg-red-600/10', border: 'border-red-600/20', text: 'text-red-300', bar: 'bg-red-600' }
-                    };
-                    const style = colors[strength as SecurityStrength] || colors[SecurityStrength.MODERATE];
+                    const style = getSecurityTypeStyle(type as SecurityType);
 
                     if ((count as number) === 0) return null;
 
                     return (
                       <div
-                        key={strength}
+                        key={type}
                         className={`flex items-center justify-between p-4 rounded-lg border ${style.border} ${style.bg}`}
                       >
                         <div className="flex items-center gap-3 flex-1">
-                          <Badge className={`${getSecurityBadgeClass(strength as SecurityStrength)} border text-xs px-2`}>
-                            {strength}
+                          <Badge className={`${style.bg} ${style.text} ${style.border} border text-xs px-2`}>
+                            {type}
                           </Badge>
                           <div className="flex-1">
                             <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
                               <div
-                                className={`h-2 ${style.bar} transition-all`}
-                                style={{ width: `${percentage}%` }}
+                                className="h-2 transition-all"
+                                style={{ width: `${percentage}%`, backgroundColor: style.color }}
                               />
                             </div>
                           </div>
@@ -429,24 +416,9 @@ export default function Dashboard() {
                     );
                   })}
                 </div>
-
-                {/* At-Risk Warning */}
-                {securityAnalysis.data.summary.at_risk_networks > 0 && (
-                  <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-semibold text-red-300 mb-1">
-                        Security Alert
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {securityAnalysis.data.summary.at_risk_networks} networks detected with weak or no encryption.
-                        Consider upgrading to WPA2 or WPA3 for better security.
-                      </p>
-                    </div>
-                  </div>
-                )}
               </>
-            ) : (
+              );
+            })() : (
               <div className="space-y-4">
                 <Skeleton className="h-[300px] w-full" />
                 <Skeleton className="h-16 w-full" />

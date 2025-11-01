@@ -147,12 +147,12 @@ export class DatabaseStorage implements IStorage {
     if (!dbInstance) return [];
 
     try {
-      // Use PostGIS ST_DWithin for spatial query
+      // Use PostGIS ST_DWithin for spatial query using lat/lon columns
       const result = await dbInstance.execute(sql`
         SELECT * FROM ${networks}
         WHERE ST_DWithin(
-          ${networks.geom}::geometry,
-          ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)::geometry,
+          ST_SetSRID(ST_MakePoint(${networks.longitude}, ${networks.latitude}), 4326)::geography,
+          ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)::geography,
           ${radius}
         )
         ORDER BY ${networks.observed_at} DESC

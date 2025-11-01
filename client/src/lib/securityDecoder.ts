@@ -279,3 +279,131 @@ export function getSecurityBadgeClass(strength: SecurityStrength): string {
   };
   return classes[strength];
 }
+
+/**
+ * Security type categories for network classification
+ */
+export enum SecurityType {
+  ENTERPRISE = 'Enterprise',
+  PERSONAL_WPA3 = 'Personal (WPA3)',
+  PERSONAL_WPA2 = 'Personal (WPA2)',
+  LEGACY = 'Legacy (WPA/WEP)',
+  OPEN = 'Open'
+}
+
+/**
+ * Categorize a network by its security type based on capabilities
+ */
+export function categorizeSecurityType(capabilities: string | null | undefined): SecurityType {
+  if (!capabilities || capabilities.trim() === '') {
+    return SecurityType.OPEN;
+  }
+
+  const caps = capabilities.toUpperCase();
+
+  // Check for Enterprise (EAP authentication)
+  if (caps.includes('EAP')) {
+    return SecurityType.ENTERPRISE;
+  }
+
+  // Check for WPA3 with SAE (Personal WPA3)
+  if (caps.includes('SAE') || caps.includes('WPA3')) {
+    return SecurityType.PERSONAL_WPA3;
+  }
+
+  // Check for WPA2/RSN with PSK (Personal WPA2)
+  if ((caps.includes('WPA2') || caps.includes('RSN')) && caps.includes('PSK')) {
+    return SecurityType.PERSONAL_WPA2;
+  }
+
+  // Legacy protocols (WPA1, WEP)
+  if (caps.includes('WPA') || caps.includes('WEP')) {
+    return SecurityType.LEGACY;
+  }
+
+  // Default to open if we can't determine
+  return SecurityType.OPEN;
+}
+
+/**
+ * Get color and styling for security type
+ */
+export function getSecurityTypeStyle(type: SecurityType) {
+  switch (type) {
+    case SecurityType.ENTERPRISE:
+      return {
+        color: '#10b981', // green
+        bg: 'bg-green-500/10',
+        border: 'border-green-500/20',
+        text: 'text-green-300'
+      };
+    case SecurityType.PERSONAL_WPA3:
+      return {
+        color: '#3b82f6', // blue
+        bg: 'bg-blue-500/10',
+        border: 'border-blue-500/20',
+        text: 'text-blue-300'
+      };
+    case SecurityType.PERSONAL_WPA2:
+      return {
+        color: '#f59e0b', // yellow/amber
+        bg: 'bg-yellow-500/10',
+        border: 'border-yellow-500/20',
+        text: 'text-yellow-300'
+      };
+    case SecurityType.LEGACY:
+      return {
+        color: '#f97316', // orange
+        bg: 'bg-orange-500/10',
+        border: 'border-orange-500/20',
+        text: 'text-orange-300'
+      };
+    case SecurityType.OPEN:
+      return {
+        color: '#ef4444', // red
+        bg: 'bg-red-500/10',
+        border: 'border-red-500/20',
+        text: 'text-red-300'
+      };
+  }
+}
+
+/**
+ * Categorize networks from security analysis data by type
+ * @param securityData - Security analysis data from API
+ * @param useObservations - If true, use total observations instead of distinct networks
+ */
+export function categorizeNetworksByType(securityData: any, useObservations: boolean = false): Record<SecurityType, number> {
+  const categories: Record<SecurityType, number> = {
+    [SecurityType.ENTERPRISE]: 0,
+    [SecurityType.PERSONAL_WPA3]: 0,
+    [SecurityType.PERSONAL_WPA2]: 0,
+    [SecurityType.LEGACY]: 0,
+    [SecurityType.OPEN]: 0
+  };
+
+  // Use the actual security_types data from backend if available
+  if (useObservations && securityData?.security_type_observations) {
+    return {
+      [SecurityType.ENTERPRISE]: securityData.security_type_observations.enterprise || 0,
+      [SecurityType.PERSONAL_WPA3]: securityData.security_type_observations.personal_wpa3 || 0,
+      [SecurityType.PERSONAL_WPA2]: securityData.security_type_observations.personal_wpa2 || 0,
+      [SecurityType.LEGACY]: securityData.security_type_observations.legacy || 0,
+      [SecurityType.OPEN]: securityData.security_type_observations.open || 0
+    };
+  }
+
+  if (!useObservations && securityData?.security_types) {
+    return {
+      [SecurityType.ENTERPRISE]: securityData.security_types.enterprise || 0,
+      [SecurityType.PERSONAL_WPA3]: securityData.security_types.personal_wpa3 || 0,
+      [SecurityType.PERSONAL_WPA2]: securityData.security_types.personal_wpa2 || 0,
+      [SecurityType.LEGACY]: securityData.security_types.legacy || 0,
+      [SecurityType.OPEN]: securityData.security_types.open || 0
+    };
+  }
+
+  // Fallback: if backend doesn't provide security_types, return empty
+  console.warn('Security type data not available from backend');
+  return categories;
+}

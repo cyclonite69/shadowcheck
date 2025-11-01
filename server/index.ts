@@ -465,23 +465,39 @@ app.get("/api/v1/security-analysis", async (_req, res) => {
   try {
     const { parseCapabilities, categorizeNetworksBySecurity, SecurityStrength } = await import('./utils/securityAnalysis.js');
 
-    // Get all WiFi networks with capabilities
+    // Get all WiFi networks with capabilities AND observation counts
     const query = `
-      SELECT DISTINCT ON (bssid)
-        bssid,
-        ssid,
-        capabilities,
-        frequency
-      FROM app.networks_legacy
-      WHERE type = 'W'
-      ORDER BY bssid, lasttime DESC
+      SELECT DISTINCT ON (n.bssid)
+        n.bssid,
+        n.ssid,
+        n.capabilities,
+        n.frequency,
+        (SELECT COUNT(*) FROM app.locations_legacy l WHERE l.bssid = n.bssid) as observation_count
+      FROM app.networks_legacy n
+      WHERE n.type = 'W'
+      ORDER BY n.bssid, n.lasttime DESC
     `;
 
     const result = await pool.query(query);
     const networks = result.rows;
 
-    // Categorize by security strength
+    // Categorize by security strength (distinct networks)
     const categories = categorizeNetworksBySecurity(networks);
+
+    // Also categorize by observation counts
+    const observationCounts: Record<string, number> = {
+      [SecurityStrength.EXCELLENT]: 0,
+      [SecurityStrength.GOOD]: 0,
+      [SecurityStrength.MODERATE]: 0,
+      [SecurityStrength.WEAK]: 0,
+      [SecurityStrength.VULNERABLE]: 0,
+      [SecurityStrength.OPEN]: 0
+    };
+
+    networks.forEach(network => {
+      const analysis = parseCapabilities(network.capabilities);
+      observationCounts[analysis.strength] += Number(network.observation_count) || 0;
+    });
 
     // Get some example networks for each category
     const examples: Record<string, any[]> = {
@@ -504,11 +520,62 @@ app.get("/api/v1/security-analysis", async (_req, res) => {
       }
     });
 
+    const totalObservations = Object.values(observationCounts).reduce((sum, count) => sum + count, 0);
+
+    // Categorize by security TYPE (Enterprise/Personal/WPA3/Legacy/Open)
+    const securityTypes = {
+      enterprise: 0,
+      personal_wpa3: 0,
+      personal_wpa2: 0,
+      legacy: 0,
+      open: 0
+    };
+
+    const securityTypeObservations = {
+      enterprise: 0,
+      personal_wpa3: 0,
+      personal_wpa2: 0,
+      legacy: 0,
+      open: 0
+    };
+
+    networks.forEach(network => {
+      const analysis = parseCapabilities(network.capabilities);
+      const caps = (network.capabilities || '').toUpperCase();
+      const obsCount = Number(network.observation_count) || 0;
+
+      // Categorize by type
+      if (caps.includes('EAP')) {
+        securityTypes.enterprise++;
+        securityTypeObservations.enterprise += obsCount;
+      } else if (caps.includes('SAE') || caps.includes('WPA3')) {
+        securityTypes.personal_wpa3++;
+        securityTypeObservations.personal_wpa3 += obsCount;
+      } else if ((caps.includes('WPA2') || caps.includes('RSN')) && caps.includes('PSK')) {
+        securityTypes.personal_wpa2++;
+        securityTypeObservations.personal_wpa2 += obsCount;
+      } else if (caps.includes('WPA') || caps.includes('WEP')) {
+        securityTypes.legacy++;
+        securityTypeObservations.legacy += obsCount;
+      } else if (!caps || caps.trim() === '' || analysis.strength === SecurityStrength.OPEN) {
+        securityTypes.open++;
+        securityTypeObservations.open += obsCount;
+      } else {
+        // Default to WPA2 if we can't determine but it has some security
+        securityTypes.personal_wpa2++;
+        securityTypeObservations.personal_wpa2 += obsCount;
+      }
+    });
+
     res.json({
       ok: true,
       data: {
         total_networks: networks.length,
+        total_observations: totalObservations,
         categories,
+        observation_counts: observationCounts,
+        security_types: securityTypes,
+        security_type_observations: securityTypeObservations,
         examples,
         summary: {
           secure_networks: categories[SecurityStrength.EXCELLENT] + categories[SecurityStrength.GOOD],

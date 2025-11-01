@@ -10,39 +10,42 @@ router.get("/", async (req, res) => {
     try {
         const sql = `
       SELECT
-        id, bssid, lat, lon, level,
-        time::text  AS time,
-        time::bigint AS time_epoch_ms,
-        to_char( to_timestamp(time/1000.0) AT TIME ZONE 'UTC',
-                 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"' ) AS time_iso,
-        radio_short, security_short,
-        frequency_at_time, frequency_mhz, channel, band
-      FROM app.location_details_enriched
-      WHERE lat IS NOT NULL AND lon IS NOT NULL
-      ORDER BY time DESC
+        l.bssid,
+        l.lat,
+        l.lon,
+        l.level,
+        l.time,
+        l.altitude,
+        l.accuracy,
+        n.ssid,
+        n.type as radio_type
+      FROM app.locations_legacy l
+      LEFT JOIN app.networks_legacy n ON l.bssid = n.bssid
+      WHERE l.lat IS NOT NULL AND l.lon IS NOT NULL
+      ORDER BY l.time DESC
       LIMIT $1
     `;
         const { rows } = await query(sql, [limit]);
         res.json({
-            type: "FeatureCollection",
-            features: rows.map(r => ({
-                type: "Feature",
-                geometry: { type: "Point", coordinates: [r.lon, r.lat] },
-                properties: {
-                    id: r.id,
-                    bssid: r.bssid,
-                    level: r.level,
-                    radio: r.radio_short,
-                    security: r.security_short,
-                    time: r.time,
-                    time_epoch_ms: Number(r.time_epoch_ms),
-                    time_iso: r.time_iso,
-                    frequency_at_time: r.frequency_at_time,
-                    frequency_mhz: r.frequency_mhz,
-                    channel: r.channel,
-                    band: r.band
-                }
-            }))
+            ok: true,
+            data: {
+                type: "FeatureCollection",
+                features: rows.map(r => ({
+                    type: "Feature",
+                    geometry: { type: "Point", coordinates: [Number(r.lon), Number(r.lat)] },
+                    properties: {
+                        bssid: r.bssid,
+                        ssid: r.ssid,
+                        signal: r.level,
+                        seen: r.time ? new Date(Number(r.time)).toISOString() : null,
+                        lat: Number(r.lat),
+                        lon: Number(r.lon),
+                        alt: r.altitude,
+                        accuracy: r.accuracy,
+                        radio_type: r.radio_type || 'wifi'
+                    }
+                }))
+            }
         });
     }
     catch (err) {

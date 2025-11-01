@@ -194,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             type: "Feature",
             geometry: {
               type: "Point",
-              coordinates: [parseFloat(network.longitude || "0"), parseFloat(network.latitude || "0")]
+              coordinates: [parseFloat(String(network.longitude || "0")), parseFloat(String(network.latitude || "0"))]
             },
             properties: {
               id: network.id,
