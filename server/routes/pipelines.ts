@@ -383,7 +383,11 @@ router.post('/wigle/import', async (req, res) => {
     console.log(`[WiGLE Import] Starting import of ${filename}...`);
     const { stdout, stderr } = await execAsync(
       `python3 "${parserPath}" "${wiglePath}"`,
-      { env, timeout: 600000 } // 10 minute timeout for large databases
+      {
+        env,
+        timeout: 600000, // 10 minute timeout for large databases
+        maxBuffer: 100 * 1024 * 1024 // 100MB buffer for large database output
+      }
     );
 
     if (stderr) {
@@ -517,7 +521,11 @@ router.post('/kismet/import', async (req, res) => {
     console.log(`[Kismet Import] Starting import of ${filename}... (include packets: ${includePackets})`);
     const { stdout, stderr } = await execAsync(
       `python3 "${parserPath}" "${kismetPath}" ${args}`,
-      { env, timeout: 600000 } // 10 minute timeout
+      {
+        env,
+        timeout: 600000, // 10 minute timeout
+        maxBuffer: 100 * 1024 * 1024 // 100MB buffer for large database output
+      }
     );
 
     if (stderr) {
@@ -760,108 +768,85 @@ router.post('/wigle-api/detail', async (req, res) => {
 
     console.log(`[WiGLE API Detail] Fetching full observation history for: ${bssid}`);
 
-    // Query WiGLE API detail endpoint
-    const wigleUrl = `https://api.wigle.net/api/v2/network/detail?netid=${encodeURIComponent(bssid)}`;
-    const response = await fetch(wigleUrl, {
-      headers: {
-        'Authorization': `Basic ${Buffer.from(`${wigleApiName}:${wigleApiToken}`).toString('base64')}`,
-        'Accept': 'application/json'
+    // Call the Python Alpha v3 importer which handles the correct v3 endpoint and format
+    const alphaV3ParserPath = path.join(process.cwd(), 'server', 'pipelines', 'enrichment', 'wigle_api_alpha_v3.py');
+
+    // Set up environment with API credentials and DB config
+    const dbPassword = process.env.DATABASE_URL?.match(/password=([^&\s]+)/)?.[1] ||
+                       'DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8=';
+
+    const env = {
+      ...process.env,
+      WIGLE_API_KEY: Buffer.from(`${wigleApiName}:${wigleApiToken}`).toString('base64'),
+      PGHOST: process.env.PGHOST || 'postgres',
+      PGPORT: '5432',
+      PGDATABASE: 'shadowcheck',
+      PGUSER: 'shadowcheck_user',
+      PGPASSWORD: dbPassword
+    };
+
+    console.log(`[WiGLE API Detail] Calling Alpha v3 importer for ${bssid}...`);
+
+    try {
+      // The Python script uses the correct v3 endpoint: /api/v3/detail/wifi/{bssid}
+      const { stdout, stderr } = await execAsync(
+        `python3 "${alphaV3ParserPath}" --process-queue --limit 1`,
+        {
+          env,
+          timeout: 60000, // 1 minute timeout
+          maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+        }
+      );
+
+      // First, tag this BSSID for enrichment
+      await db.query(`
+        INSERT INTO app.bssid_enrichment_queue (bssid, priority, status)
+        VALUES ($1, 100, 'pending')
+        ON CONFLICT (bssid) DO UPDATE SET
+          priority = 100,
+          status = 'pending',
+          tagged_at = NOW()
+      `, [bssid.toUpperCase()]);
+
+      // Now process it
+      const { stdout: processStdout, stderr: processStderr } = await execAsync(
+        `python3 "${alphaV3ParserPath}" --process-queue --limit 1`,
+        {
+          env,
+          timeout: 60000,
+          maxBuffer: 10 * 1024 * 1024
+        }
+      );
+
+      if (processStderr) {
+        console.log(`[WiGLE API Detail] Python output:`, processStderr);
       }
-    });
 
-    if (!response.ok) {
-      throw new Error(`WiGLE API error: ${response.statusText}`);
-    }
+      // Check if import was successful
+      const result = await db.query(`
+        SELECT COUNT(*) as obs_count
+        FROM app.wigle_alpha_v3_observations
+        WHERE bssid = $1
+      `, [bssid.toUpperCase()]);
 
-    const data = await response.json() as any;
+      const obsCount = parseInt(result[0]?.obs_count || '0');
 
-    if (!data.success) {
-      throw new Error(`WiGLE API returned error: ${data.message || 'Unknown error'}`);
-    }
+      console.log(`[WiGLE API Detail] Imported ${obsCount} observations for ${bssid}`);
 
-    // Extract network details
-    const results = data.results || [];
-    if (results.length === 0) {
-      return res.json({
-        ok: false,
-        error: 'No network found with that BSSID'
+      res.json({
+        ok: true,
+        bssid: bssid.toUpperCase(),
+        stats: {
+          network_imported: true,
+          observations_imported: obsCount
+        },
+        message: `Imported ${obsCount} observations for ${bssid} via Alpha v3 API`
       });
+
+    } catch (pythonError: any) {
+      console.error('[WiGLE API Detail] Python import failed:', pythonError);
+      throw new Error(`Failed to import via Alpha v3: ${pythonError.message}`);
     }
-
-    const network = results[0];
-    const queryParams = JSON.stringify({ bssid, endpoint: 'detail' });
-
-    // Import network metadata
-    await db.query(`
-      INSERT INTO app.wigle_alpha_v3_networks
-      (bssid, ssid, frequency, encryption, type, last_seen, first_seen,
-       trilaterated_lat, trilaterated_lon, channel)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      ON CONFLICT (bssid, query_timestamp) DO UPDATE SET
-        ssid = COALESCE(EXCLUDED.ssid, app.wigle_alpha_v3_networks.ssid),
-        last_seen = GREATEST(EXCLUDED.last_seen, app.wigle_alpha_v3_networks.last_seen)
-    `, [
-      network.netid,
-      network.ssid || null,
-      network.channel ? (network.channel * 5 + (network.channel <= 14 ? 2407 : 5000)) : null,
-      network.encryption || null,
-      network.type || 'W',
-      network.lasttime ? new Date(network.lasttime) : null,
-      network.firsttime ? new Date(network.firsttime) : null,
-      network.trilat || null,
-      network.trilong || null,
-      network.channel || null
-    ]);
-
-    // Import ALL location observations from locationData array
-    let locationsImported = 0;
-    const locationData = network.locationData || [];
-
-    for (const location of locationData) {
-      try {
-        // Skip invalid coordinates
-        if (!location.latitude || !location.longitude) continue;
-        if (location.latitude === 0 && location.longitude === 0) continue;
-        if (location.latitude < -90 || location.latitude > 90) continue;
-        if (location.longitude < -180 || location.longitude > 180) continue;
-
-        await db.query(`
-          INSERT INTO app.wigle_alpha_v3_observations
-          (bssid, lat, lon, altitude, accuracy, observation_time, signal_dbm, ssid, frequency, channel, encryption_value)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        `, [
-          network.netid,
-          location.latitude,
-          location.longitude,
-          location.alt || null,
-          location.accuracy || null,
-          location.time ? new Date(location.time) : null,
-          location.signal || null,
-          location.ssid || network.ssid || null,
-          network.channel ? (network.channel * 5 + (network.channel <= 14 ? 2407 : 5000)) : null,
-          network.channel || null,
-          network.encryption || null
-        ]);
-        locationsImported++;
-      } catch (err) {
-        console.error(`Error importing location for ${network.netid}:`, err);
-      }
-    }
-
-    console.log(`[WiGLE API Detail] Imported ${locationsImported} observations for ${bssid}`);
-
-    res.json({
-      ok: true,
-      bssid: network.netid,
-      ssid: network.ssid,
-      stats: {
-        network_imported: true,
-        total_observations: locationData.length,
-        observations_imported: locationsImported,
-        skipped: locationData.length - locationsImported
-      },
-      message: `Imported detailed data: ${locationsImported} observations for ${network.ssid || network.netid}`
-    });
 
   } catch (err: any) {
     console.error('[POST /api/v1/pipelines/wigle-api/detail] error:', err);
