@@ -25,11 +25,11 @@ def parse_kml_file(kml_path):
     placemarks = root.findall('.//kml:Placemark', NS)
 
     for pm in placemarks:
-        # Extract name (usually SSID or BSSID)
+        # Extract name (usually SSID - may be "(no SSID)")
         name_elem = pm.find('kml:name', NS)
         name = name_elem.text if name_elem is not None else None
 
-        # Extract description (contains metadata)
+        # Extract description (contains metadata including BSSID as "Network ID:")
         desc_elem = pm.find('kml:description', NS)
         description = desc_elem.text if desc_elem is not None else ''
 
@@ -42,13 +42,23 @@ def parse_kml_file(kml_path):
                 lat = float(coords[1])
                 altitude = float(coords[2]) if len(coords) > 2 else 0.0
 
-                # Parse description for metadata
+                # Parse description for metadata (including BSSID)
                 metadata = parse_description(description)
+
+                # Use Network ID from description as BSSID
+                bssid = metadata.get('bssid')
+                if not bssid:
+                    continue  # Skip if no BSSID found
+
+                # Use name as SSID (unless it's "(no SSID)")
+                ssid = None
+                if name and name not in ['(no SSID)', '(no_SSID)', '<hidden>', '']:
+                    ssid = name
 
                 # Create location entry
                 location = {
-                    'bssid': metadata.get('bssid', name),
-                    'ssid': metadata.get('ssid'),
+                    'bssid': bssid.upper(),  # Normalize to uppercase
+                    'ssid': ssid,
                     'lat': lat,
                     'lon': lon,
                     'altitude': altitude,
@@ -62,75 +72,120 @@ def parse_kml_file(kml_path):
 
                 # Create network entry (unique by BSSID)
                 network = {
-                    'bssid': metadata.get('bssid', name),
-                    'ssid': metadata.get('ssid'),
+                    'bssid': bssid.upper(),  # Normalize to uppercase
+                    'ssid': ssid,
                     'frequency': metadata.get('frequency'),
                     'capabilities': metadata.get('capabilities'),
-                    'first_seen': metadata.get('first_seen'),
-                    'last_seen': metadata.get('last_seen'),
+                    'first_seen': metadata.get('time'),  # Will be updated to min time
+                    'last_seen': metadata.get('time'),   # Will be updated to max time
                     'network_type': metadata.get('type')
                 }
 
-                # Only add unique networks
+                # Only add unique networks (will compute first/last seen later)
                 if not any(n['bssid'] == network['bssid'] for n in networks):
                     networks.append(network)
+
+    # Compute first_seen/last_seen for each network from location timestamps
+    if locations:
+        # Group locations by BSSID
+        bssid_times = {}
+        for loc in locations:
+            bssid = loc['bssid']
+            time_val = loc.get('time')
+            if time_val:
+                if bssid not in bssid_times:
+                    bssid_times[bssid] = []
+                bssid_times[bssid].append(time_val)
+
+        # Update networks with computed first/last seen
+        for network in networks:
+            bssid = network['bssid']
+            if bssid in bssid_times and bssid_times[bssid]:
+                times = bssid_times[bssid]
+                network['first_seen'] = min(times)
+                network['last_seen'] = max(times)
 
     return networks, locations
 
 def parse_description(desc):
-    """Parse KML description field for network metadata"""
+    """Parse KML description field for network metadata
+
+    WiGLE KML format example:
+    Network ID: AA:BB:CC:DD:EE:FF
+    Time: 2025-06-17T01:07:05.000-07:00
+    Signal: -88.0
+    Accuracy: 3.79009
+    Type: BLE
+    """
     metadata = {}
 
     if not desc:
         return metadata
 
-    # WiGLE KML format usually has key-value pairs
+    # WiGLE KML format has key-value pairs separated by newlines
     lines = desc.split('\n')
     for line in lines:
-        if ':' in line:
-            key, value = line.split(':', 1)
-            key = key.strip().lower()
-            value = value.strip()
+        if ':' not in line:
+            continue
 
-            if key in ['bssid', 'mac', 'netid', 'network id']:
-                metadata['bssid'] = value
-            elif key == 'ssid':
-                metadata['ssid'] = value if value and value != '<hidden>' else None
-            elif key in ['signal', 'level', 'rssi']:
-                try:
-                    metadata['level'] = int(float(value.replace('dBm', '').strip()))
-                except:
-                    pass
-            elif key == 'frequency':
-                try:
-                    metadata['frequency'] = int(value.replace('MHz', '').strip())
-                except:
-                    pass
-            elif key in ['type', 'network_type']:
-                metadata['type'] = value
-            elif key in ['encryption', 'capabilities', 'security']:
-                metadata['encryption'] = value
-                metadata['capabilities'] = value
-            elif key == 'time':
-                try:
-                    # Try to parse ISO 8601 timestamp first
-                    from dateutil import parser as date_parser
-                    dt = date_parser.parse(value)
-                    metadata['time'] = int(dt.timestamp() * 1000)  # Convert to Unix milliseconds
-                except:
+        key, value = line.split(':', 1)
+        key = key.strip().lower()
+        value = value.strip()
+
+        if key in ['network id', 'netid', 'bssid', 'mac']:
+            metadata['bssid'] = value
+        elif key == 'ssid':
+            metadata['ssid'] = value if value and value not in ['<hidden>', '(no SSID)'] else None
+        elif key in ['signal', 'level', 'rssi']:
+            try:
+                metadata['level'] = int(float(value))
+            except:
+                pass
+        elif key == 'frequency':
+            try:
+                # Handle both "2437 MHz" and "2437" formats
+                freq_str = value.replace('MHz', '').replace('mhz', '').strip()
+                metadata['frequency'] = int(float(freq_str))
+            except:
+                pass
+        elif key in ['type', 'network_type']:
+            metadata['type'] = value
+        elif key in ['encryption', 'capabilities', 'security']:
+            metadata['encryption'] = value
+            metadata['capabilities'] = value
+        elif key == 'time':
+            try:
+                # Parse ISO 8601 timestamp (e.g., "2025-06-17T01:07:05.000-07:00")
+                from datetime import datetime
+                # Remove timezone for simpler parsing, then parse
+                if 'T' in value:
+                    # Handle ISO format with timezone offset
+                    dt_str = value.split('.')[0]  # Remove milliseconds
+                    dt_str = dt_str.split('+')[0].split('-')[0:-1]  # Remove timezone
+                    dt_str = 'T'.join(dt_str) if len(dt_str) > 1 else dt_str[0]
+
+                    # Try parsing with dateutil if available, else use basic parsing
                     try:
-                        # Fallback: try Unix milliseconds
-                        metadata['time'] = int(value)
+                        from dateutil import parser as date_parser
+                        dt = date_parser.parse(value)
                     except:
-                        pass
-            elif key == 'accuracy':
+                        # Fallback: manual parse
+                        dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+
+                    metadata['time'] = int(dt.timestamp() * 1000)  # Convert to Unix milliseconds
+            except:
                 try:
-                    metadata['accuracy'] = float(value.replace('m', '').strip())
+                    # Fallback: try Unix milliseconds
+                    metadata['time'] = int(value)
                 except:
                     pass
-            elif key == 'attributes':
-                # Store Bluetooth attributes
-                metadata['attributes'] = value
+        elif key == 'accuracy':
+            try:
+                metadata['accuracy'] = float(value)
+            except:
+                pass
+        elif key == 'attributes':
+            metadata['attributes'] = value
 
     return metadata
 

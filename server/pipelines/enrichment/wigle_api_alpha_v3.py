@@ -115,17 +115,24 @@ def fetch_from_wigle_api(bssid: str, api_key: str) -> dict:
 
     Args:
         bssid: MAC address to fetch
-        api_key: WiGLE API key (from environment or parameter)
+        api_key: WiGLE API key in format "name:token" or pre-encoded base64
 
     Returns:
         Alpha v3 JSON response
     """
     import requests
+    import base64
 
     url = f"https://api.wigle.net/api/v3/detail/wifi/{bssid}"
 
+    # Encode API key if it's in name:token format (not already base64)
+    if ':' in api_key and len(api_key) < 100:  # name:token format
+        encoded_key = base64.b64encode(api_key.encode('utf-8')).decode('utf-8')
+    else:  # Assume already base64 encoded
+        encoded_key = api_key
+
     headers = {
-        'Authorization': f'Basic {api_key}',
+        'Authorization': f'Basic {encoded_key}',
         'Accept': 'application/json'
     }
 

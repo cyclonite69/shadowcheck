@@ -40,7 +40,7 @@ def extract_sqlite_from_zip(zip_path):
             return temp_db.name
 
 def parse_wigle_database(db_path):
-    """Parse WiGLE SQLite database and extract networks and locations using batch processing"""
+    """Parse WiGLE SQLite database and extract networks, locations, and routes using batch processing"""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
@@ -52,6 +52,7 @@ def parse_wigle_database(db_path):
 
     networks = []
     locations = []
+    routes = []
 
     # Parse networks table (if exists) - usually small, can load all
     if 'network' in tables:
@@ -65,7 +66,7 @@ def parse_wigle_database(db_path):
 
         for row in cur.fetchall():
             network = {
-                'bssid': row['bssid'],
+                'bssid': row['bssid'].upper() if row['bssid'] else None,  # Normalize to uppercase
                 'ssid': row['ssid'] if row['ssid'] else None,
                 'frequency': row['frequency'] if row['frequency'] else None,
                 'capabilities': row['capabilities'],
@@ -108,7 +109,7 @@ def parse_wigle_database(db_path):
 
             for row in batch:
                 location = {
-                    'bssid': row['bssid'],
+                    'bssid': row['bssid'].upper() if row['bssid'] else None,  # Normalize to uppercase
                     'level': row['level'] if row['level'] else None,
                     'lat': row['lat'],
                     'lon': row['lon'],
@@ -121,17 +122,47 @@ def parse_wigle_database(db_path):
             offset += batch_size
             print(f"  Processed {min(offset, total_locations)}/{total_locations} locations...", file=sys.stderr)
 
+    # Parse route table (if exists) - wardriving path with network counts
+    if 'route' in tables:
+        print(f"Parsing route table...", file=sys.stderr)
+
+        cur.execute("SELECT COUNT(*) FROM route")
+        total_routes = cur.fetchone()[0]
+        print(f"Total route points to process: {total_routes}", file=sys.stderr)
+
+        cur.execute("""
+            SELECT run_id, wifi_visible, cell_visible, bt_visible,
+                   lat, lon, altitude, accuracy, time
+            FROM route
+            ORDER BY time ASC
+        """)
+
+        for row in cur.fetchall():
+            route = {
+                'run_id': row['run_id'],
+                'wifi_visible': row['wifi_visible'],
+                'cell_visible': row['cell_visible'],
+                'bt_visible': row['bt_visible'],
+                'lat': row['lat'],
+                'lon': row['lon'],
+                'altitude': row['altitude'] if row['altitude'] else 0.0,
+                'accuracy': row['accuracy'] if row['accuracy'] else None,
+                'time': row['time'],
+            }
+            routes.append(route)
+
     conn.close()
 
-    return networks, locations
+    return networks, locations, routes
 
-def load_to_database(source_filename, networks, locations, db_config):
+def load_to_database(source_filename, networks, locations, routes, db_config):
     """Load parsed data into WiGLE SQLite staging tables with provenance tracking"""
     conn = psycopg2.connect(**db_config)
     cur = conn.cursor()
 
     networks_inserted = 0
     locations_inserted = 0
+    routes_inserted = 0
 
     try:
         # Staging tables don't use provenance_legacy (which has a restrictive CHECK constraint)
@@ -198,8 +229,40 @@ def load_to_database(source_filename, networks, locations, db_config):
                 print(f"Error inserting location for {location['bssid']}: {e}", file=sys.stderr)
                 continue
 
+        print(f"Loading {len(routes)} route points into wigle_sqlite_routes_staging...", file=sys.stderr)
+
+        # Insert route points into staging
+        for route in routes:
+            try:
+                cur.execute("""
+                    INSERT INTO app.wigle_sqlite_routes_staging
+                    (source_id, run_id, wifi_visible, cell_visible, bt_visible,
+                     lat, lon, altitude, accuracy, time, sqlite_filename)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    source_id,
+                    route['run_id'],
+                    route['wifi_visible'],
+                    route['cell_visible'],
+                    route['bt_visible'],
+                    route['lat'],
+                    route['lon'],
+                    route.get('altitude', 0.0),
+                    route.get('accuracy'),
+                    route['time'],
+                    source_filename
+                ))
+                routes_inserted += 1
+
+                if routes_inserted % 1000 == 0:
+                    print(f"  {routes_inserted} route points processed...", file=sys.stderr)
+
+            except Exception as e:
+                print(f"Error inserting route point: {e}", file=sys.stderr)
+                continue
+
         conn.commit()
-        print(f"✓ Loaded {source_filename} to staging (source_id={source_id}): {networks_inserted} networks, {locations_inserted} locations", file=sys.stderr)
+        print(f"✓ Loaded {source_filename} to staging (source_id={source_id}): {networks_inserted} networks, {locations_inserted} locations, {routes_inserted} routes", file=sys.stderr)
 
     except Exception as e:
         conn.rollback()
@@ -209,7 +272,7 @@ def load_to_database(source_filename, networks, locations, db_config):
         cur.close()
         conn.close()
 
-    return {'networks': networks_inserted, 'locations': locations_inserted, 'source_id': source_id}
+    return {'networks': networks_inserted, 'locations': locations_inserted, 'routes': routes_inserted, 'source_id': source_id}
 
 def main():
     if len(sys.argv) < 2:
@@ -242,12 +305,12 @@ def main():
 
     try:
         print(f"Parsing WiGLE database...", file=sys.stderr)
-        networks, locations = parse_wigle_database(db_path)
+        networks, locations, routes = parse_wigle_database(db_path)
 
-        print(f"Found {len(networks)} networks, {len(locations)} location observations", file=sys.stderr)
+        print(f"Found {len(networks)} networks, {len(locations)} location observations, {len(routes)} route points", file=sys.stderr)
 
         source_filename = os.path.basename(input_file)
-        result = load_to_database(source_filename, networks, locations, db_config)
+        result = load_to_database(source_filename, networks, locations, routes, db_config)
 
         # Output JSON for API response
         print(json.dumps({
