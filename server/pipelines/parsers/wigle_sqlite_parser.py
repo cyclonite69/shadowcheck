@@ -40,7 +40,7 @@ def extract_sqlite_from_zip(zip_path):
             return temp_db.name
 
 def parse_wigle_database(db_path):
-    """Parse WiGLE SQLite database and extract networks and locations"""
+    """Parse WiGLE SQLite database and extract networks and locations using batch processing"""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
@@ -53,7 +53,7 @@ def parse_wigle_database(db_path):
     networks = []
     locations = []
 
-    # Parse networks table (if exists)
+    # Parse networks table (if exists) - usually small, can load all
     if 'network' in tables:
         print(f"Parsing networks table...", file=sys.stderr)
         cur.execute("""
@@ -76,32 +76,50 @@ def parse_wigle_database(db_path):
             }
             networks.append(network)
 
-    # Parse location table (if exists)
+    # Parse location table (if exists) - use batch processing to avoid memory issues
     if 'location' in tables:
-        print(f"Parsing location table...", file=sys.stderr)
-        cur.execute("""
-            SELECT bssid, level, lat, lon, altitude, accuracy, time
-            FROM location
-            WHERE bssid IS NOT NULL
-              AND lat IS NOT NULL
-              AND lon IS NOT NULL
-              AND lat BETWEEN -90 AND 90
-              AND lon BETWEEN -180 AND 180
-              AND NOT (lat = 0 AND lon = 0)
-            LIMIT 1000000
-        """)
+        print(f"Parsing location table (batched)...", file=sys.stderr)
 
-        for row in cur.fetchall():
-            location = {
-                'bssid': row['bssid'],
-                'level': row['level'] if row['level'] else None,
-                'lat': row['lat'],
-                'lon': row['lon'],
-                'altitude': row['altitude'] if row['altitude'] else 0.0,
-                'accuracy': row['accuracy'] if row['accuracy'] else None,
-                'time': row['time'] if row['time'] else None,
-            }
-            locations.append(location)
+        # Get total count for progress
+        cur.execute("SELECT COUNT(*) FROM location WHERE bssid IS NOT NULL AND lat IS NOT NULL AND lon IS NOT NULL AND lat BETWEEN -90 AND 90 AND lon BETWEEN -180 AND 180 AND NOT (lat = 0 AND lon = 0)")
+        total_locations = cur.fetchone()[0]
+        print(f"Total valid locations to process: {total_locations}", file=sys.stderr)
+
+        # Process in batches of 50k rows to avoid memory issues
+        batch_size = 50000
+        offset = 0
+
+        while offset < total_locations:
+            cur.execute("""
+                SELECT bssid, level, lat, lon, altitude, accuracy, time
+                FROM location
+                WHERE bssid IS NOT NULL
+                  AND lat IS NOT NULL
+                  AND lon IS NOT NULL
+                  AND lat BETWEEN -90 AND 90
+                  AND lon BETWEEN -180 AND 180
+                  AND NOT (lat = 0 AND lon = 0)
+                LIMIT ? OFFSET ?
+            """, (batch_size, offset))
+
+            batch = cur.fetchall()
+            if not batch:
+                break
+
+            for row in batch:
+                location = {
+                    'bssid': row['bssid'],
+                    'level': row['level'] if row['level'] else None,
+                    'lat': row['lat'],
+                    'lon': row['lon'],
+                    'altitude': row['altitude'] if row['altitude'] else 0.0,
+                    'accuracy': row['accuracy'] if row['accuracy'] else None,
+                    'time': row['time'] if row['time'] else None,
+                }
+                locations.append(location)
+
+            offset += batch_size
+            print(f"  Processed {min(offset, total_locations)}/{total_locations} locations...", file=sys.stderr)
 
     conn.close()
 

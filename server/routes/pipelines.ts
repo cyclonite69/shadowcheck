@@ -694,8 +694,8 @@ router.post('/wigle-api/query', async (req, res) => {
         if (network.trilat && network.trilong) {
           await db.query(`
             INSERT INTO app.wigle_alpha_v3_observations
-            (bssid, lat, lon, altitude, accuracy, time, signal_level, query_params)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+            (bssid, lat, lon, altitude, accuracy, observation_time, last_update, signal_dbm)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
           `, [
             network.netid,
             network.trilat,
@@ -703,8 +703,8 @@ router.post('/wigle-api/query', async (req, res) => {
             null,
             null,
             network.lasttime ? new Date(network.lasttime) : null,
-            network.rcois || null,
-            queryParams
+            network.lasttime ? new Date(network.lasttime) : null,
+            network.rcois || null
           ]);
           locationsImported++;
         }
