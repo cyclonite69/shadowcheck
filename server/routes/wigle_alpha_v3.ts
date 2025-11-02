@@ -86,81 +86,84 @@ router.get('/network/:bssid/detail', async (req: Request, res: Response) => {
 
     const network = networkResult.rows[0];
 
-    // Get location clusters with observations
-    const clustersResult = await pool.query(`
+    // Get all observations grouped by SSID (simple schema - no pre-computed clusters)
+    const observationsResult = await pool.query(`
       SELECT
-        cluster_id,
-        cluster_ssid,
-        centroid_lat,
-        centroid_lon,
-        cluster_score,
-        days_observed_count,
-        min_last_update,
-        max_last_update,
-        location_count
-      FROM app.wigle_location_clusters
-      WHERE wigle_network_id = $1
-      ORDER BY cluster_score DESC, location_count DESC
-    `, [network.wigle_network_id]);
+        lat,
+        lon,
+        altitude as alt,
+        accuracy,
+        observation_time as time,
+        last_update as lastupdt,
+        month_bucket as month,
+        ssid,
+        signal_dbm as signal,
+        noise,
+        snr,
+        channel,
+        frequency,
+        encryption_value,
+        wigle_net_id as "netId",
+        name,
+        wep
+      FROM app.wigle_alpha_v3_observations
+      WHERE bssid = $1
+      ORDER BY ssid NULLS LAST, observation_time ASC
+    `, [bssid.toUpperCase()]);
 
-    // Build location clusters with all observations
-    const locationClusters = await Promise.all(
-      clustersResult.rows.map(async (cluster) => {
-        // Get all observations for this cluster
-        const observationsResult = await pool.query(`
-          SELECT
-            lat,
-            lon,
-            altitude as alt,
-            accuracy,
-            observation_time as time,
-            last_update as lastupdt,
-            month_bucket as month,
-            ssid,
-            signal_dbm as signal,
-            noise,
-            snr,
-            channel,
-            frequency,
-            encryption_value,
-            wigle_net_id as "netId",
-            name,
-            wep
-          FROM app.wigle_observations
-          WHERE cluster_id = $1
-          ORDER BY observation_time ASC
-        `, [cluster.cluster_id]);
+    // Group observations by SSID into clusters (dynamic clustering)
+    const observationsBySSID = new Map<string, any[]>();
+    for (const obs of observationsResult.rows) {
+      const ssidKey = obs.ssid || '<hidden>';
+      if (!observationsBySSID.has(ssidKey)) {
+        observationsBySSID.set(ssidKey, []);
+      }
+      observationsBySSID.get(ssidKey)!.push({
+        latitude: obs.lat,
+        longitude: obs.lon,
+        alt: obs.alt,
+        accuracy: obs.accuracy,
+        time: obs.time,
+        lastupdt: obs.lastupdt,
+        month: obs.month,
+        ssid: obs.ssid,
+        signal: obs.signal,
+        noise: obs.noise,
+        snr: obs.snr,
+        channel: obs.channel,
+        frequency: obs.frequency,
+        encryptionValue: obs.encryption_value,
+        netId: obs.netId,
+        name: obs.name,
+        wep: obs.wep
+      });
+    }
 
-        return {
-          centroidLatitude: cluster.centroid_lat,
-          centroidLongitude: cluster.centroid_lon,
-          clusterSsid: cluster.cluster_ssid,
-          minLastUpdate: cluster.min_last_update,
-          maxLastUpdate: cluster.max_last_update,
-          daysObservedCount: cluster.days_observed_count,
-          score: cluster.cluster_score,
-          locations: observationsResult.rows.map(obs => ({
-            latitude: obs.lat,
-            longitude: obs.lon,
-            alt: obs.alt,
-            accuracy: obs.accuracy,
-            time: obs.time,
-            lastupdt: obs.lastupdt,
-            month: obs.month,
-            ssid: obs.ssid,
-            signal: obs.signal,
-            noise: obs.noise,
-            snr: obs.snr,
-            channel: obs.channel,
-            frequency: obs.frequency,
-            encryptionValue: obs.encryption_value,
-            netId: obs.netId,
-            name: obs.name,
-            wep: obs.wep
-          }))
-        };
-      })
-    );
+    // Build location clusters from grouped observations
+    const locationClusters = Array.from(observationsBySSID.entries()).map(([ssid, locations]) => {
+      // Calculate centroid
+      const centroidLat = locations.reduce((sum, loc) => sum + loc.latitude, 0) / locations.length;
+      const centroidLon = locations.reduce((sum, loc) => sum + loc.longitude, 0) / locations.length;
+
+      // Get temporal bounds
+      const lastUpdates = locations.map(l => l.lastupdt).filter(Boolean).sort();
+      const minLastUpdate = lastUpdates[0];
+      const maxLastUpdate = lastUpdates[lastUpdates.length - 1];
+
+      // Count unique days
+      const uniqueDays = new Set(locations.map(l => l.lastupdt ? l.lastupdt.split('T')[0] : null).filter(Boolean));
+
+      return {
+        centroidLatitude: centroidLat,
+        centroidLongitude: centroidLon,
+        clusterSsid: ssid === '<hidden>' ? null : ssid,
+        minLastUpdate,
+        maxLastUpdate,
+        daysObservedCount: uniqueDays.size,
+        score: locations.length, // Use observation count as score
+        locations
+      };
+    });
 
     // Build Alpha v3 compatible response
     const response = {
@@ -263,28 +266,28 @@ router.get('/network/:bssid/ssid-timeline', async (req: Request, res: Response) 
 
     const network = networkResult.rows[0];
 
-    // Aggregate SSID timeline
+    // Aggregate SSID timeline from observations (dynamic - no clusters table)
     const timelineResult = await pool.query(`
       WITH ssid_aggregates AS (
         SELECT
-          cluster_ssid,
-          MIN(min_last_update) as first_seen,
-          MAX(max_last_update) as last_seen,
-          SUM(location_count) as total_observations,
-          SUM(days_observed_count) as total_days,
-          COUNT(*) as cluster_count,
-          AVG(centroid_lat) as avg_lat,
-          AVG(centroid_lon) as avg_lon,
+          ssid,
+          MIN(last_update) as first_seen,
+          MAX(last_update) as last_seen,
+          COUNT(*) as total_observations,
+          COUNT(DISTINCT DATE(last_update)) as total_days,
+          COUNT(DISTINCT ST_SnapToGrid(ST_SetSRID(ST_MakePoint(lon, lat), 4326), 0.001)) as cluster_count,
+          AVG(lat) as avg_lat,
+          AVG(lon) as avg_lon,
           MAX(ST_Distance(
-            ST_SetSRID(ST_MakePoint(centroid_lon, centroid_lat), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography,
             ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography
           ) / 1000.0) as max_distance_km
-        FROM app.wigle_location_clusters
-        WHERE wigle_network_id = $1
-        GROUP BY cluster_ssid
+        FROM app.wigle_alpha_v3_observations
+        WHERE bssid = $1
+        GROUP BY ssid
       )
       SELECT
-        cluster_ssid as ssid,
+        ssid,
         first_seen,
         last_seen,
         total_observations,
@@ -301,7 +304,7 @@ router.get('/network/:bssid/ssid-timeline', async (req: Request, res: Response) 
         END as pattern
       FROM ssid_aggregates
       ORDER BY first_seen ASC, total_observations DESC
-    `, [network.wigle_network_id, network.trilaterated_lon, network.trilaterated_lat]);
+    `, [bssid.toUpperCase(), network.trilaterated_lon, network.trilaterated_lat]);
 
     const timeline = timelineResult.rows;
     const uniqueSSIDs = timeline.filter(t => t.ssid).length;
@@ -355,12 +358,13 @@ router.get('/networks/summary', async (req: Request, res: Response) => {
 
     const summaryResult = await pool.query(`
       SELECT
-        COUNT(DISTINCT bssid) as total_networks,
-        COUNT(DISTINCT ssid) FILTER (WHERE ssid IS NOT NULL) as unique_ssids,
-        MIN(query_timestamp)::date as oldest_cache,
-        MAX(query_timestamp)::date as newest_cache,
-        SUM((SELECT COUNT(*) FROM app.wigle_observations wo WHERE wo.wigle_network_id = wan.wigle_network_id)) as total_observations
-      FROM app.wigle_alpha_v3_networks wan
+        COUNT(DISTINCT n.bssid) as total_networks,
+        COUNT(DISTINCT n.ssid) FILTER (WHERE n.ssid IS NOT NULL) as unique_ssids,
+        MIN(n.query_timestamp)::date as oldest_cache,
+        MAX(n.query_timestamp)::date as newest_cache,
+        COUNT(o.observation_id) as total_observations
+      FROM app.wigle_alpha_v3_networks n
+      LEFT JOIN app.wigle_alpha_v3_observations o ON o.bssid = n.bssid
     `);
 
     return res.json({

@@ -10,7 +10,7 @@ Usage:
     python3 wigle_api_alpha_v3.py <json_file>
 
     # From stdin (for pipeline integration)
-    curl "https://api.wigle.net/api/v3/detail/network/CA:99:B2:1E:55:13" | python3 wigle_api_alpha_v3.py -
+    curl "https://api.wigle.net/api/v3/detail/wifi/CA:99:B2:1E:55:13" | python3 wigle_api_alpha_v3.py -
 
     # Tag and fetch workflow
     curl -X POST http://localhost:5000/api/v1/wigle/tag -d '{"bssids": ["CA:99:B2:1E:55:13"]}'
@@ -122,7 +122,7 @@ def fetch_from_wigle_api(bssid: str, api_key: str) -> dict:
     """
     import requests
 
-    url = f"https://api.wigle.net/api/v3/detail/network/{bssid}"
+    url = f"https://api.wigle.net/api/v3/detail/wifi/{bssid}"
 
     headers = {
         'Authorization': f'Basic {api_key}',

@@ -11,6 +11,8 @@ import surveillanceRouter from "./routes/surveillance.js";
 import pipelinesRouter from "./routes/pipelines.js";
 import accessPointsRouter from "./routes/accessPoints.js";
 import wigleEnrichmentRouter from "./routes/wigleEnrichment.js";
+import wigleStagingRouter from "./routes/wigleStagingRoutes.js";
+import wigleAlphaV3Router from "./routes/wigle_alpha_v3.js";
 import networkObservationsRouter from "./routes/networkObservations.js";
 import { db as dbConnection } from "./db/connection.js";
 
@@ -79,6 +81,8 @@ app.use("/api/v1/surveillance", surveillanceRouter);
 app.use("/api/v1/pipelines", pipelinesRouter);
 app.use("/api/v1/access-points", accessPointsRouter);
 app.use("/api/v1/wigle", wigleEnrichmentRouter);
+app.use("/api/v1/wigle", wigleStagingRouter);
+app.use("/api/v3", wigleAlphaV3Router);
 app.use("/api/v1/network", networkObservationsRouter);
 
 // Legacy health endpoint for backward compatibility
