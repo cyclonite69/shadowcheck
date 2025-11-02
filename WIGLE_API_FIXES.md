@@ -149,52 +149,69 @@ curl http://localhost:5000/api/v1/wigle/staging/locations?limit=10
 
 ## Known Issues / Future Work
 
-### 1. Buffer Error (Not Addressed Yet)
-You mentioned a "buffer error when trying to import database backup into staging tables."
+### 1. Buffer Error ✅ FIXED
+The buffer error was caused by the Python parser trying to load 1M+ location rows into memory at once.
 
-**Need more info:**
-- What's the exact error message?
-- Which script/command produces it?
-- What's the file size of the backup?
+**Root cause:**
+- `wigle_sqlite_parser.py` line 91 had `LIMIT 1000000` with `fetchall()`
+- This loaded all rows into memory before processing
+- Large WiGLE databases (>100k locations) would cause memory exhaustion
 
-**Potential causes:**
-- Memory limits in Python script
-- PostgreSQL buffer size limits
-- File encoding issues
+**Fix applied:**
+- Added batch processing (50k rows per batch)
+- Process locations in chunks with LIMIT/OFFSET
+- Added progress reporting
+- Removed arbitrary 1M row limit
 
-**Suggested fixes:**
-- Increase Python buffer with `sys.setrecursionlimit()`
-- Use batch inserts instead of single row inserts
-- Stream large files instead of loading all into memory
+**File:** `server/pipelines/parsers/wigle_sqlite_parser.py:79-122`
 
 ### 2. Observations Table Naming
 The simple schema uses `wigle_alpha_v3_observations` but the cached schema uses `wigle_observations`. This inconsistency could cause confusion.
 
 **Recommendation:** Standardize on one name across all schemas.
 
-### 3. No Location Data Issue
-If you're seeing "none into the locations" it could be:
-- The API response has no `locationClusters` array
-- The network hasn't been seen recently by WiGLE
-- WiGLE API returned an error (check HTTP status)
+### 3. No Location Data Issue ✅ FIXED
+The pipeline endpoint had wrong column names causing INSERT failures.
+
+**Root cause:**
+- `pipelines.ts:697` tried to INSERT into column `time` but table has `observation_time`
+- Referenced non-existent columns `signal_level` and `query_params`
+- Missing required column `last_update`
+
+**Fix applied:**
+- Changed `time` → `observation_time`
+- Changed `signal_level` → `signal_dbm`
+- Removed `query_params` (doesn't exist in schema)
+- Added `last_update` column mapping
+
+**File:** `server/routes/pipelines.ts:693-710`
 
 **Debug steps:**
 ```bash
-# Check raw API response
+# Check raw API response structure
 curl "https://api.wigle.net/api/v3/detail/wifi/AA:BB:CC:DD:EE:FF" \
   -H "Authorization: Basic YOUR_API_KEY" | jq .
 
-# Check what was actually imported
+# Verify import worked
 docker exec shadowcheck_postgres_18 psql -U shadowcheck_user -d shadowcheck \
   -c "SELECT COUNT(*) FROM app.wigle_alpha_v3_observations WHERE bssid = 'AA:BB:CC:DD:EE:FF'"
+
+# Check backend logs for any remaining errors
+docker logs shadowcheck_backend --tail 50 | grep -i error
 ```
 
 ## Files Changed
 
+### First Commit (9dd240d) - API Endpoint and Schema Fixes:
 1. `server/pipelines/enrichment/wigle_api_alpha_v3.py` - Fixed API endpoint
 2. `server/routes/wigle_alpha_v3.ts` - Fixed table references and removed cluster dependency
 3. `server/routes/wigleStagingRoutes.ts` - NEW file for staging API
 4. `server/index.ts` - Added route registrations
+5. `WIGLE_API_FIXES.md` - This documentation file
+
+### Second Commit (c63cd20) - Buffer Error and Column Mismatch:
+6. `server/pipelines/parsers/wigle_sqlite_parser.py` - Added batch processing
+7. `server/routes/pipelines.ts` - Fixed column names in INSERT statements
 
 ## Restart Required
 
