@@ -134,22 +134,10 @@ def load_to_database(source_filename, networks, locations, db_config):
     locations_inserted = 0
 
     try:
-        # Create provenance entry for this import
-        # Extract simple identifier from filename (e.g., "backup-1761824754281.sqlite" -> "wigle_1761824754281")
-        import_id = source_filename.replace('backup-', 'wigle_').replace('.sqlite', '').replace('.zip', '')
-
-        cur.execute("""
-            INSERT INTO app.provenance_legacy (source, network_rows, location_rows)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (source) DO UPDATE SET
-                network_rows = EXCLUDED.network_rows,
-                location_rows = EXCLUDED.location_rows,
-                loaded_at = NOW()
-            RETURNING id
-        """, (import_id, len(networks), len(locations)))
-
-        source_id = cur.fetchone()[0]
-        print(f"Created provenance entry: source_id={source_id}, source={import_id}", file=sys.stderr)
+        # Staging tables don't use provenance_legacy (which has a restrictive CHECK constraint)
+        # Set source_id to NULL - provenance is tracked via sqlite_filename column instead
+        source_id = None
+        print(f"Loading to staging (no provenance entry, tracked by filename={source_filename})", file=sys.stderr)
 
         print(f"Loading {len(networks)} networks into wigle_sqlite_networks_staging...", file=sys.stderr)
 
