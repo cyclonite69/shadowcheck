@@ -18,7 +18,15 @@ node_modules/
 dist/
 */dist/
 */node_modules/
+compiled_server/
 *.log
+*.js.map
+
+# Deprecated/experimental files
+*.deprecated
+*.old
+*.backup
+*.bak
 
 # Database
 *.dump
@@ -48,3 +56,4 @@ scripts/*password*.sh
 scripts/*secrets*.sh
 client/client/
 docker/pgadmin/
+pgadmin-config/pgpassfile

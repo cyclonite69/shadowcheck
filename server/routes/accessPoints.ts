@@ -9,7 +9,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { query } from '../db.js';
+import { db } from '../db/connection';
 
 const router = Router();
 
@@ -197,11 +197,11 @@ router.get('/', async (req: Request, res: Response) => {
     if (cachedTotalCount !== null && (now - cacheTimestamp) < CACHE_TTL_MS) {
       totalCount = cachedTotalCount;
     } else {
-      const countResult = await query(
+      const countResult = await db.query(
         `SELECT COUNT(*) as total FROM app.api_networks ${whereClause}`,
         whereClause ? queryParams : []
       );
-      totalCount = Number(countResult.rows[0].total);
+      totalCount = Number(countResult[0].total);
 
       // Cache only if no filters applied (for accurate total)
       if (whereClauses.length === 0) {
@@ -223,20 +223,20 @@ router.get('/', async (req: Request, res: Response) => {
       OFFSET $${paramIndex + 1}
     `;
 
-    const result = await query(dataSql, queryParams);
+    const result = await db.query(dataSql, queryParams);
 
     // Calculate if there are more records
-    const hasMore = offset + result.rows.length < totalCount;
+    const hasMore = offset + result.length < totalCount;
 
     res.json({
       ok: true,
-      data: result.rows,
+      data: result,
       metadata: {
         total: totalCount,
         limit,
         offset,
         hasMore,
-        returned: result.rows.length
+        returned: result.length
       }
     });
 
@@ -313,14 +313,14 @@ router.get('/:mac/observations', async (req: Request, res: Response) => {
     const offset = Number(req.query.offset) || 0;
 
     // Get total count for this BSSID
-    const countResult = await query(
+    const countResult = await db.query(
       'SELECT COUNT(*) as total FROM app.locations_legacy WHERE bssid = $1',
       [macAddress]
     );
-    const totalCount = Number(countResult.rows[0].total);
+    const totalCount = Number(countResult[0].total);
 
     // Fetch observations with pagination
-    const result = await query(
+    const result = await db.query(
       `SELECT
         bssid,
         ssid,
@@ -339,17 +339,17 @@ router.get('/:mac/observations', async (req: Request, res: Response) => {
       [macAddress, limit, offset]
     );
 
-    const hasMore = offset + result.rows.length < totalCount;
+    const hasMore = offset + result.length < totalCount;
 
     res.json({
       ok: true,
-      data: result.rows,
+      data: result,
       metadata: {
         total: totalCount,
         limit,
         offset,
         hasMore,
-        returned: result.rows.length,
+        returned: result.length,
         mac_address: macAddress
       }
     });
@@ -379,12 +379,12 @@ router.get('/:id', async (req: Request, res: Response) => {
       });
     }
 
-    const result = await query(
+    const result = await db.query(
       'SELECT * FROM app.api_networks WHERE access_point_id = $1',
       [accessPointId]
     );
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return res.status(404).json({
         ok: false,
         error: 'Access point not found'
@@ -393,7 +393,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     res.json({
       ok: true,
-      data: result.rows[0]
+      data: result[0]
     });
 
   } catch (error: any) {

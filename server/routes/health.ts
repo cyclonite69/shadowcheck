@@ -14,7 +14,7 @@
  */
 
 import { Router, Request, Response } from "express";
-import { query, pool } from "../db";
+import { db } from "../db/connection";
 import { isSystemShuttingDown } from "../utils/shutdown";
 import { getPool, getConnectionStats } from '../db/connection';
 
@@ -26,17 +26,17 @@ const router = Router();
  */
 router.get("/", async (_req: Request, res: Response) => {
   try {
-    const now = await query<{ now: string }>("SELECT now()");
-    const who = await query<{ current_user: string }>("SELECT current_user");
-    const db = await query<{ current_database: string }>("SELECT current_database()");
+    const now = await db.query("SELECT now()");
+    const who = await db.query("SELECT current_user");
+    const database = await db.query("SELECT current_database()");
     res.json({
       ok: true,
       status: "ok",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      time: now.rows[0]?.now,
-      user: who.rows[0]?.current_user,
-      database: db.rows[0]?.current_database,
+      time: (now[0] as any)?.now,
+      user: (who[0] as any)?.current_user,
+      database: (database[0] as any)?.current_database,
     });
   } catch (err: any) {
     res.status(500).json({

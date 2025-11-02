@@ -39,14 +39,14 @@ services:
       POSTGRES_MAINTENANCE_WORK_MEM: 128MB
       POSTGRES_EXTENSIONS: postgis,postgis_topology,postgis_raster
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '1.0'
-          memory: 1G
+    # deploy:  # COMMENTED OUT - Not supported in Docker Compose v1.29
+    #   resources:
+    #     limits:
+    #       cpus: '2.0'
+    #       memory: 2G
+    #     reservations:
+    #       cpus: '1.0'
+    #       memory: 1G
     secrets:
       - db_password
     networks:
@@ -78,15 +78,15 @@ services:
     container_name: shadowcheck_backend
     restart: unless-stopped
 
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          cpus: '1.5'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
+    # Resource limits - COMMENTED OUT - Not supported in Docker Compose v1.29
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1.5'
+    #       memory: 1G
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 512M
 
     # CRITICAL: Wait for database to be healthy before starting
     depends_on:
@@ -127,8 +127,13 @@ services:
       JWT_SECRET_FILE: /run/secrets/jwt_secret
 
       # Monitoring
-      PROMETHEUS_ENABLED: true
-      PROMETHEUS_PORT: 9090
+      PROMETHEUS_ENABLED: "true"
+      PROMETHEUS_PORT: "9090"
+
+      # WiGLE API credentials (optional - for pipeline enrichment)
+      # Set these to enable WiGLE API queries in pipelines
+      WIGLE_API_NAME: ${WIGLE_API_NAME:-}
+      WIGLE_API_TOKEN: ${WIGLE_API_TOKEN:-}
 
     # Secrets mounting
     secrets:
@@ -149,10 +154,11 @@ services:
     volumes:
       - backend_logs:/app/logs
       - signal_cache:/app/cache
+      - ./pipelines:/app/pipelines:ro  # Pipeline data files (read-only)
 
     # CRITICAL: Health check endpoint
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/api/v1/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/health"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -180,12 +186,12 @@ services:
     container_name: shadowcheck_frontend
     restart: unless-stopped
 
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
+    # Resource limits - COMMENTED OUT - Not supported in Docker Compose v1.29
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.5'
+    #       memory: 512M
 
     # Wait for backend to be healthy
     depends_on:
@@ -227,6 +233,36 @@ services:
         max-file: "3"
         labels: "service=frontend,app=shadowcheck,layer=web"
 
+  # ============================================================================
+  # PGADMIN: Database Administration UI
+  # ============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:8.14
+    container_name: shadowcheck_pgadmin
+    ports:
+      - "127.0.0.1:8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      PGADMIN_SERVER_JSON_FILE: '/pgadmin4/servers.json'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin-config/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin-config/pgpassfile:/pgadmin4/pgpassfile:ro
+    networks:
+      - shadowcheck_internal_prod
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+        labels: "service=pgadmin,app=shadowcheck,layer=admin"
 
 
 # ==============================================================================
@@ -249,6 +285,10 @@ volumes:
   backend_logs:
     driver: local
   signal_cache:
+    driver: local
+
+  # pgAdmin
+  pgadmin_data:
     driver: local
 
   # Monitoring

@@ -1,6 +1,6 @@
 // server/routes/metrics.ts
 import { Router } from "express";
-import { query } from "../db";
+import { db } from "../db/connection";
 
 const router = Router();
 
@@ -12,42 +12,42 @@ const router = Router();
 router.get("/", async (req, res) => {
   try {
     // Database connectivity checks
-    const dbHealthResult = await query("SELECT true AS connected");
-    const postgisResult = await query(
+    const dbHealthResult = await db.query("SELECT true AS connected");
+    const postgisResult = await db.query(
       "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname='postgis') AS postgis"
     );
     
-    const connected = dbHealthResult.rows[0]?.connected ?? false;
-    const postgis = postgisResult.rows[0]?.postgis ?? false;
+    const connected = dbHealthResult[0]?.connected ?? false;
+    const postgis = postgisResult[0]?.postgis ?? false;
 
     // Get counts from your actual tables
     // Using location_details_enriched since that's your main enriched view
     const countsQueries = await Promise.allSettled([
       // Total networks (distinct BSSIDs)
-      query("SELECT COUNT(DISTINCT bssid)::int AS networks FROM app.location_details_enriched"),
+      db.query("SELECT COUNT(DISTINCT bssid)::int AS networks FROM app.location_details_enriched"),
       
       // Total location observations
-      query("SELECT COUNT(*)::int AS locations FROM app.location_details_enriched"),
+      db.query("SELECT COUNT(*)::int AS locations FROM app.location_details_enriched"),
       
       // WiFi networks (radio_short = 'WiFi' or similar)
-      query("SELECT COUNT(DISTINCT bssid)::int AS wifi FROM app.location_details_enriched WHERE radio_short ILIKE '%wifi%' OR radio_short = 'W'"),
+      db.query("SELECT COUNT(DISTINCT bssid)::int AS wifi FROM app.location_details_enriched WHERE radio_short ILIKE '%wifi%' OR radio_short = 'W'"),
       
       // Bluetooth networks
-      query("SELECT COUNT(DISTINCT bssid)::int AS bt FROM app.location_details_enriched WHERE radio_short = 'BT'"),
+      db.query("SELECT COUNT(DISTINCT bssid)::int AS bt FROM app.location_details_enriched WHERE radio_short = 'BT'"),
       
       // Cellular networks (radio_short LIKE 'Cell%')
-      query("SELECT COUNT(DISTINCT bssid)::int AS cell FROM app.location_details_enriched WHERE radio_short LIKE 'Cell%'")
+      db.query("SELECT COUNT(DISTINCT bssid)::int AS cell FROM app.location_details_enriched WHERE radio_short LIKE 'Cell%'")
     ]);
 
     // Extract counts safely
-    const networks = countsQueries[0].status === 'fulfilled' ? countsQueries[0].value.rows[0]?.networks ?? 0 : 0;
-    const locations = countsQueries[1].status === 'fulfilled' ? countsQueries[1].value.rows[0]?.locations ?? 0 : 0;
-    const wifi = countsQueries[2].status === 'fulfilled' ? countsQueries[2].value.rows[0]?.wifi ?? 0 : 0;
-    const bt = countsQueries[3].status === 'fulfilled' ? countsQueries[3].value.rows[0]?.bt ?? 0 : 0;
-    const cell = countsQueries[4].status === 'fulfilled' ? countsQueries[4].value.rows[0]?.cell ?? 0 : 0;
+    const networks = countsQueries[0].status === 'fulfilled' ? countsQueries[0].value[0]?.networks ?? 0 : 0;
+    const locations = countsQueries[1].status === 'fulfilled' ? countsQueries[1].value[0]?.locations ?? 0 : 0;
+    const wifi = countsQueries[2].status === 'fulfilled' ? countsQueries[2].value[0]?.wifi ?? 0 : 0;
+    const bt = countsQueries[3].status === 'fulfilled' ? countsQueries[3].value[0]?.bt ?? 0 : 0;
+    const cell = countsQueries[4].status === 'fulfilled' ? countsQueries[4].value[0]?.cell ?? 0 : 0;
 
     // Recent activity sample for the "Recent SIGINT Activity" list
-    const recentResult = await query(`
+    const recentResult = await db.query(`
       SELECT
         ssid_at_time AS ssid,
         bssid,
@@ -61,7 +61,7 @@ router.get("/", async (req, res) => {
     `);
 
     // Security breakdown (encrypted vs open)
-    const securityResult = await query(`
+    const securityResult = await db.query(`
       SELECT 
         CASE 
           WHEN security_short ILIKE '%wpa%' OR security_short ILIKE '%wep%' OR security_short != '' 
@@ -74,7 +74,7 @@ router.get("/", async (req, res) => {
       GROUP BY security_type
     `);
 
-    const securityCounts = securityResult.rows.reduce((acc, row) => {
+    const securityCounts = securityResult.reduce((acc: any, row: any) => {
       acc[row.security_type] = row.count;
       return acc;
     }, { encrypted: 0, open: 0 });
@@ -96,7 +96,7 @@ router.get("/", async (req, res) => {
         open: securityCounts.open
       },
       sample: { 
-        recent: recentResult.rows.map(row => ({
+        recent: recentResult.map((row: any) => ({
           ssid: row.ssid || null,
           bssid: row.bssid,
           freq_mhz: row.frequency_mhz || null,

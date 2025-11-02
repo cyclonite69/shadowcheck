@@ -9,10 +9,11 @@ import { AlertStatus } from "./alert-status";
 import { GrafanaDashboard } from "./grafana-dashboard";
 import { PipelinesPanel } from "./pipelines-panel";
 import { OrphanedNetworksPanel } from "./OrphanedNetworksPanel";
+import { NetworkMapVisualizer } from "./NetworkMapVisualizer";
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Shield, Database, MemoryStick, Plug, Activity, Server, BarChart3, FileText, Bell, ExternalLink, Copy, Eye, EyeOff, Settings } from 'lucide-react';
+import { Shield, Database, MemoryStick, Plug, Activity, Server, BarChart3, FileText, Bell, ExternalLink, Copy, Eye, EyeOff, Settings, MapPin } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { iconColors, getIconContainerClasses, getIconTextColor } from '@/lib/iconColors';
 
@@ -43,6 +44,12 @@ export function AdminPanel() {
     queryFn: () => api.getSystemStatus(),
     refetchInterval: 5000,
   });
+
+  // Fetch detailed health metrics
+  const { data: healthDetails } = useQuery({
+    queryKey: ["/api/v1/health/detailed"],
+    refetchInterval: 5000,
+  }) as { data: any };
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -83,7 +90,7 @@ export function AdminPanel() {
               <Shield className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(59,130,246,0.5)]">
+              <h1 className="text-3xl font-bold text-slate-100">
                 System Administration
               </h1>
               <p className="text-sm text-slate-400 cyber-text tracking-wide mt-1">
@@ -94,7 +101,7 @@ export function AdminPanel() {
 
       <Tabs defaultValue="system" className="w-full">
         <div className="premium-card p-2 mb-6">
-          <TabsList className="grid w-full grid-cols-7 bg-transparent gap-2">
+          <TabsList className="grid w-full grid-cols-8 bg-transparent gap-2">
             <TabsTrigger value="system" data-testid="tab-system" className="premium-card hover:scale-105 flex items-center gap-2">
               <Activity className={`h-4 w-4 ${iconColors.success.text}`} />
               <span className="hidden lg:inline">System</span>
@@ -123,20 +130,25 @@ export function AdminPanel() {
               <Bell className={`h-4 w-4 ${iconColors.warning.text}`} />
               <span className="hidden lg:inline">Alerts</span>
             </TabsTrigger>
+            <TabsTrigger value="map" className="premium-card hover:scale-105 flex items-center gap-2">
+              <MapPin className={`h-4 w-4 ${iconColors.info.text}`} />
+              <span className="hidden lg:inline">Map</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="system" className="space-y-6">
           <MetricsGrid />
           
-          {/* Database Status */}
+          {/* Enhanced Database & Memory Status Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Enhanced Database Connection Card */}
             <div className="premium-card p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className={`${getIconContainerClasses('info')} w-12 h-12`}>
-                  <Database className="h-6 w-6" />
+                  <Database className="h-6 w-6 text-cyan-400" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className={`w-3 h-3 rounded-full ${
                       systemStatus?.database.connected ? 'bg-green-500' : 'bg-red-500'
@@ -145,32 +157,133 @@ export function AdminPanel() {
                   </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <p className="text-sm text-slate-300">
-                  Status: <span className="font-medium cyber-text">{systemStatus?.database.connected ? 'Connected' : 'Disconnected'}</span>
-                </p>
-                <p className="text-xs text-slate-400 font-mono">
-                  PostGIS: <span className="text-cyan-400">{systemStatus?.database.postgisEnabled ? 'Enabled' : 'Disabled'}</span>
-                </p>
+
+              <div className="space-y-3">
+                {/* Status Row */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Status:</span>
+                  <span className={`text-sm font-medium ${systemStatus?.database.connected ? 'text-green-400' : 'text-red-400'}`}>
+                    {systemStatus?.database.connected ? 'Connected ✓' : 'Disconnected'}
+                  </span>
+                </div>
+
+                {/* PostGIS Version */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">PostGIS:</span>
+                  <span className="text-sm font-mono text-cyan-400">
+                    {healthDetails?.checks?.database?.postgisVersion?.split(' ')[0] || 'N/A'}
+                  </span>
+                </div>
+
+                {/* Response Time */}
+                {healthDetails?.checks?.database?.responseTime && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-400">Response:</span>
+                    <span className="text-sm font-mono text-green-400">
+                      {healthDetails.checks.database.responseTime}
+                    </span>
+                  </div>
+                )}
+
+                {/* Connection Pool */}
+                {healthDetails?.checks?.database?.pool && (
+                  <>
+                    <div className="mt-3 pt-3 border-t border-slate-700/50">
+                      <p className="text-xs text-slate-400 mb-2">Connection Pool:</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                            style={{width: `${(healthDetails.checks.database.pool.idle / healthDetails.checks.database.pool.total) * 100}%`}}
+                          />
+                        </div>
+                        <span className="text-xs font-mono text-slate-400">
+                          {healthDetails.checks.database.pool.idle}/{healthDetails.checks.database.pool.total} idle
+                        </span>
+                      </div>
+                      {healthDetails.checks.database.pool.waiting > 0 && (
+                        <p className="text-xs text-amber-400 mt-1">
+                          ⚠️ {healthDetails.checks.database.pool.waiting} waiting
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
+            {/* Enhanced Memory Usage Card */}
             <div className="premium-card p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className={`${getIconContainerClasses('secondary')} w-12 h-12`}>
-                  <MemoryStick className="h-6 w-6" />
+                  <MemoryStick className="h-6 w-6 text-purple-400" />
                 </div>
                 <div>
                   <span className="font-semibold text-lg text-slate-100">Memory Usage</span>
                 </div>
               </div>
-              <div className="space-y-2">
-                <p className="text-sm text-slate-300">
-                  Used: <span className="font-medium metric-value text-xl">{systemStatus?.memory.used || 0}</span><span className="text-xs text-slate-400 ml-1">MB</span>
-                </p>
-                <p className="text-xs text-slate-400 font-mono">
-                  Total: <span className="text-purple-400">{systemStatus?.memory.total || 0} MB</span>
-                </p>
+
+              <div className="space-y-3">
+                {/* System Memory Progress Bar */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-slate-400">System Memory:</span>
+                    <span className="text-sm font-mono text-slate-300">
+                      {systemStatus?.memory.used || 0}MB / {systemStatus?.memory.total || 0}MB
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${
+                          ((systemStatus?.memory.used || 0) / (systemStatus?.memory.total || 1)) > 0.9
+                            ? 'bg-gradient-to-r from-red-500 to-orange-500'
+                            : 'bg-gradient-to-r from-purple-500 to-pink-500'
+                        }`}
+                        style={{width: `${((systemStatus?.memory.used || 0) / (systemStatus?.memory.total || 1)) * 100}%`}}
+                      />
+                    </div>
+                    <span className="text-xs font-mono text-slate-400">
+                      {Math.round(((systemStatus?.memory.used || 0) / (systemStatus?.memory.total || 1)) * 100)}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Memory Breakdown */}
+                {healthDetails?.checks?.system?.memory && (
+                  <div className="mt-3 pt-3 border-t border-slate-700/50">
+                    <p className="text-xs text-slate-400 mb-2">Breakdown:</p>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">• Heap:</span>
+                        <span className="font-mono text-purple-300">
+                          {healthDetails.checks.system.memory.heapUsed}MB ({Math.round((healthDetails.checks.system.memory.heapUsed / (systemStatus?.memory?.total || 1)) * 100)}%)
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">• External:</span>
+                        <span className="font-mono text-purple-300">
+                          {healthDetails.checks.system.memory.external}MB
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">• RSS:</span>
+                        <span className="font-mono text-purple-300">
+                          {healthDetails.checks.system.memory.rss}MB
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Warning if memory >90% */}
+                {((systemStatus?.memory.used || 0) / (systemStatus?.memory.total || 1)) > 0.9 && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mt-3">
+                    <p className="text-xs text-amber-400">
+                      ⚠️ Warning: Memory usage &gt;90%, consider scaling
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -552,6 +665,11 @@ export function AdminPanel() {
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Map Visualizer Tab */}
+        <TabsContent value="map" className="h-[calc(100vh-250px)] min-h-[600px]">
+          <NetworkMapVisualizer />
         </TabsContent>
       </Tabs>
         </div>

@@ -8,7 +8,6 @@ import HomePage from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import VisualizationPage from "@/pages/visualization";
 import SurveillancePage from "@/pages/surveillance";
-import WiGLEViewer from "@/pages/wigle-viewer";
 import { AdminPanel } from "@/components/admin-panel";
 import { AccessPointsPage } from "@/components/AccessPointsPage";
 import { MobileShell } from "@/components/MobileShell";
@@ -41,7 +40,6 @@ function Router() {
                 <Route path="/visualization" component={VisualizationPage} />
                 <Route path="/access-points" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AccessPointsPage /></div>} />
                 <Route path="/surveillance" component={SurveillancePage} />
-                <Route path="/wigle" component={WiGLEViewer} />
                 <Route path="/admin" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AdminPanel /></div>} />
                 <Route component={NotFound} />
               </Switch>
@@ -53,7 +51,6 @@ function Router() {
                 <Route path="/visualization" component={VisualizationPage} />
                 <Route path="/access-points" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AccessPointsPage /></div>} />
                 <Route path="/surveillance" component={SurveillancePage} />
-                <Route path="/wigle" component={WiGLEViewer} />
                 <Route path="/admin" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AdminPanel /></div>} />
                 <Route component={NotFound} />
               </Switch>

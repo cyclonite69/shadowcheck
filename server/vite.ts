@@ -67,9 +67,8 @@ export function serveStatic(app: Express) {
   const distPath = path.resolve(process.cwd(), "client", "dist");
 
   if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+    log(`Warning: Client build directory not found at ${distPath}. API endpoints will work, but frontend will not be served.`, "express");
+    return;
   }
 
   app.use(express.static(distPath));

@@ -57,15 +57,27 @@ COPY --from=pruner /app/node_modules ./node_modules
 # Copy the compiled server code from the builder stage
 COPY --from=builder /app/server/dist ./server/dist
 
+# Copy pipeline parsers (Python scripts needed at runtime)
+COPY --from=builder /app/server/pipelines ./server/pipelines
+
 # Copy the root package.json (might be needed for runtime)
 COPY package.json .
 
-# Install runtime utilities like tini for process management
-RUN apt-get update && apt-get install -y tini && rm -rf /var/lib/apt/lists/*
+# Install runtime utilities and Python for pipeline parsers
+RUN apt-get update && \
+    apt-get install -y \
+    tini \
+    curl \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies for pipeline parsers
+RUN pip3 install --no-cache-dir psycopg2-binary lxml python-dateutil --break-system-packages
 
 EXPOSE 5000
 
 # Use tini to properly handle signals and reap zombie processes
 # Run the compiled JavaScript output
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["node", "server/dist/index.js"]
+CMD ["node", "server/dist/server/index.js"]

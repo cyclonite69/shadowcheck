@@ -447,12 +447,13 @@ html:not(.dark) .premium-card {
 
 /* Enhanced Typography */
 .hero-gradient-text {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   font-weight: 800;
   letter-spacing: -0.025em;
+  /* Ensure good contrast on dark backgrounds - WCAG AA compliant */
 }
 
 .feature-gradient-text {

@@ -150,7 +150,7 @@ export function NetworkMapboxViewer({
     // Process features with calculated radius and color
     const processedFeatures = networks.map((feature) => {
       const zoom = currentMap.getZoom();
-      const signal = feature.properties.signal || feature.properties.signal_strength || null;
+      const signal = (feature.properties as any).signal || feature.properties.signal_strength || null;
       const freq = feature.properties.frequency || 0;
       const bssid = feature.properties.bssid;
 
@@ -363,13 +363,13 @@ export function NetworkMapboxViewer({
     return () => {
       // Clean up cluster event listeners
       currentMap.off('click', 'clusters', clusterClickHandler);
-      currentMap.off('mouseenter', 'clusters');
-      currentMap.off('mouseleave', 'clusters');
+      (currentMap as any).off('mouseenter', 'clusters');
+      (currentMap as any).off('mouseleave', 'clusters');
 
       // Clean up point event listeners
       currentMap.off('click', 'pts', pointClickHandler);
-      currentMap.off('mouseenter', 'pts');
-      currentMap.off('mouseleave', 'pts');
+      (currentMap as any).off('mouseenter', 'pts');
+      (currentMap as any).off('mouseleave', 'pts');
 
       // Clean up tooltip system
       if (cleanupTooltip) cleanupTooltip();

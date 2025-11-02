@@ -11,6 +11,7 @@ import surveillanceRouter from "./routes/surveillance.js";
 import pipelinesRouter from "./routes/pipelines.js";
 import accessPointsRouter from "./routes/accessPoints.js";
 import wigleEnrichmentRouter from "./routes/wigleEnrichment.js";
+import networkObservationsRouter from "./routes/networkObservations.js";
 import { db as dbConnection } from "./db/connection.js";
 
 const { Pool } = pg;
@@ -24,18 +25,17 @@ app.use(express.json());
 // Metrics endpoint
 app.get("/api/v1/metrics", async (_req, res) => {
   try {
-    const count = await pool.query("SELECT COUNT(*) as count FROM app.networks");
+    const count = await dbConnection.query("SELECT COUNT(*) as count FROM app.networks");
     res.json({
       ok: true,
       timestamp: new Date().toISOString(),
-      counts: { networks: parseInt(count.rows[0]?.count || "0") }
+      counts: { networks: parseInt((count[0] as any)?.count || "0") }
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err) });
   }
 });
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const toInt = (v: unknown, d: number) => {
   const n = parseInt(String(v ?? ""), 10);
@@ -79,6 +79,7 @@ app.use("/api/v1/surveillance", surveillanceRouter);
 app.use("/api/v1/pipelines", pipelinesRouter);
 app.use("/api/v1/access-points", accessPointsRouter);
 app.use("/api/v1/wigle", wigleEnrichmentRouter);
+app.use("/api/v1/network", networkObservationsRouter);
 
 // Legacy health endpoint for backward compatibility
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
@@ -181,7 +182,8 @@ app.get("/api/v1/networks", async (req, res) => {
         ORDER BY lo.time DESC NULLS LAST
         LIMIT $${params.length - 1} OFFSET $${params.length};
       `;
-      const { rows } = await pool.query(sql, params);
+      const result = await dbConnection.query(sql, params);
+    const rows = result;
       const total_count = rows.length ? Number(rows[0].total_count) : 0;
 
       return res.json({
@@ -189,7 +191,7 @@ app.get("/api/v1/networks", async (req, res) => {
         mode: "grouped",
         count: rows.length,
         total_count,
-        data: rows.map(row => {
+        data: rows.map((row: any) => {
           const { total_count, ...networkData } = row;
           const frequency = networkData.frequency;
           const calculatedChannel = calculateChannel(frequency);
@@ -250,7 +252,8 @@ app.get("/api/v1/networks", async (req, res) => {
         ORDER BY d."time" DESC
         LIMIT $${params.length - 1} OFFSET $${params.length};
       `;
-      const { rows } = await pool.query(sql, params);
+      const result = await dbConnection.query(sql, params);
+    const rows = result;
       return res.json({ mode: "distinct_latest", count: rows.length, rows });
     }
 
@@ -383,7 +386,8 @@ app.get("/api/v1/networks", async (req, res) => {
       ORDER BY l.time DESC NULLS LAST
       LIMIT $${params.length - 1} OFFSET $${params.length};
     `;
-    const { rows } = await pool.query(sql, params);
+    const result = await dbConnection.query(sql, params);
+    const rows = result;
     const total_count = rows.length ? Number(rows[0].total_count) : 0;
 
     return res.json({
@@ -391,7 +395,7 @@ app.get("/api/v1/networks", async (req, res) => {
       mode: "raw",
       count: rows.length,
       total_count,
-      data: rows.map(row => {
+      data: rows.map((row: any) => {
         const { total_count, ...networkData } = row;
         const frequency = networkData.frequency;
         const calculatedChannel = calculateChannel(frequency);
@@ -436,8 +440,9 @@ app.get("/api/v1/analytics", async (_req, res) => {
         (SELECT COUNT(*) FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL) as geolocated_observations
     `;
 
-    const result = await pool.query(query);
-    const overview = result.rows[0];
+    const result = await dbConnection.query(query);
+    const rows = result;
+    const overview = result[0];
 
     res.json({
       ok: true,
@@ -478,8 +483,9 @@ app.get("/api/v1/security-analysis", async (_req, res) => {
       ORDER BY n.bssid, n.lasttime DESC
     `;
 
-    const result = await pool.query(query);
-    const networks = result.rows;
+    const result = await dbConnection.query(query);
+    const rows = result;
+    const networks = result;
 
     // Categorize by security strength (distinct networks)
     const categories = categorizeNetworksBySecurity(networks);
@@ -494,7 +500,7 @@ app.get("/api/v1/security-analysis", async (_req, res) => {
       [SecurityStrength.OPEN]: 0
     };
 
-    networks.forEach(network => {
+    networks.forEach((network: any) => {
       const analysis = parseCapabilities(network.capabilities);
       observationCounts[analysis.strength] += Number(network.observation_count) || 0;
     });
@@ -509,7 +515,7 @@ app.get("/api/v1/security-analysis", async (_req, res) => {
       [SecurityStrength.OPEN]: []
     };
 
-    networks.forEach(network => {
+    networks.forEach((network: any) => {
       const analysis = parseCapabilities(network.capabilities);
       if (examples[analysis.strength].length < 5) {
         examples[analysis.strength].push({
@@ -539,7 +545,7 @@ app.get("/api/v1/security-analysis", async (_req, res) => {
       open: 0
     };
 
-    networks.forEach(network => {
+    networks.forEach((network: any) => {
       const analysis = parseCapabilities(network.capabilities);
       const caps = (network.capabilities || '').toUpperCase();
       const obsCount = Number(network.observation_count) || 0;
@@ -629,10 +635,11 @@ app.get("/api/v1/signal-strength", async (_req, res) => {
       ORDER BY sort_order
     `;
 
-    const result = await pool.query(query);
+    const result = await dbConnection.query(query);
+    const rows = result;
     res.json({
       ok: true,
-      data: result.rows.map(row => ({
+      data: result.map((row: any) => ({
         signal_range: row.signal_range,
         count: Number(row.count) || 0
       }))
@@ -685,10 +692,11 @@ app.get("/api/v1/security-analysis", async (_req, res) => {
       ORDER BY sc.network_count DESC
     `;
 
-    const result = await pool.query(query);
+    const result = await dbConnection.query(query);
+    const rows = result;
     res.json({
       ok: true,
-      data: result.rows.map(row => ({
+      data: result.map((row: any) => ({
         security_level: row.security_level,
         security: row.security,
         network_count: Number(row.network_count) || 0,
@@ -784,7 +792,8 @@ app.get("/api/v1/timeline", async (req, res) => {
       ORDER BY time_bucket ASC
     `;
 
-    const result = await pool.query(query);
+    const result = await dbConnection.query(query);
+    const rows = result;
     res.json({
       ok: true,
       parameters: {
@@ -792,7 +801,7 @@ app.get("/api/v1/timeline", async (req, res) => {
         granularity,
         rangeMs
       },
-      data: result.rows.map(row => ({
+      data: result.map((row: any) => ({
         time_bucket: row.time_bucket,
         radio_type: row.radio_type,
         unique_networks: Number(row.unique_networks) || 0,
@@ -809,13 +818,14 @@ app.get("/api/v1/timeline", async (req, res) => {
 
 app.get("/api/v1/status", async (_req, res) => {
   try {
-    const result = await pool.query("SELECT 1 as test");
-    const postgisResult = await pool.query("SELECT PostGIS_Version() as version");
+    const result = await dbConnection.query("SELECT 1 as test");
+    const rows = result;
+    const postgisResult = await dbConnection.query("SELECT PostGIS_Version() as version");
     res.json({
       ok: true,
       database: {
         connected: true,
-        postgisEnabled: !!postgisResult.rows[0]?.version
+        postgisEnabled: !!postgisResult[0]?.version
       },
       memory: {
         used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
@@ -852,8 +862,9 @@ app.get("/api/v1/config", async (_req, res) => {
 // Spatial query endpoint - networks within radius
 app.get("/api/v1/within", async (req, res) => {
   try {
-    const result = await pool.query("SELECT 1 as test");
-    const isConnected = result.rows.length > 0;
+    const result = await dbConnection.query("SELECT 1 as test");
+    const rows = result;
+    const isConnected = result.length > 0;
 
     if (!isConnected) {
       return res.status(501).json({
@@ -906,7 +917,7 @@ app.get("/api/v1/within", async (req, res) => {
   }
 
   try {
-    const result = await pool.query(`
+    const result = await dbConnection.query(`
       SELECT
         bssid,
         ssid,
@@ -933,8 +944,8 @@ app.get("/api/v1/within", async (req, res) => {
 
     res.json({
       ok: true,
-      data: result.rows,
-      count: result.rows.length,
+      data: result,
+      count: result.length,
       query: {
         latitude,
         longitude,
@@ -960,7 +971,7 @@ app.get("/api/v1/radio-stats", async (_req, res) => {
     // - Bluetooth: Classic BT devices, often with device names, frequency 2402-2480 MHz
     // - BLE: Low energy devices, often "Misc" encryption, lower power, specific naming patterns
 
-    const radioStats = await pool.query(`
+    const radioStats = await dbConnection.query(`
       WITH radio_classification AS (
         SELECT
           n.bssid,
@@ -1038,7 +1049,7 @@ app.get("/api/v1/radio-stats", async (_req, res) => {
 
     res.json({
       ok: true,
-      data: radioStats.rows.map(row => ({
+      data: radioStats.map((row: any) => ({
         radio_type: row.radio_type,
         total_observations: Number(row.total_observations) || 0,
         distinct_networks: Number(row.distinct_networks) || 0

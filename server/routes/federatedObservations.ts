@@ -2,7 +2,7 @@
 // API endpoints for multi-source data federation
 
 import { Router } from "express";
-import { query } from "../db.js";
+import { db } from "../db/connection";
 
 const router = Router();
 
@@ -13,22 +13,22 @@ const router = Router();
 router.get("/statistics", async (req, res) => {
   try {
     const results = await Promise.all([
-      query(`SELECT COUNT(*) as count FROM app.observations_federated`),
-      query(`SELECT COUNT(*) as count FROM app.observations_deduplicated`),
-      query(`SELECT COUNT(*) as count FROM app.observations_deduplicated_fuzzy`),
-      query(`SELECT COUNT(*) as count FROM app.observations_smart_merged`),
-      query(`SELECT COUNT(*) as count FROM app.observations_smart_merged_v2`),
-      query(`SELECT COUNT(*) as count FROM app.observations_hybrid_merged`),
+      db.query(`SELECT COUNT(*) as count FROM app.observations_federated`),
+      db.query(`SELECT COUNT(*) as count FROM app.observations_deduplicated`),
+      db.query(`SELECT COUNT(*) as count FROM app.observations_deduplicated_fuzzy`),
+      db.query(`SELECT COUNT(*) as count FROM app.observations_smart_merged`),
+      db.query(`SELECT COUNT(*) as count FROM app.observations_smart_merged_v2`),
+      db.query(`SELECT COUNT(*) as count FROM app.observations_hybrid_merged`),
     ]);
 
     res.json({
       ok: true,
-      federated: parseInt(results[0].rows[0].count),
-      deduplicated: parseInt(results[1].rows[0].count),
-      deduplicated_fuzzy: parseInt(results[2].rows[0].count),
-      smart_merged: parseInt(results[3].rows[0].count),
-      precision_merged: parseInt(results[4].rows[0].count),
-      hybrid: parseInt(results[5].rows[0].count),
+      federated: parseInt(results[0][0].count),
+      deduplicated: parseInt(results[1][0].count),
+      deduplicated_fuzzy: parseInt(results[2][0].count),
+      smart_merged: parseInt(results[3][0].count),
+      precision_merged: parseInt(results[4][0].count),
+      hybrid: parseInt(results[5][0].count),
     });
   } catch (error: any) {
     console.error("Error fetching federation statistics:", error);
@@ -47,7 +47,7 @@ router.get("/statistics", async (req, res) => {
 router.get("/sources", async (req, res) => {
   try {
     const sql = `SELECT * FROM app.get_source_statistics()`;
-    const { rows } = await query(sql);
+    const rows = await db.query(sql);
 
     // Also get registry metadata
     const registrySql = `
@@ -69,11 +69,11 @@ router.get("/sources", async (req, res) => {
           ELSE 4
         END
     `;
-    const { rows: registryRows } = await query(registrySql);
+    const registryRows = await db.query(registrySql);
 
     // Merge statistics with registry data
-    const sources = registryRows.map(reg => {
-      const stats = rows.find(s => s.source_name === reg.source_name);
+    const sources = registryRows.map((reg: any) => {
+      const stats = rows.find((s: any) => s.source_name === reg.source_name);
       return {
         ...reg,
         statistics: stats || {
@@ -118,7 +118,7 @@ router.post("/sources/:sourceName/toggle", async (req, res) => {
     }
 
     const sql = `SELECT app.toggle_data_source($1, $2) as success`;
-    const { rows } = await query(sql, [sourceName, active]);
+    const rows = await db.query(sql, [sourceName, active]);
 
     if (rows[0]?.success) {
       res.json({
@@ -150,7 +150,7 @@ router.post("/sources/:sourceName/toggle", async (req, res) => {
 router.post("/sources/refresh", async (req, res) => {
   try {
     const sql = `SELECT * FROM app.refresh_source_statistics()`;
-    const { rows } = await query(sql);
+    const rows = await db.query(sql);
 
     res.json({
       ok: true,
@@ -395,7 +395,7 @@ router.get("/observations", async (req, res) => {
       `;
     }
 
-    const { rows } = await query(sql, params);
+    const rows = await db.query(sql, params);
     const total_count = rows.length ? Number(rows[0].total_count) : 0;
 
     res.json({
@@ -405,7 +405,7 @@ router.get("/observations", async (req, res) => {
       total_count,
       offset,
       limit,
-      data: rows.map(row => {
+      data: rows.map((row: any) => {
         const { total_count, ...observation } = row;
         return observation;
       })
@@ -446,7 +446,7 @@ router.get("/duplicates", async (req, res) => {
       LIMIT $1
     `;
 
-    const { rows } = await query(sql, [limit]);
+    const rows = await db.query(sql, [limit]);
 
     res.json({
       ok: true,
@@ -484,11 +484,11 @@ router.get("/comparison", async (req, res) => {
       ORDER BY source_name, observation_count DESC
     `;
 
-    const { rows } = await query(sql);
+    const rows = await db.query(sql);
 
     // Pivot data for easier consumption
     const bySource: Record<string, any> = {};
-    rows.forEach(row => {
+    rows.forEach((row: any) => {
       if (!bySource[row.source_name]) {
         bySource[row.source_name] = {
           source_name: row.source_name,
@@ -525,11 +525,11 @@ router.get("/comparison", async (req, res) => {
 router.get("/precision-stats", async (req, res) => {
   try {
     const sql = `SELECT * FROM app.get_precision_improvement_stats()`;
-    const { rows } = await query(sql);
+    const rows = await db.query(sql);
 
     res.json({
       ok: true,
-      statistics: rows.map(r => ({
+      statistics: rows.map((r: any) => ({
         metric: r.metric,
         before_melding: Number(r.before_melding),
         after_melding: Number(r.after_melding),
@@ -553,7 +553,7 @@ router.get("/precision-stats", async (req, res) => {
 router.get("/enrichment-stats", async (req, res) => {
   try {
     const sql = `SELECT * FROM app.get_enrichment_stats()`;
-    const { rows } = await query(sql);
+    const rows = await db.query(sql);
 
     if (rows.length === 0) {
       return res.json({
@@ -595,12 +595,12 @@ router.get("/enrichment-analysis", async (req, res) => {
     const limit = Math.min(Number(req.query.limit ?? 100) || 100, 1000);
 
     const sql = `SELECT * FROM app.analyze_cross_source_enrichment($1)`;
-    const { rows } = await query(sql, [limit]);
+    const rows = await db.query(sql, [limit]);
 
     res.json({
       ok: true,
       count: rows.length,
-      enrichments: rows.map(r => ({
+      enrichments: rows.map((r: any) => ({
         bssid: r.bssid,
         time_ms: r.time_ms,
         latitude: Number(r.latitude),

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { query } from "../db";
+import { db } from "../db/connection";
 
 const router = Router();
 
@@ -51,7 +51,7 @@ router.get("/", async (req, res) => {
   `;
 
   try {
-    const { rows } = await query(sql, [lat, lon, radius, limit]);
+    const rows = await db.query(sql, [lat, lon, radius, limit]);
     res.json({ ok: true, count: rows.length, rows });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message ?? String(err) });

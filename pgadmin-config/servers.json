@@ -1,0 +1,15 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "ShadowCheck Production",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "shadowcheck",
+      "Username": "shadowcheck_user",
+      "SSLMode": "prefer",
+      "PassFile": "/pgadmin4/pgpassfile",
+      "Comment": "ShadowCheck PostgreSQL 18 Production Database"
+    }
+  }
+}

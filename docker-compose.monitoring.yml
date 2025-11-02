@@ -210,6 +210,7 @@ services:
 
 networks:
   shadowcheck_internal_prod:
+    name: shadowcheck_shadowcheck_internal_prod
     external: true
 
 volumes:

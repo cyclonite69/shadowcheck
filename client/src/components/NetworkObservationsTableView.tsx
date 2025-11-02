@@ -238,6 +238,7 @@ export function NetworkObservationsTableView({ queryResult, columnConfig }: Netw
 
   const [sortConfig, setSortConfig] = useState<SortConfig[]>([]);
   const [selectedNetworks, setSelectedNetworks] = useState<Set<string>>(new Set());
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkObservation | null>(null);
   const [showMap, setShowMap] = useState(false);
 
   // Toggle network selection

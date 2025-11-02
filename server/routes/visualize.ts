@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { query } from "../db";
+import { db } from "../db/connection";
 
 const router = Router();
 
@@ -27,13 +27,13 @@ router.get("/", async (req, res) => {
       ORDER BY l.time DESC
       LIMIT $1
     `;
-    const { rows } = await query(sql, [limit]);
+    const rows = await db.query(sql, [limit]);
 
     res.json({
       ok: true,
       data: {
         type: "FeatureCollection",
-        features: rows.map(r => ({
+        features: rows.map((r: any) => ({
           type: "Feature",
           geometry: { type: "Point", coordinates: [Number(r.lon), Number(r.lat)] },
           properties: {

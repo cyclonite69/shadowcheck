@@ -12,3 +12,13 @@
 .signal-strong{color:#34d399}
 .signal-medium{color:#f59e0b}
 .signal-weak{color:#ef4444}
+
+/* Minimal Tooltip - Compact hover-only design */
+.minimal-tooltip{background:rgba(15,15,15,0.98);color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:6px 9px;max-width:200px;box-shadow:0 4px 16px rgba(0,0,0,.6);backdrop-filter:blur(8px)}
+.minimal-tooltip-header{display:flex;align-items:center;margin-bottom:4px;font-size:12px;font-weight:600;color:#f1f5f9}
+.minimal-tooltip-ssid{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.minimal-tooltip-body{font-size:10.5px}
+.minimal-tooltip-row{display:flex;justify-content:space-between;gap:8px;margin-bottom:2px}
+.minimal-tooltip-label{color:#94a3b8;min-width:50px;font-weight:500}
+.minimal-tooltip-value{color:#e2e8f0;font-family:'SF Mono','Consolas',monospace;text-align:right}
+.minimal-tooltip-seen{margin-top:4px;padding-top:3px;border-top:1px solid rgba(255,255,255,.08);font-size:9.5px;color:#cbd5e1;text-align:center}

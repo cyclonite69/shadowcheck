@@ -1,6 +1,6 @@
 // server/routes/networks.ts
 import { Router } from "express";
-import { query } from "../db";
+import { db } from "../db/connection";
 
 const router = Router();
 
@@ -124,7 +124,7 @@ router.get("/", async (req, res) => {
 
   try {
     const params: any[] = hasBefore ? [before, limit] : [limit];
-    const { rows } = await query(finalSql, params);
+    const rows = await db.query(finalSql, params);
     res.json({
       ok: true,
       count: rows.length,

@@ -16,11 +16,7 @@ export default function Dashboard() {
   const [showDistinctNetworks, setShowDistinctNetworks] = useState<boolean>(true);
   const [showDistinctSecurity, setShowDistinctSecurity] = useState<boolean>(true);
 
-  const { data: networks, isLoading: networksLoading } = useQuery({
-    queryKey: ['/api/v1/networks'],
-    queryFn: () => api.getNetworks({ limit: 10 }),
-    refetchInterval: 30000,
-  });
+  // Removed networks query - recent activity section redacted
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ['/api/v1/analytics'],
@@ -303,118 +299,78 @@ export default function Dashboard() {
 
               return (
               <>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
-                  {/* Pie Chart */}
-                  <div className="flex justify-center">
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={[
-                            {
-                              name: SecurityType.ENTERPRISE,
-                              value: typeCategories[SecurityType.ENTERPRISE] || 0,
-                              color: '#10b981'
-                            },
-                            {
-                              name: SecurityType.PERSONAL_WPA3,
-                              value: typeCategories[SecurityType.PERSONAL_WPA3] || 0,
-                              color: '#3b82f6'
-                            },
-                            {
-                              name: SecurityType.PERSONAL_WPA2,
-                              value: typeCategories[SecurityType.PERSONAL_WPA2] || 0,
-                              color: '#f59e0b'
-                            },
-                            {
-                              name: SecurityType.LEGACY,
-                              value: typeCategories[SecurityType.LEGACY] || 0,
-                              color: '#f97316'
-                            },
-                            {
-                              name: SecurityType.OPEN,
-                              value: typeCategories[SecurityType.OPEN] || 0,
-                              color: '#ef4444'
-                            }
-                          ].filter(item => item.value > 0)}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={120}
-                          paddingAngle={2}
-                          dataKey="value"
-                        >
-                          {[
-                            { color: '#10b981' },
-                            { color: '#3b82f6' },
-                            { color: '#f59e0b' },
-                            { color: '#f97316' },
-                            { color: '#ef4444' }
-                          ].map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: '#1e293b',
-                            border: '1px solid #475569',
-                            borderRadius: '8px',
-                            color: '#e2e8f0'
-                          }}
-                        />
-                        <Legend wrapperStyle={{ color: '#e2e8f0' }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* Security Type Stats */}
-                  <div className="space-y-3">
-                    <div className="text-center p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/20">
-                      <p className="text-5xl font-bold text-blue-300 mb-2 font-mono">
-                        {total.toLocaleString()}
-                      </p>
-                      <p className="text-sm text-slate-300 mb-1">
-                        {showDistinctSecurity ? 'Distinct Networks' : 'Total Observations'}
-                      </p>
-                      <p className="text-xs text-slate-400">WiFi access points detected</p>
-                    </div>
-                  </div>
+                {/* Security Type Distribution - Centered Pie Chart */}
+                <div className="flex justify-center">
+                  <ResponsiveContainer width="100%" height={400}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          {
+                            name: SecurityType.ENTERPRISE,
+                            value: typeCategories[SecurityType.ENTERPRISE] || 0,
+                            color: '#10b981'
+                          },
+                          {
+                            name: SecurityType.PERSONAL_WPA3,
+                            value: typeCategories[SecurityType.PERSONAL_WPA3] || 0,
+                            color: '#3b82f6'
+                          },
+                          {
+                            name: SecurityType.PERSONAL_WPA2,
+                            value: typeCategories[SecurityType.PERSONAL_WPA2] || 0,
+                            color: '#f59e0b'
+                          },
+                          {
+                            name: SecurityType.LEGACY,
+                            value: typeCategories[SecurityType.LEGACY] || 0,
+                            color: '#f97316'
+                          },
+                          {
+                            name: SecurityType.OPEN,
+                            value: typeCategories[SecurityType.OPEN] || 0,
+                            color: '#ef4444'
+                          }
+                        ].filter(item => item.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={80}
+                        outerRadius={140}
+                        paddingAngle={2}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                      >
+                        {[
+                          { color: '#10b981' },
+                          { color: '#3b82f6' },
+                          { color: '#f59e0b' },
+                          { color: '#f97316' },
+                          { color: '#ef4444' }
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#1e293b',
+                          border: '1px solid #475569',
+                          borderRadius: '8px',
+                          color: '#e2e8f0'
+                        }}
+                      />
+                      <Legend wrapperStyle={{ color: '#e2e8f0' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
 
-                {/* Security Type Breakdown */}
-                <div className="space-y-3">
-                  {Object.entries(typeCategories).map(([type, count]) => {
-                    const percentage = ((count as number / total) * 100).toFixed(1);
-                    const style = getSecurityTypeStyle(type as SecurityType);
-
-                    if ((count as number) === 0) return null;
-
-                    return (
-                      <div
-                        key={type}
-                        className={`flex items-center justify-between p-4 rounded-lg border ${style.border} ${style.bg}`}
-                      >
-                        <div className="flex items-center gap-3 flex-1">
-                          <Badge className={`${style.bg} ${style.text} ${style.border} border text-xs px-2`}>
-                            {type}
-                          </Badge>
-                          <div className="flex-1">
-                            <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-                              <div
-                                className="h-2 transition-all"
-                                style={{ width: `${percentage}%`, backgroundColor: style.color }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right ml-4">
-                          <p className={`text-lg font-bold ${style.text} font-mono`}>
-                            {(count as number).toLocaleString()}
-                          </p>
-                          <p className="text-xs text-slate-400">{percentage}%</p>
-                        </div>
-                      </div>
-                    );
-                  })}
+                {/* Total Networks Summary */}
+                <div className="mt-6 text-center p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/20">
+                  <p className="text-5xl font-bold text-blue-300 mb-2 font-mono">
+                    {total.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-slate-300 mb-1">
+                    {showDistinctSecurity ? 'Distinct WiFi Networks' : 'Total WiFi Observations'}
+                  </p>
+                  <p className="text-xs text-slate-400">Analyzed for security posture</p>
                 </div>
               </>
               );
@@ -746,61 +702,7 @@ export default function Dashboard() {
             </Link>
           </div>
 
-          {/* Recent Network Activity */}
-          <div className="premium-card">
-          <CardHeader>
-            <CardTitle className="text-slate-300 flex items-center gap-2">
-              <Activity className={`h-5 w-5 ${iconColors.success.text}`} />
-              Recent SIGINT Activity
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              Latest wireless network observations from forensics database
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {networksLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : networks?.data && networks.data.length > 0 ? (
-              <div className="space-y-3" data-testid="recent-activity">
-                {networks.data.slice(0, 5).map((network) => (
-                  <div
-                    key={network.bssid}
-                    className="flex items-center justify-between p-3 rounded border border-slate-500/20 bg-background/40"
-                    data-testid={`activity-${network.bssid}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                      <div>
-                        <p className="font-mono text-sm text-slate-300" data-testid={`activity-ssid-${network.bssid}`}>
-                          {network.ssid || 'Hidden Network'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {network.bssid} • {network.frequency} MHz
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant="outline" className="text-xs">
-                        {network.signal_strength} dBm
-                      </Badge>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(Number(network.observed_at)).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground" data-testid="no-activity">
-                No recent forensics activity. Database connection may be required.
-              </div>
-            )}
-          </CardContent>
-          </div>
+          {/* Recent SIGINT Activity section removed - redacted for security */}
         </div>
       </main>
     </div>

@@ -2,7 +2,7 @@
 // Advanced comparative analysis endpoints for multi-source data analysis
 
 import { Router } from "express";
-import { query } from "../db.js";
+import { db } from "../db/connection";
 
 const router = Router();
 
@@ -63,16 +63,16 @@ router.get("/observations", async (req, res) => {
           LIMIT $${params.length}
         `;
 
-        const { rows } = await query(sql, params);
+        const rows =await db.query(sql, params);
 
         // Calculate source-specific metrics
         const metrics = {
           total_observations: rows.length,
-          unique_networks: new Set(rows.map(r => r.bssid)).size,
+          unique_networks: new Set(rows.map((r: any) => r.bssid)).size,
           avg_signal: rows.length > 0
-            ? rows.reduce((sum, r) => sum + (r.signal_strength || 0), 0) / rows.length
+            ? rows.reduce((sum: any, r: any) => sum + (r.signal_strength || 0), 0) / rows.length
             : null,
-          radio_types: rows.reduce((acc: Record<string, number>, r) => {
+          radio_types: rows.reduce((acc: Record<string, number>, r: any) => {
             if (r.radio_type) {
               acc[r.radio_type] = (acc[r.radio_type] || 0) + 1;
             }
@@ -162,17 +162,17 @@ router.get("/overlap", async (req, res) => {
       LIMIT $2
     `;
 
-    const { rows } = await query(sql, [sources, limit]);
+    const rows =await db.query(sql, [sources, limit]);
 
     // Calculate overlap statistics
     const stats = {
       total_overlapping: rows.length,
-      by_source_count: rows.reduce((acc: Record<number, number>, r) => {
+      by_source_count: rows.reduce((acc: Record<number, number>, r: any) => {
         const count = Number(r.source_count);
         acc[count] = (acc[count] || 0) + 1;
         return acc;
       }, {}),
-      quality_improvement: rows.filter(r =>
+      quality_improvement: rows.filter((r: any) =>
         r.max_signal && r.min_signal && (r.max_signal - r.min_signal) > 10
       ).length
     };
@@ -182,7 +182,7 @@ router.get("/overlap", async (req, res) => {
       selected_sources: sources,
       count: rows.length,
       statistics: stats,
-      overlaps: rows.map(row => ({
+      overlaps: rows.map((row: any) => ({
         bssid: row.bssid,
         time_ms: row.time_ms,
         latitude: row.lat_rounded,
@@ -263,12 +263,12 @@ router.get("/unique", async (req, res) => {
           LIMIT $3
         `;
 
-        const { rows } = await query(sql, [sourceName, otherSources, limit]);
+        const rows =await db.query(sql, [sourceName, otherSources, limit]);
 
         return {
           source_name: sourceName,
           unique_count: rows.length > 0 ? Number(rows[0].total_unique) : 0,
-          sample: rows.slice(0, 10).map(r => {
+          sample: rows.slice(0, 10).map((r: any) => {
             const { total_unique, ...observation } = r;
             return observation;
           })
@@ -280,7 +280,7 @@ router.get("/unique", async (req, res) => {
       ok: true,
       selected_sources: sources,
       results: uniqueResults,
-      total_unique: uniqueResults.reduce((sum, r) => sum + r.unique_count, 0)
+      total_unique: uniqueResults.reduce((sum: any, r) => sum + r.unique_count, 0)
     });
   } catch (err: any) {
     console.error("[/comparison/unique] error:", err);
@@ -367,15 +367,15 @@ router.post("/merge", async (req, res) => {
       `;
     }
 
-    const { rows } = await query(sql, params);
+    const rows =await db.query(sql, params);
 
     // Calculate merge statistics
     const stats = {
       mode,
       sources_used: sources,
       result_count: rows.length,
-      unique_networks: new Set(rows.map(r => r.bssid)).size,
-      radio_type_breakdown: rows.reduce((acc: Record<string, number>, r) => {
+      unique_networks: new Set(rows.map((r: any) => r.bssid)).size,
+      radio_type_breakdown: rows.reduce((acc: Record<string, number>, r: any) => {
         if (r.radio_type) {
           acc[r.radio_type] = (acc[r.radio_type] || 0) + 1;
         }
@@ -461,7 +461,7 @@ router.get("/quality-matrix", async (req, res) => {
           GROUP BY source_name
         `;
 
-        const { rows } = await query(sql, [sourceName]);
+        const rows =await db.query(sql, [sourceName]);
 
         if (rows.length === 0) {
           return {
