@@ -72,7 +72,7 @@ def parse_kismet_database(db_path, include_packets=False):
                 device = {
                     'devkey': row['devkey'],
                     'phyname': row['phyname'],
-                    'devmac': row['devmac'],
+                    'devmac': row['devmac'].upper() if row['devmac'] else None,
                     'strongest_signal': row['strongest_signal'],
                     'min_lat': row['min_lat'] if row['min_lat'] else None,
                     'min_lon': row['min_lon'] if row['min_lon'] else None,
@@ -137,9 +137,9 @@ def parse_kismet_database(db_path, include_packets=False):
                     'ts_sec': row['ts_sec'],
                     'ts_usec': row['ts_usec'],
                     'phyname': row['phyname'],
-                    'sourcemac': row['sourcemac'],
-                    'destmac': row['destmac'],
-                    'transmac': row['transmac'],
+                    'sourcemac': row['sourcemac'].upper() if row['sourcemac'] else None,
+                    'destmac': row['destmac'].upper() if row['destmac'] else None,
+                    'transmac': row['transmac'].upper() if row['transmac'] else None,
                     'frequency': row['frequency'],
                     'devkey': row['devkey'],
                     'lat': row['lat'] if row['lat'] else None,
@@ -187,7 +187,7 @@ def parse_kismet_database(db_path, include_packets=False):
                     'ts_sec': row['ts_sec'],
                     'ts_usec': row['ts_usec'],
                     'phyname': row['phyname'],
-                    'devmac': row['devmac'],
+                    'devmac': row['devmac'].upper() if row['devmac'] else None,
                     'lat': row['lat'] if row['lat'] else None,
                     'lon': row['lon'] if row['lon'] else None,
                     'header': row['header'],
@@ -423,11 +423,12 @@ def load_to_database(filename, data, db_config):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: kismet_parser.py <kismet_database.kismet> [--include-packets]")
+        print("Usage: kismet_parser.py <kismet_database.kismet> [--skip-packets]")
         sys.exit(1)
 
     kismet_file = sys.argv[1]
-    include_packets = '--include-packets' in sys.argv
+    # Changed default: packets ENABLED unless --skip-packets flag is used
+    include_packets = '--skip-packets' not in sys.argv
 
     if not os.path.exists(kismet_file):
         print(f"Error: File {kismet_file} not found")
