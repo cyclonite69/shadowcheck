@@ -788,17 +788,7 @@ router.post('/wigle-api/detail', async (req, res) => {
     console.log(`[WiGLE API Detail] Calling Alpha v3 importer for ${bssid}...`);
 
     try {
-      // The Python script uses the correct v3 endpoint: /api/v3/detail/wifi/{bssid}
-      const { stdout, stderr } = await execAsync(
-        `python3 "${alphaV3ParserPath}" --process-queue --limit 1`,
-        {
-          env,
-          timeout: 60000, // 1 minute timeout
-          maxBuffer: 10 * 1024 * 1024 // 10MB buffer
-        }
-      );
-
-      // First, tag this BSSID for enrichment
+      // FIRST: Tag this BSSID for enrichment (add to queue)
       await db.query(`
         INSERT INTO app.bssid_enrichment_queue (bssid, priority, status)
         VALUES ($1, 100, 'pending')
@@ -808,13 +798,16 @@ router.post('/wigle-api/detail', async (req, res) => {
           tagged_at = NOW()
       `, [bssid.toUpperCase()]);
 
-      // Now process it
+      console.log(`[WiGLE API Detail] Added ${bssid} to enrichment queue`);
+
+      // SECOND: Process the queue (fetch from WiGLE API v3 and import)
+      // The Python script uses the correct v3 endpoint: /api/v3/detail/wifi/{bssid}
       const { stdout: processStdout, stderr: processStderr } = await execAsync(
         `python3 "${alphaV3ParserPath}" --process-queue --limit 1`,
         {
           env,
-          timeout: 60000,
-          maxBuffer: 10 * 1024 * 1024
+          timeout: 120000, // 2 minute timeout for API call + import
+          maxBuffer: 10 * 1024 * 1024 // 10MB buffer
         }
       );
 
