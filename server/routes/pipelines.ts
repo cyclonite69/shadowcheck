@@ -163,9 +163,10 @@ router.post('/kml/import-all', async (_req, res) => {
     for (const filename of kmlFiles) {
       try {
         const kmlPath = path.join(kmlDir, filename);
+        console.log(`[KML Import-All] Processing ${filename}...`);
         const { stdout } = await execAsync(
           `python3 "${parserPath}" "${kmlPath}"`,
-          { env, timeout: 60000 }
+          { env, timeout: 300000 } // 5 minute timeout per file
         );
 
         const lines = stdout.trim().split('\n');
