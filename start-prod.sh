@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # ShadowCheck - Production Startup Script
-# Starts postgres, backend, frontend, and pgadmin containers
+# Uses Docker Compose native health checks for reliability
 #
 
 set -euo pipefail
@@ -15,99 +15,14 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-# Timeouts (seconds)
-POSTGRES_TIMEOUT=60
-BACKEND_TIMEOUT=30
-FRONTEND_TIMEOUT=30
-PGADMIN_TIMEOUT=20
-
 # Configuration
 COMPOSE_FILE="docker-compose.prod.yml"
-DB_USER="${DB_USER:-shadowcheck_user}"
 FRONTEND_PORT="${FRONTEND_PORT:-5173}"
 
-log_info() {
-  echo -e "${BLUE}ℹ${NC} $*"
-}
-
-log_success() {
-  echo -e "${GREEN}✓${NC} $*"
-}
-
-log_error() {
-  echo -e "${RED}✗${NC} $*"
-}
-
-log_warning() {
-  echo -e "${YELLOW}⚠${NC} $*"
-}
-
-wait_for_http() {
-  local url="$1"
-  local service="$2"
-  local timeout="$3"
-  local elapsed=0
-
-  log_info "Waiting for ${service} at ${url} (timeout: ${timeout}s)..."
-
-  while [[ ${elapsed} -lt ${timeout} ]]; do
-    if curl -sf "${url}" >/dev/null 2>&1; then
-      log_success "${service} is ready (${elapsed}s)"
-      return 0
-    fi
-
-    echo -ne "${YELLOW}⏳${NC} ${service}... ${elapsed}/${timeout}s\r"
-    sleep 2
-    elapsed=$((elapsed + 2))
-  done
-
-  log_error "${service} failed to become ready after ${timeout}s"
-  return 1
-}
-
-wait_for_postgres() {
-  local timeout="${POSTGRES_TIMEOUT}"
-  local elapsed=0
-
-  log_info "Waiting for PostgreSQL (timeout: ${timeout}s)..."
-
-  while [[ ${elapsed} -lt ${timeout} ]]; do
-    if docker exec shadowcheck_postgres_18 pg_isready -U "${DB_USER}" -d shadowcheck >/dev/null 2>&1; then
-      log_success "PostgreSQL is ready (${elapsed}s)"
-      return 0
-    fi
-
-    echo -ne "${YELLOW}⏳${NC} PostgreSQL... ${elapsed}/${timeout}s\r"
-    sleep 2
-    elapsed=$((elapsed + 2))
-  done
-
-  log_error "PostgreSQL failed to become ready after ${timeout}s"
-  return 1
-}
-
-wait_for_container() {
-  local container="$1"
-  local service="$2"
-  local timeout="${3:-30}"
-  local elapsed=0
-
-  log_info "Waiting for ${service} container..."
-
-  while [[ ${elapsed} -lt ${timeout} ]]; do
-    if docker ps --filter "name=${container}" --filter "status=running" | grep -q "${container}"; then
-      log_success "${service} container is running (${elapsed}s)"
-      return 0
-    fi
-
-    echo -ne "${YELLOW}⏳${NC} ${service}... ${elapsed}/${timeout}s\r"
-    sleep 2
-    elapsed=$((elapsed + 2))
-  done
-
-  log_error "${service} container failed to start after ${timeout}s"
-  return 1
-}
+log_info() { echo -e "${BLUE}ℹ${NC} $*"; }
+log_success() { echo -e "${GREEN}✓${NC} $*"; }
+log_error() { echo -e "${RED}✗${NC} $*"; }
+log_warning() { echo -e "${YELLOW}⚠${NC} $*"; }
 
 echo ""
 echo -e "${CYAN}${BOLD}╔════════════════════════════════════════════════════════════════╗${NC}"
@@ -119,69 +34,80 @@ echo ""
 
 START_TIME=$(date +%s)
 
-# Step 1: Start PostgreSQL
-log_info "Step 1: Starting PostgreSQL..."
+# Start all services - Docker Compose handles dependencies via depends_on
+log_info "Starting all services..."
+echo ""
+docker-compose -f "${COMPOSE_FILE}" up -d
+
+# Wait for services using Docker's native health status
+log_info "Waiting for services to become healthy..."
 echo ""
 
-if ! docker-compose -f "${COMPOSE_FILE}" up -d postgres; then
-    log_error "Failed to start PostgreSQL"
-    exit 1
-fi
+# Function to wait for Docker health check to pass
+wait_for_healthy() {
+  local service="$1"
+  local timeout="${2:-60}"
+  local elapsed=0
 
-wait_for_postgres || exit 1
+  while [[ ${elapsed} -lt ${timeout} ]]; do
+    local health_status=$(docker-compose -f "${COMPOSE_FILE}" ps -q "${service}" | xargs docker inspect --format='{{.State.Health.Status}}' 2>/dev/null || echo "none")
+
+    # If service has no health check, verify it's running
+    if [[ "${health_status}" == "none" ]]; then
+      local running_status=$(docker-compose -f "${COMPOSE_FILE}" ps -q "${service}" | xargs docker inspect --format='{{.State.Status}}' 2>/dev/null || echo "")
+      if [[ "${running_status}" == "running" ]]; then
+        log_success "${service} is running (no health check defined)"
+        return 0
+      fi
+    elif [[ "${health_status}" == "healthy" ]]; then
+      log_success "${service} is healthy (${elapsed}s)"
+      return 0
+    fi
+
+    echo -ne "${YELLOW}⏳${NC} ${service}... ${elapsed}/${timeout}s (status: ${health_status})\r"
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+
+  log_error "${service} failed to become healthy after ${timeout}s"
+  return 1
+}
+
+# Wait for each service in dependency order
+log_info "Step 1: Waiting for PostgreSQL..."
+wait_for_healthy "postgres" 60 || exit 1
 echo ""
 
-# Step 2: Start Backend and pgAdmin
-log_info "Step 2: Starting backend and pgAdmin..."
+log_info "Step 2: Waiting for Backend API..."
+wait_for_healthy "backend" 60 || exit 1
 echo ""
 
-if ! docker-compose -f "${COMPOSE_FILE}" up -d backend pgadmin; then
-    log_error "Failed to start backend/pgAdmin"
-    exit 1
-fi
-
-# Wait for Backend
-wait_for_http "http://localhost:5000/api/v1/health" "Backend API" "${BACKEND_TIMEOUT}" || exit 1
+log_info "Step 3: Waiting for pgAdmin..."
+wait_for_healthy "pgadmin" 30 || log_warning "pgAdmin may still be starting (no health check)"
 echo ""
 
-# Wait for pgAdmin container
-wait_for_container "shadowcheck_pgadmin" "pgAdmin" "${PGADMIN_TIMEOUT}" || log_warning "pgAdmin health check failed"
+log_info "Step 4: Waiting for Frontend..."
+wait_for_healthy "frontend" 30 || log_warning "Frontend may still be starting"
 echo ""
 
-# Step 3: Start Frontend
-log_info "Step 3: Starting frontend..."
-echo ""
-
-if ! docker-compose -f "${COMPOSE_FILE}" up -d frontend; then
-    log_error "Failed to start frontend"
-    exit 1
-fi
-
-wait_for_http "http://localhost:${FRONTEND_PORT}" "Frontend" "${FRONTEND_TIMEOUT}" || log_warning "Frontend health check failed"
-echo ""
-
-# Calculate total time
 END_TIME=$(date +%s)
 TOTAL_TIME=$((END_TIME - START_TIME))
-
 log_success "All services started in ${TOTAL_TIME}s"
 echo ""
 
-# Show final status
 log_info "Service Status:"
 echo ""
-docker-compose -f "${COMPOSE_FILE}" ps postgres backend frontend pgadmin
-
+docker-compose -f "${COMPOSE_FILE}" ps
 echo ""
 echo -e "${BOLD}${GREEN}Available Services:${NC}"
 echo -e "  ${GREEN}●${NC} PostgreSQL Database  → localhost:5432"
-echo -e "  ${GREEN}●${NC} Backend API          → ${CYAN}http://localhost:5000${NC}"
-echo -e "  ${GREEN}●${NC} Backend Health       → ${CYAN}http://localhost:5000/api/v1/health${NC}"
+echo -e "  ${GREEN}●${NC} Backend API          → ${CYAN}http://127.0.0.1:5000${NC}"
+echo -e "  ${GREEN}●${NC} Backend Health       → ${CYAN}http://127.0.0.1:5000/api/v1/health${NC}"
 echo -e "  ${GREEN}●${NC} Frontend Dashboard   → ${CYAN}http://localhost:${FRONTEND_PORT}${NC}"
 echo -e "  ${GREEN}●${NC} pgAdmin              → ${CYAN}http://localhost:8080${NC}"
 echo ""
-echo -e "${BOLD}Control:${NC}"
-echo -e "  → Stop all:    ${CYAN}./stop-prod.sh${NC}"
-echo -e "  → Restart all: ${CYAN}./restart-prod.sh${NC}"
-echo -e "  → View logs:   ${CYAN}docker-compose -f ${COMPOSE_FILE} logs -f [service]${NC}"
+echo -e "${BOLD}Management:${NC}"
+echo -e "  → View logs:    ${CYAN}docker-compose -f ${COMPOSE_FILE} logs -f [service]${NC}"
+echo -e "  → Stop:         ${CYAN}./stop-prod.sh${NC}"
+echo -e "  → Restart:      ${CYAN}./restart-prod.sh${NC}"
 echo ""
