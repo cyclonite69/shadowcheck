@@ -368,7 +368,7 @@ router.post('/wigle/import', async (req, res) => {
     }
 
     // Run the Python parser
-    const parserPath = path.join(process.cwd(), 'server', 'pipelines', 'parsers', 'wigle_sqlite_parser.py');
+    const parserPath = path.join(process.cwd(), 'pipelines', 'wigle', 'wigle_sqlite_parser.py');
     const dbPassword = process.env.DATABASE_URL?.match(/password=([^&\s]+)/)?.[1] ||
                        'DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8=';
 
