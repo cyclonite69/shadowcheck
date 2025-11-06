@@ -6,24 +6,7 @@
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query';
-
-export interface NetworkObservation {
-  id: string;
-  bssid: string;
-  ssid: string | null;
-  type: string; // W, B, E, L, G
-  frequency: number | null;
-  channel: number | null;
-  encryption: string | null;
-  latitude: string | undefined;
-  longitude: string | undefined;
-  altitude: number | null;
-  accuracy: number | null;
-  observed_at: string;
-  signal_strength: number | null;
-  observation_count: number;
-  manufacturer: string | null;
-}
+import { type NetworkObservation } from '@/types';
 
 export interface NetworkFilters {
   search?: string;
@@ -38,6 +21,8 @@ export interface NetworkFilters {
   radiusLat?: number;
   radiusLng?: number;
   radiusMeters?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
 }
 
 interface NetworksResponse {
@@ -125,6 +110,13 @@ async function fetchNetworkObservations({
     params.append('radius_meters', filters.radiusMeters.toString());
   }
 
+  if (filters.sortBy) {
+    params.append('sort_by', filters.sortBy);
+  }
+  if (filters.sortDir) {
+    params.append('sort_dir', filters.sortDir);
+  }
+
   const response = await fetch(`/api/v1/networks?${params.toString()}`);
 
   if (!response.ok) {
@@ -143,7 +135,7 @@ export function useInfiniteNetworkObservations({
   enabled = true,
 }: UseInfiniteNetworkObservationsOptions = {}) {
   return useInfiniteQuery({
-    queryKey: ['network-observations', filters, pageSize],
+    queryKey: ['network-observations', filters, pageSize, filters.sortBy, filters.sortDir],
     queryFn: ({ pageParam = 0 }) =>
       fetchNetworkObservations({ pageParam, filters, pageSize }),
     getNextPageParam: (lastPage, allPages) => {
@@ -165,18 +157,4 @@ export function useInfiniteNetworkObservations({
   });
 }
 
-/**
- * Helper to flatten all pages into a single array
- */
-export function flattenNetworkObservations(pages: NetworksResponse[] | undefined): NetworkObservation[] {
-  if (!pages) return [];
-  return pages.flatMap((page) => page.data);
-}
-
-/**
- * Helper to get total count from response
- */
-export function getTotalNetworkCount(pages: NetworksResponse[] | undefined): number {
-  if (!pages || pages.length === 0) return 0;
-  return pages[0].total_count;
-}
+export { flattenNetworkObservations, getTotalNetworkCount } from '../types';

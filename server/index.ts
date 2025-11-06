@@ -142,6 +142,16 @@ app.get("/api/v1/networks", async (req, res) => {
 
       params.push(limit, offset);
 
+      // Parse sorting parameters
+      let sortBy = req.query.sort_by as string || 'observed_at';
+      const sortDir = (req.query.sort_dir as string || 'desc').toUpperCase();
+
+      // Define allowed sortable columns
+      const allowedSorts = ['observed_at', 'ssid', 'bssid', 'frequency', 'signal_strength', 'observation_count', 'manufacturer'];
+      if (!allowedSorts.includes(sortBy)) {
+        sortBy = 'observed_at'; // Default to observed_at if sortBy is invalid
+      }
+
       const sql = `
         WITH latest_networks AS (
           SELECT DISTINCT ON (bssid)
@@ -183,7 +193,7 @@ app.get("/api/v1/networks", async (req, res) => {
         LEFT JOIN latest_observations lo ON g.bssid = lo.bssid
         LEFT JOIN app.radio_manufacturers m ON UPPER(REPLACE(SUBSTRING(g.bssid, 1, 8), ':', '')) = m.oui_prefix_24bit
         ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
-        ORDER BY lo.time DESC NULLS LAST
+        ORDER BY ${sortBy === 'manufacturer' ? 'COALESCE(m.organization_name, \'Unknown\')' : sortBy} ${sortDir === 'ASC' ? 'ASC' : 'DESC'} NULLS ${sortDir === 'ASC' ? 'LAST' : 'FIRST'}
         LIMIT $${params.length - 1} OFFSET $${params.length};
       `;
       const result = await dbConnection.query(sql, params);

@@ -8,10 +8,11 @@
  * - Smooth virtual scrolling
  */
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, Filter, Shield, X, Radio, Signal, ChevronDown } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useInfiniteNetworkObservations, type NetworkFilters } from '@/hooks/useInfiniteNetworkObservations';
+import { flattenNetworkObservations } from '@/types';
 import { useNetworkObservationColumns } from '@/hooks/useNetworkObservationColumns';
 import { NetworkObservationsTableView } from '@/components/NetworkObservationsTableView';
 import { ObservationColumnSelector } from '@/components/ObservationColumnSelector';
@@ -31,10 +32,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { type SortingState, type Updater } from '@tanstack/react-table';
 
 export function AccessPointsPage() {
   // Column visibility state
   const columnConfig = useNetworkObservationColumns();
+
+  useEffect(() => {
+    localStorage.setItem('shadowcheck_column_order', JSON.stringify(columnConfig.columnOrder));
+  }, [columnConfig.columnOrder]);
 
   // Filter state
   const [filters, setFilters] = useState<NetworkFilters>({
@@ -42,6 +48,8 @@ export function AccessPointsPage() {
     radioTypes: [],
     minSignal: undefined,
     maxSignal: undefined,
+    sortBy: 'observed_at',
+    sortDir: 'desc',
   });
 
   // Security filter state
@@ -61,29 +69,26 @@ export function AccessPointsPage() {
     enabled: true,
   });
 
-  const { data, isLoading } = queryResult;
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, error } = queryResult;
 
   // Calculate stats
   const totalCount = data?.pages?.[0]?.total_count ?? 0;
   const loadedCount = data?.pages?.reduce((sum, page) => sum + page.count, 0) ?? 0;
 
+  // Flatten all pages
+  const allObservations = useMemo(() => flattenNetworkObservations(data?.pages || []), [data?.pages]);
+
   // Apply client-side security filtering
-  // TODO: Need to add capabilities field to NetworkObservation type
-  const filteredQueryResult = {
-    ...queryResult,
-    data: securityFilters.size > 0 && data ? {
-      ...data,
-      pages: data.pages.map(page => ({
-        ...page,
-        data: page.data.filter((observation: any) => {
-          if (!observation.capabilities) return true; // Show if no capabilities
-          const { parseCapabilities } = require('@/lib/securityDecoder');
-          const analysis = parseCapabilities(observation.capabilities);
-          return securityFilters.has(analysis.strength);
-        })
-      }))
-    } : data
-  };
+  const tableData = useMemo(() => {
+    if (securityFilters.size === 0) return allObservations;
+    return allObservations.filter((observation: any) => {
+      if (!observation.capabilities) return true; // Show if no capabilities
+      // Dynamically import parseCapabilities to avoid circular dependency or unnecessary load
+      const { parseCapabilities } = require('@/lib/securityDecoder');
+      const analysis = parseCapabilities(observation.capabilities);
+      return securityFilters.has(analysis.strength);
+    });
+  }, [allObservations, securityFilters]);
 
   return (
     <div className="flex flex-col h-full bg-slate-900">
@@ -100,7 +105,17 @@ export function AccessPointsPage() {
                 Browse {totalCount.toLocaleString()} network observations from locations_legacy • Multi-column sorting with Shift+Click
               </p>
             </div>
-            <ObservationColumnSelector />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => columnConfig.resetToDefaults()}
+                className="gap-2 bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"
+              >
+                Reset Columns
+              </Button>
+              <ObservationColumnSelector />
+            </div>
           </div>
 
           {/* Search and filters */}
@@ -303,7 +318,23 @@ export function AccessPointsPage() {
 
       {/* Table */}
       <div className="flex-1 overflow-hidden">
-        <NetworkObservationsTableView queryResult={filteredQueryResult as any} columnConfig={columnConfig} />
+        <NetworkObservationsTableView
+          data={tableData}
+          columnConfig={columnConfig}
+          sorting={filters.sortBy ? [{ id: filters.sortBy, desc: filters.sortDir === 'desc' }] : []}
+          onSortingChange={(updater: Updater<SortingState>) => {
+            const currentSortingState = filters.sortBy ? [{ id: filters.sortBy, desc: filters.sortDir === 'desc' }] : [];
+            const newState = typeof updater === 'function' ? updater(currentSortingState) : updater;
+            const primary = newState[0];
+            setFilters(prev => ({ ...prev, sortBy: primary?.id || 'observed_at', sortDir: primary?.desc ? 'desc' : 'asc' }));
+          }}
+          fetchNextPage={fetchNextPage}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          isLoading={isLoading}
+          isError={isError}
+          error={error}
+        />
       </div>
     </div>
   );

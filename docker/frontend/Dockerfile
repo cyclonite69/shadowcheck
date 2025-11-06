@@ -56,7 +56,7 @@ RUN ls -la /build/client/dist
 FROM nginx:stable AS production
 
 # Install runtime dependencies
-RUN apt update && apt install -y wget && \
+RUN apt update --allow-releaseinfo-change && apt install -y wget && \
     rm -rf /var/lib/apt/lists/*
 
 # Remove default nginx config
