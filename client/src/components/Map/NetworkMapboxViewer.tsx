@@ -319,13 +319,9 @@ export function NetworkMapboxViewer({
     });
 
     if (map.current && mapLoaded && networks.length > 0) {
-      // Temporarily bypass addLayersAndData to debug React error #310
-      // const cleanup = addLayersAndData(map.current);
-      // return cleanup;
-    }
-    // Temporarily comment out else if block to debug React error #310
-    /*
-    else if (map.current && mapLoaded && networks.length === 0) {
+      const cleanup = addLayersAndData(map.current);
+      return cleanup;
+    } else if (map.current && mapLoaded && networks.length === 0) {
       // If map is loaded but no networks, ensure layers are removed if they exist
       const currentMap = map.current;
       const layerIds = ['clusters', 'cluster-count', 'hover', 'pts', 'selected-point'];
@@ -338,7 +334,6 @@ export function NetworkMapboxViewer({
         currentMap.removeSource('wifi');
       }
     }
-    */
   }, [map.current, mapLoaded, networks, addLayersAndData]);
 
   // Initialize map

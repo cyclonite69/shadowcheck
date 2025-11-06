@@ -222,6 +222,7 @@ function DraggableColumnHeader({ header }: { header: Header<NetworkObservation, 
   });
 
   const style = {
+    width: header.getSize(),
     transform: transform ? `translate3d(${transform.x}px, 0, 0)` : undefined,
     transition,
   };
@@ -232,6 +233,18 @@ function DraggableColumnHeader({ header }: { header: Header<NetworkObservation, 
       style={style}
       {...attributes}
       {...listeners}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (e.shiftKey) {
+          // Shift+click for multi-column sort
+          alert('Multi-column sort not yet implemented');
+        } else {
+          // Single click to toggle sort
+          const isSorted = header.column.getIsSorted();
+          const newDirection = isSorted === 'asc' ? 'desc' : isSorted === 'desc' ? false : 'asc';
+          header.column.toggleSorting(newDirection);
+        }
+      }}
       className="p-4 text-left text-xs font-semibold text-slate-400 uppercase"
     >
       {header.isPlaceholder
@@ -240,6 +253,13 @@ function DraggableColumnHeader({ header }: { header: Header<NetworkObservation, 
             header.column.columnDef.header,
             header.getContext()
           )}
+      {header.column.getIsSorted() ? (
+        header.column.getIsSorted() === 'desc' ? (
+          <ArrowDown className="w-4 h-4 inline ml-1" />
+        ) : (
+          <ArrowUp className="w-4 h-4 inline ml-1" />
+        )
+      ) : null}
     </th>
   );
 }
@@ -579,8 +599,11 @@ export function NetworkObservationsTableView({
         )}
       </div>
       <DragOverlay>
-        {/* Temporarily removed activeHeader to debug React error #310 */}
-        {null}
+        {activeId && table ? (
+          <div className="bg-slate-800 p-4 rounded-lg shadow-lg">
+            {table.getHeaderGroups().flatMap((g: HeaderGroup<NetworkObservation>) => g.headers).find((h: Header<NetworkObservation, unknown>) => h.id === activeId)?.id}
+          </div>
+        ) : null}
       </DragOverlay>
     </DndContext>
   );
