@@ -312,7 +312,7 @@ export function NetworkFilters({ filters, onChange, resultCount, totalCount }: N
           </div>
         ) : (
           <p className="text-xs text-slate-500 italic">
-            Click "🎯 Radius Search" button, then click map to set center point
+            Click &quot;🎯 Radius Search&quot; button, then click map to set center point
           </p>
         )}
       </div>

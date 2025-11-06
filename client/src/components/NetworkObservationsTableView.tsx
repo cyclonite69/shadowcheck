@@ -8,9 +8,9 @@
  * - Dynamic column visibility
  */
 
-import { useRef, useEffect, useMemo, useState } from 'react';
-import type { Row, Header, Cell, HeaderGroup } from '@tanstack/react-table';
-import type { NetworkObservation } from '@/types';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
+import type { Row, Header, Cell, HeaderGroup, SortingState, Updater } from '@tanstack/react-table';
+import { NetworkObservation } from '@/types';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Loader2, Wifi, Signal, ArrowUpDown, ArrowUp, ArrowDown, Bluetooth, Radio, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -24,15 +24,8 @@ import {
   ColumnVisibility,
   flexRender,
   getCoreRowModel,
-  Header,
-  Row,
-  Cell,
-  HeaderGroup,
   useReactTable,
-  type SortingState,
-  type Updater,
 } from "@tanstack/react-table";
-import type { NetworkObservation } from '@/types';
 import {
   DndContext,
   closestCenter,
@@ -502,11 +495,6 @@ export function NetworkObservationsTableView({
     return <div>Error: {error?.message || 'Unknown error'}</div>;
   }
 
-      const activeHeader = useMemo(() => {
-      if (!activeId) return null;
-      const header = table.getHeaderGroups().flatMap((g: HeaderGroup<NetworkObservation>) => g.headers).find((h: Header<NetworkObservation, unknown>) => h.id === activeId);
-      return header;
-    }, [activeId, table]);
   return (
     <DndContext
       sensors={sensors}
@@ -526,25 +514,26 @@ export function NetworkObservationsTableView({
           <table className="w-full">
             <thead className="sticky top-0 z-10 bg-slate-900 border-b border-slate-700">
               {table.getHeaderGroups().map((headerGroup: HeaderGroup<NetworkObservation>) => (
-                <ResizablePanelGroup direction="horizontal" key={headerGroup.id} className="flex">
+                <tr key={headerGroup.id} className="flex">
                   <SortableContext
                     items={columnConfig.columnOrder}
                     strategy={horizontalListSortingStrategy}
                   >
-                    {headerGroup.headers.map((header: Header<NetworkObservation, unknown>) => {
-                      const { header } = header.getHeaderProps(headerGroup.getHeaderGroupProps() as HeaderGroup<NetworkObservation>) as Header<NetworkObservation, unknown>;
+                    {headerGroup.headers.map((headerItem: Header<NetworkObservation, unknown>) => {
                       return (
-                      <DraggableColumnHeader key={header.id} header={header as Header<NetworkObservation, unknown>} />
-                    )})}
-                </ResizablePanelGroup>
+                        <DraggableColumnHeader key={headerItem.id} header={headerItem} />
+                      );
+                    })}
+                  </SortableContext>
+                </tr>
               ))}
             </thead>
             <tbody style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
               {virtualItems.map((virtualRow) => {
-                const { row } = table.getRowModel().rows[virtualRow.index] as Row<NetworkObservation>;
+                const row = table.getRowModel().rows[virtualRow.index];
                 if (!row) return null;
 
-                prepareRow(row as Row<NetworkObservation>);
+
 
                 return (
                   <tr
@@ -557,20 +546,20 @@ export function NetworkObservationsTableView({
                     }}
                     title="Click to view location on map"
                   >
-                    {row.getVisibleCells().map((cell: Cell<NetworkObservation, unknown>) => {
-                      const { cell } = cell.getCellProps() as Cell<NetworkObservation, unknown>;
+                    {row.getVisibleCells().map((cellItem: Cell<NetworkObservation, unknown>) => {
                       return (
                       <td
-                        key={cell.id}
-                        style={{ width: cell.column.getSize() }}
+                        key={cellItem.id}
+                        style={{ width: cellItem.column.getSize() }}
                         className="p-4"
                       >
                         {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
+                          cellItem.column.columnDef.cell,
+                          cellItem.getContext()
                         )}
                       </td>
                     )})}
+                  </tr>
                 );
               })}
             </tbody>
@@ -590,11 +579,8 @@ export function NetworkObservationsTableView({
         )}
       </div>
       <DragOverlay>
-        {activeHeader ? (
-          <div className="bg-slate-800 p-4 rounded-lg shadow-lg">
-            {flexRender(activeHeader.column.columnDef.header, activeHeader.getContext())}
-          </div>
-        ) : null}
+        {/* Temporarily removed activeHeader to debug React error #310 */}
+        {null}
       </DragOverlay>
     </DndContext>
   );

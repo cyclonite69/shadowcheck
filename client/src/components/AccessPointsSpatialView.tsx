@@ -10,7 +10,7 @@
  * - Expandable rows to show observations
  */
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -37,8 +37,8 @@ export function AccessPointsSpatialView({ defaultFilters = {} }: AccessPointsSpa
     radiusSearch: undefined,
   });
 
-  const [selectedNetworkIds, setSelectedNetworkIds] = useState<Set<number>>(new Set());
-  const [mapCenter, setMapCenter] = useState<[number, number]>([-83.6968461, 43.02342188]); // Default: home
+  const [selectedNetworkIds /*, setSelectedNetworkIds*/] = useState<Set<number>>(new Set());
+  const [mapCenter /*, setMapCenter*/] = useState<[number, number]>([-83.6968461, 43.02342188]); // Default: home
   const [isRadiusMode, setIsRadiusMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -233,11 +233,11 @@ export function AccessPointsSpatialView({ defaultFilters = {} }: AccessPointsSpa
   }, [filters.radiusSearch]);
 
   // Handle row click in table
-  const handleTableRowClick = useCallback((accessPointId: number, location: [number, number] | null) => {
-    if (location && mapRef.current) {
-      mapRef.current.flyTo({ center: location, zoom: 15 });
-    }
-  }, []);
+  // const handleTableRowClick = useCallback((accessPointId: number, location: [number, number] | null) => {
+  //   if (location && mapRef.current) {
+  //     mapRef.current.flyTo({ center: location, zoom: 15 });
+  //   }
+  // }, []);
 
   // Spatial filter controls
   const clearSpatialFilters = () => {

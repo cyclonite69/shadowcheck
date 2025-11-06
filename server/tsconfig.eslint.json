@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "shared/schema.d.ts",
+    "shared/schema.js"
+  ]
+}

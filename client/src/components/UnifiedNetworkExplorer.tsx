@@ -22,7 +22,7 @@ import { flattenNetworkObservations, getTotalNetworkCount } from '@/types';
 import type { UnifiedFilters } from '@/lib/unifiedFilters';
 import { filtersToQueryParams } from '@/lib/unifiedFilters';
 import { getDefaultVisibleColumns } from '@/lib/unifiedColumns';
-import { type SortingState, type Updater } from '@tanstack/react-table';
+import { type Updater } from '@tanstack/react-table';
 
 type ViewMode = 'observations' | 'access-points';
 
