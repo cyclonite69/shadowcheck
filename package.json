@@ -28,14 +28,24 @@
     "server"
   ],
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/helmet": "^0.0.48",
     "@types/nanoid": "^2.1.0",
     "@types/node": "^24.7.2",
     "@types/pg": "^8.15.5",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@typescript-eslint/parser": "^8.46.3",
     "concurrently": "^8.2.2",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.46.3"
   }
 }
