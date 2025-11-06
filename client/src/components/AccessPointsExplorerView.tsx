@@ -35,7 +35,8 @@ import {
   Wifi,
   Signal,
   Check,
-  Eye
+  Eye,
+  Bluetooth
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AccessPoint } from '@/hooks/useInfiniteAccessPoints';
@@ -131,6 +132,7 @@ export function AccessPointsExplorerView() {
   const [selectedNetworkIds, setSelectedNetworkIds] = useState<Set<number>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set()); // MAC addresses
   const [spatialFilterMenuOpen, setSpatialFilterMenuOpen] = useState(false);
+  const [radioTypeFilter, setRadioTypeFilter] = useState<string | null>(null);
 
   // Refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -171,7 +173,10 @@ export function AccessPointsExplorerView() {
 
   // Fetch access points
   const queryResult = useInfiniteAccessPoints({
-    filters,
+    filters: {
+      ...filters,
+      radioTypes: radioTypeFilter ? [radioTypeFilter] : [],
+    },
     columns: [
       'location_geojson',
       'primary_frequency_hz',
@@ -473,6 +478,60 @@ export function AccessPointsExplorerView() {
 
   return (
     <div className="flex flex-col h-full bg-slate-900">
+      {/* Stats Cards Section */}
+      <div className="grid grid-cols-4 gap-4 p-4 flex-shrink-0">
+        {/* WiFi Card */}
+        <div
+          className={cn(
+            "bg-slate-800/50 border rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer transition-colors",
+            radioTypeFilter === "wifi" ? "border-blue-500 bg-blue-900/20" : "border-slate-700 hover:bg-slate-700/50"
+          )}
+          onClick={() => setRadioTypeFilter(radioTypeFilter === "wifi" ? null : "wifi")}
+        >
+          <Wifi className="h-8 w-8 text-blue-400" />
+          <p className="text-lg font-semibold text-slate-200 mt-2">WiFi</p>
+          <p className="text-sm text-slate-400">123,456 Networks</p> {/* Placeholder */}
+        </div>
+
+        {/* Cellular Card */}
+        <div
+          className={cn(
+            "bg-slate-800/50 border rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer transition-colors",
+            radioTypeFilter === "cellular" ? "border-green-500 bg-green-900/20" : "border-slate-700 hover:bg-slate-700/50"
+          )}
+          onClick={() => setRadioTypeFilter(radioTypeFilter === "cellular" ? null : "cellular")}
+        >
+          <Signal className="h-8 w-8 text-green-400" />
+          <p className="text-lg font-semibold text-slate-200 mt-2">Cellular</p>
+          <p className="text-sm text-slate-400">78,901 Networks</p> {/* Placeholder */}
+        </div>
+
+        {/* Bluetooth Card */}
+        <div
+          className={cn(
+            "bg-slate-800/50 border rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer transition-colors",
+            radioTypeFilter === "bluetooth" ? "border-purple-500 bg-purple-900/20" : "border-slate-700 hover:bg-slate-700/50"
+          )}
+          onClick={() => setRadioTypeFilter(radioTypeFilter === "bluetooth" ? null : "bluetooth")}
+        >
+          <Bluetooth className="h-8 w-8 text-purple-400" />
+          <p className="text-lg font-semibold text-slate-200 mt-2">Bluetooth</p>
+          <p className="text-sm text-slate-400">23,456 Devices</p> {/* Placeholder */}
+        </div>
+
+        {/* BLE Card */}
+        <div
+          className={cn(
+            "bg-slate-800/50 border rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer transition-colors",
+            radioTypeFilter === "ble" ? "border-red-500 bg-red-900/20" : "border-slate-700 hover:bg-slate-700/50"
+          )}
+          onClick={() => setRadioTypeFilter(radioTypeFilter === "ble" ? null : "ble")}
+        >
+          <Bluetooth className="h-8 w-8 text-red-400" /> {/* Using Bluetooth icon for BLE */}
+          <p className="text-lg font-semibold text-slate-200 mt-2">BLE</p>
+          <p className="text-sm text-slate-400">9,876 Devices</p> {/* Placeholder */}
+        </div>
+      </div>
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-slate-800/50">
         <div className="flex items-center gap-3">
