@@ -9,7 +9,7 @@
  */
 
 import { useState } from 'react';
-import { Search, Filter, Shield, X, Radio, Signal } from 'lucide-react';
+import { Search, Filter, Shield, X, Radio, Signal, ChevronDown } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useInfiniteNetworkObservations, type NetworkFilters } from '@/hooks/useInfiniteNetworkObservations';
 import { useNetworkObservationColumns } from '@/hooks/useNetworkObservationColumns';
@@ -46,6 +46,7 @@ export function AccessPointsPage() {
 
   // Security filter state
   const [securityFilters, setSecurityFilters] = useState<Set<SecurityStrength>>(new Set());
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // Debounce search to reduce API calls
   const debouncedSearch = useDebounce(filters.search, 300);

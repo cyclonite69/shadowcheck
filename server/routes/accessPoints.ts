@@ -123,7 +123,7 @@ router.get('/', async (req: Request, res: Response) => {
     // Radio type filter
     if (req.query.radio_types) {
       const radioTypes = String(req.query.radio_types).split(',').map((t: string) => t.trim());
-      whereClauses.push(`radio_technology = ANY($${paramIndex}::text[])`);
+      whereClauses.push(`type = ANY($${paramIndex}::text[])`);
       queryParams.push(radioTypes);
       paramIndex++;
     }

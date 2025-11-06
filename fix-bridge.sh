@@ -7,7 +7,7 @@
 
 set -e
 
-BRIDGE_NAME="br-61d45f745fe9"
+BRIDGE_NAME="br-94fc32b671c8"
 BRIDGE_IP="172.29.0.1/16"
 
 echo "🔍 Checking Docker bridge configuration..."

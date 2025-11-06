@@ -78,7 +78,17 @@ async function fetchNetworkObservations({
   }
 
   if (filters.radioTypes && filters.radioTypes.length > 0) {
-    params.append('radio_types', filters.radioTypes.join(','));
+    const codeMap: Record<string, string> = {
+      'WiFi': 'W',
+      'Cellular': 'C',
+      'Bluetooth': 'B',
+      'BLE': 'E'
+    };
+    console.log('[DEBUG] radioTypes input:', filters.radioTypes);
+    console.log('[DEBUG] codeMap:', codeMap);
+    const codes = filters.radioTypes.map(type => codeMap[type] || type).join(',');
+    console.log('[DEBUG] mapped codes:', codes);
+    params.append('radio_types', codes);
   }
 
   if (filters.minSignal !== undefined) {

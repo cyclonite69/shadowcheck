@@ -268,7 +268,7 @@ app.get("/api/v1/networks", async (req, res) => {
     // Search filter (BSSID, SSID, or capabilities)
     if (search) {
       params.push(`%${search}%`);
-      where.push(`(LOWER(n.bssid) LIKE $${params.length} OR LOWER(n.ssid) LIKE $${params.length} OR LOWER(n.capabilities) LIKE $${params.length})`);
+      where.push(`(LOWER(l.bssid) LIKE $${params.length} OR LOWER(n.ssid) LIKE $${params.length})`);
     }
 
     // Radio type filter (using single-letter codes: W, E, B, L, G)

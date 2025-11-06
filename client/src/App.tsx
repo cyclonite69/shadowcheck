@@ -9,7 +9,7 @@ import Dashboard from "@/pages/dashboard";
 import VisualizationPage from "@/pages/visualization";
 import SurveillancePage from "@/pages/surveillance";
 import { AdminPanel } from "@/components/admin-panel";
-import { AccessPointsExplorerView } from "@/components/AccessPointsExplorerView";
+import { AccessPointsPage } from "@/components/AccessPointsPage";
 import { MobileShell } from "@/components/MobileShell";
 import { DesktopShell } from "@/components/DesktopShell";
 import { FloatingActions } from "@/components/FloatingActions";
@@ -38,7 +38,7 @@ function Router() {
               <Switch>
                 <Route path="/dashboard" component={Dashboard} />
                 <Route path="/visualization" component={VisualizationPage} />
-                <Route path="/access-points" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AccessPointsExplorerView /></div>} />
+                <Route path="/access-points" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AccessPointsPage /></div>} />
                 <Route path="/surveillance" component={SurveillancePage} />
                 <Route path="/admin" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AdminPanel /></div>} />
                 <Route component={NotFound} />
@@ -49,7 +49,7 @@ function Router() {
               <Switch>
                 <Route path="/dashboard" component={Dashboard} />
                 <Route path="/visualization" component={VisualizationPage} />
-                <Route path="/access-points" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AccessPointsExplorerView /></div>} />
+                <Route path="/access-points" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AccessPointsPage /></div>} />
                 <Route path="/surveillance" component={SurveillancePage} />
                 <Route path="/admin" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AdminPanel /></div>} />
                 <Route component={NotFound} />
