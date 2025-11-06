@@ -211,7 +211,7 @@ function formatAltitude(value: number | null): string {
  */
 function formatAccuracy(value: number | null): string {
   if (value === null || value === undefined) return '-';
-  return `±${value.toFixed(1)}m`;
+  return `${value.toFixed(1)}m`;
 }
 
 
@@ -235,14 +235,11 @@ function DraggableColumnHeader({ header }: { header: Header<NetworkObservation, 
       {...listeners}
       onClick={(e) => {
         e.stopPropagation();
-        if (e.shiftKey) {
-          // Shift+click for multi-column sort
-          alert('Multi-column sort not yet implemented');
+        const isSorted = header.column.getIsSorted();
+        if (isSorted === 'asc') {
+          header.column.toggleSorting(true);
         } else {
-          // Single click to toggle sort
-          const isSorted = header.column.getIsSorted();
-          const newDirection = isSorted === 'asc' ? 'desc' : isSorted === 'desc' ? false : 'asc';
-          header.column.toggleSorting(newDirection);
+          header.column.toggleSorting(false);
         }
       }}
       className="p-4 text-left text-xs font-semibold text-slate-400 uppercase"
