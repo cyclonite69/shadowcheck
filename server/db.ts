@@ -34,6 +34,22 @@ export const pool = connectionString
       keepAliveInitialDelayMillis: 10000,
     });
 
+export function getPool() {
+  return pool;
+}
+
+export function getConnectionStats() {
+  return {
+    total: pool.totalCount,
+    idle: pool.idleCount,
+    waiting: pool.waitingCount,
+  };
+}
+
+export async function closePool() {
+  await pool.end();
+}
+
 // Retry on transient connection issues (Neon autosuspend/resume, etc.)
 const RETRY_CODES = new Set([
   "57P01",  // admin_shutdown
@@ -65,5 +81,5 @@ export async function query<T extends pg.QueryResultRow = any>(text: string, par
 }
 
 export const db = connectionString
-  ? drizzle(postgres(connectionString, { ssl: sslRequired ? { rejectUnauthorized: false } : undefined }))
+  ? drizzle(postgres(connectionString, { ssl: sslRequired ? { rejectUnauthorized: false } : undefined }), { logger: true })
   : null;

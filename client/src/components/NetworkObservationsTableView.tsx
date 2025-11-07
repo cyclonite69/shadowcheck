@@ -221,42 +221,75 @@ function DraggableColumnHeader({ header }: { header: Header<NetworkObservation, 
     id: header.id,
   });
 
-  const style = {
-    width: header.getSize(),
-    transform: transform ? `translate3d(${transform.x}px, 0, 0)` : undefined,
-    transition,
+  // Separate drag handle from clickable area
+  const handleClick = (e: React.MouseEvent) => {
+    console.log('[CLICK] Header clicked:', header.id, 'at', new Date().getTime());
+    e.stopPropagation();
+    
+    const isSorted = header.column.getIsSorted();
+    if (isSorted === 'asc') {
+      header.column.toggleSorting(true);
+    } else {
+      header.column.toggleSorting(false);
+    }
   };
+
+  // Shift+click for multi-sort
+  const handleShiftClick = (e: React.MouseEvent) => {
+    if (e.shiftKey) {
+      e.stopPropagation();
+      header.column.toggleSorting(undefined, true); // true = add to existing sort
+    }
+  };
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    transition,
+  } : undefined;
 
   return (
     <th
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
-      onClick={(e) => {
-        e.stopPropagation();
-        const isSorted = header.column.getIsSorted();
-        if (isSorted === 'asc') {
-          header.column.toggleSorting(true);
-        } else {
-          header.column.toggleSorting(false);
-        }
-      }}
-      className="p-4 text-left text-xs font-semibold text-slate-400 uppercase"
+      className="p-4 text-left text-xs font-semibold text-slate-400 uppercase relative group cursor-move"
     >
-      {header.isPlaceholder
-        ? null
-        : flexRender(
-            header.column.columnDef.header,
-            header.getContext()
-          )}
-      {header.column.getIsSorted() ? (
-        header.column.getIsSorted() === 'desc' ? (
-          <ArrowDown className="w-4 h-4 inline ml-1" />
-        ) : (
-          <ArrowUp className="w-4 h-4 inline ml-1" />
-        )
-      ) : null}
+      {/* Drag handle zone (left side) - use drag listeners here */}
+      <div
+        {...listeners}
+        className="absolute left-0 top-0 bottom-0 w-2 hover:bg-blue-500/20"
+        title="Drag to reorder"
+      />
+
+      {/* Clickable header content - NO listeners here */}
+      <button
+        onClick={(e) => {
+          handleClick(e);
+          handleShiftClick(e);
+        }}
+        className="w-full text-left hover:text-slate-200 transition-colors flex items-center gap-2"
+        title="Click to sort • Shift+Click for multi-sort"
+      >
+        <span className="flex-1">
+          {header.isPlaceholder
+            ? null
+            : flexRender(
+                header.column.columnDef.header,
+                header.getContext()
+              )}
+        </span>
+
+        {/* Sort indicator */}
+        <div className="flex-shrink-0">
+          {header.column.getIsSorted() ? (
+            header.column.getIsSorted() === 'desc' ? (
+              <ArrowDown className="w-4 h-4" />
+            ) : (
+              <ArrowUp className="w-4 h-4" />
+            )
+          ) : null}
+        </div>
+      </button>
     </th>
   );
 }
@@ -461,8 +494,8 @@ export function NetworkObservationsTableView({
     onColumnVisibilityChange: columnConfig.setColumnVisibility,
     onColumnOrderChange: columnConfig.setColumnOrder,
     getCoreRowModel: getCoreRowModel(),
+    // getSortedRowModel: getSortedRowModel(), // Add this if you want client-side sorting too
     manualPagination: true,
-    manualSorting: true,
   });
 
   const sensors = useSensors(

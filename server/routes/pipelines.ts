@@ -3,7 +3,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
-import { db } from '../db/connection';
+import { db } from '../db/connection.js';
 
 const execAsync = promisify(exec);
 const router = Router();
@@ -14,6 +14,14 @@ const router = Router();
  */
 router.get('/kml/files', async (_req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const kmlDir = path.join(process.cwd(), 'pipelines', 'kml');
     const files = await fs.readdir(kmlDir);
     const kmlFiles = files
@@ -211,6 +219,14 @@ router.post('/kml/import-all', async (_req, res) => {
  */
 router.get('/kml/stats', async (_req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const stats = await db.query(`
       SELECT
         (SELECT COUNT(*) FROM app.kml_networks_staging) as networks_count,
@@ -236,6 +252,14 @@ router.get('/kml/stats', async (_req, res) => {
  */
 router.delete('/kml/clear', async (_req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     await db.query('DELETE FROM app.kml_locations_staging');
     await db.query('DELETE FROM app.kml_networks_staging');
 
@@ -255,6 +279,14 @@ router.delete('/kml/clear', async (_req, res) => {
  */
 router.post('/kml/merge', async (_req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     // Merge networks
     const networksResult = await db.query(`
       INSERT INTO app.networks_legacy (bssid, ssid, frequency, capabilities, type, lasttime)
@@ -429,6 +461,14 @@ router.post('/wigle/import', async (req, res) => {
  */
 router.get('/kismet/files', async (_req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const kismetDir = path.join(process.cwd(), 'pipelines', 'kismet');
 
     // Create directory if it doesn't exist
@@ -567,6 +607,14 @@ router.post('/kismet/import', async (req, res) => {
  */
 router.get('/kismet/stats', async (_req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const stats = await db.query(`
       SELECT
         (SELECT COUNT(*) FROM app.kismet_devices_staging) as devices_count,
@@ -595,6 +643,14 @@ router.get('/kismet/stats', async (_req, res) => {
  */
 router.delete('/kismet/clear', async (_req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     await db.query('DELETE FROM app.kismet_packets_staging');
     await db.query('DELETE FROM app.kismet_alerts_staging');
     await db.query('DELETE FROM app.kismet_snapshots_staging');
@@ -625,6 +681,14 @@ router.delete('/kismet/clear', async (_req, res) => {
  */
 router.post('/wigle-api/query', async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const { ssid, bssid, latrange1, latrange2, longrange1, longrange2 } = req.body;
 
     // Get WiGLE API credentials from environment
@@ -750,6 +814,14 @@ router.post('/wigle-api/query', async (req, res) => {
  */
 router.post('/wigle-api/detail', async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const { bssid } = req.body;
 
     if (!bssid) {
@@ -858,6 +930,14 @@ router.post('/wigle-api/detail', async (req, res) => {
  */
 router.get('/wigle-api/stats', async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const result = await db.query(`
       SELECT
         -- Alpha v3 tables (new simplified schema)
@@ -889,6 +969,14 @@ router.get('/wigle-api/stats', async (req, res) => {
  */
 router.get('/wigle-api/staging-data', async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     // Get Alpha v3 observations with SSID cluster info
     const alphaV3Result = await db.query(`
       SELECT
@@ -940,6 +1028,14 @@ router.get('/wigle-api/staging-data', async (req, res) => {
  */
 router.delete('/wigle-api/clear', async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     await db.query('DELETE FROM app.wigle_alpha_v3_observations');
     await db.query('DELETE FROM app.wigle_alpha_v3_networks');
 

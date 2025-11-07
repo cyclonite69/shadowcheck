@@ -2,7 +2,7 @@
 // Advanced comparative analysis endpoints for multi-source data analysis
 
 import { Router } from "express";
-import { db } from "../db/connection";
+import { db } from '../db/connection.js';
 
 const router = Router();
 

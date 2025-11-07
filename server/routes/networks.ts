@@ -1,6 +1,6 @@
 // server/routes/networks.ts
 import { Router } from "express";
-import { db } from "../db/connection";
+import { db } from '../db/connection.js';
 
 const router = Router();
 

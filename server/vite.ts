@@ -5,8 +5,6 @@ import * as vite from "vite";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
 
-const viteLogger = vite.createLogger();
-
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -14,7 +12,6 @@ export function log(message: string, source = "express") {
     second: "2-digit",
     hour12: true,
   });
-
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
@@ -54,7 +51,6 @@ export async function setupVite(app: Express, server: Server) {
       const clientPath = path.resolve(process.cwd(), "client", "index.html");
       let template = fs.readFileSync(clientPath, "utf-8");
       template = await viteServer.transformIndexHtml(url, template);
-
       res.status(200).set({ "Content-Type": "text/html" }).end(template);
     } catch (e) {
       viteServer.ssrFixStacktrace(e as Error);
@@ -72,7 +68,6 @@ export function serveStatic(app: Express) {
   }
 
   app.use(express.static(distPath));
-
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });

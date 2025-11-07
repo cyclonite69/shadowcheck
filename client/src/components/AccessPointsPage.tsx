@@ -33,8 +33,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { type SortingState, type Updater } from '@tanstack/react-table';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function AccessPointsPage() {
+  const queryClient = useQueryClient();
   // Column visibility state
   const columnConfig = useNetworkObservationColumns();
 
@@ -323,10 +325,23 @@ export function AccessPointsPage() {
           columnConfig={columnConfig}
           sorting={filters.sortBy ? [{ id: filters.sortBy, desc: filters.sortDir === 'desc' }] : []}
           onSortingChange={(updater: Updater<SortingState>) => {
+            console.log('[SORT_CHANGE] triggered at', new Date().getTime());
             const currentSortingState = filters.sortBy ? [{ id: filters.sortBy, desc: filters.sortDir === 'desc' }] : [];
             const newState = typeof updater === 'function' ? updater(currentSortingState) : updater;
             const primary = newState[0];
-            setFilters(prev => ({ ...prev, sortBy: primary?.id || 'observed_at', sortDir: primary?.desc ? 'desc' : 'asc' }));
+            
+            // Update sort state - this will trigger queryKey change and auto-refetch
+            setFilters(prev => ({
+              ...prev,
+              sortBy: primary?.id || 'observed_at',
+              sortDir: primary?.desc ? 'desc' : 'asc'
+            }));
+
+            // Reset to first page by invalidating query
+            queryClient.invalidateQueries({
+              queryKey: ['network-observations'],
+              exact: false,
+            });
           }}
           fetchNextPage={fetchNextPage}
           hasNextPage={hasNextPage}

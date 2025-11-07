@@ -11,7 +11,7 @@
  */
 
 import type { Server } from 'http';
-import { closePool } from '../db/connection';
+import { closePool } from '../db.js';
 
 interface ShutdownConfig {
   timeout: number; // Maximum time to wait for graceful shutdown (ms)

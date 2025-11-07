@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db } from "../db/connection";
+import { db, query } from "../db.js";
 
 const router = Router();
 
@@ -10,6 +10,14 @@ const router = Router();
 router.get("/", async (req, res) => {
   const limit = Math.min(Number(req.query.limit ?? 500) || 500, 5000);
   try {
+    if (!db) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const sql = `
       SELECT
         l.bssid,
@@ -27,13 +35,13 @@ router.get("/", async (req, res) => {
       ORDER BY l.time DESC
       LIMIT $1
     `;
-    const rows = await db.query(sql, [limit]);
+    const rows = await query(sql, [limit]);
 
     res.json({
       ok: true,
       data: {
         type: "FeatureCollection",
-        features: rows.map((r: any) => ({
+        features: rows.rows.map((r: any) => ({
           type: "Feature",
           geometry: { type: "Point", coordinates: [Number(r.lon), Number(r.lat)] },
           properties: {

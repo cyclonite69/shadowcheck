@@ -9,7 +9,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { db } from '../db/connection';
+import { db } from '../db/connection.js';
 
 const router = Router();
 

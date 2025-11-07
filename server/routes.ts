@@ -83,7 +83,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
-      const networks = await storage.getNetworks(limit);
+      const sortBy = req.query.sort_by as string || 'observed_at';
+      const sortDir = req.query.sort_dir as string || 'desc';
+      const networks = await storage.getNetworks(limit, sortBy, sortDir);
       
       res.json({
         ok: true,

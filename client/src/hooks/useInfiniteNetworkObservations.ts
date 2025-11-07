@@ -150,8 +150,9 @@ export function useInfiniteNetworkObservations({
       return loadedCount;
     },
     initialPageParam: 0,
+    // *** ADD THIS: Reset to page 0 when sort changes ***
+    staleTime: 0, // Don't cache across sort changes
     enabled,
-    staleTime: 30000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });

@@ -8,12 +8,11 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "CommonJS",
+    "module": "ESNext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
-
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "../",
@@ -24,6 +23,6 @@
     },
     "types": ["node"]
   },
-  "include": ["./**/*.ts"],
-  "exclude": ["node_modules", "dist", "**/__tests__/**", "**/*.test.ts"]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/__tests__/**", "**/*.test.ts", "client/**"]
 }

@@ -10,7 +10,7 @@
  */
 
 import { Router, Request, Response } from "express";
-import { getPool } from '../db/connection';
+import { getPool, query } from '../db.js';
 
 const router = Router();
 
@@ -30,6 +30,14 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
 
   try {
     const pool = getPool();
+    if (!pool) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     // Parse query parameters with defaults
     const minDistanceKm = parseFloat(String(req.query.min_distance_km || '0.5'));
@@ -53,7 +61,7 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
     }
 
     // Call the WiFi-specific surveillance detection function
-    const threatsResult = await pool.query(`
+    const threatsResult = await query(`
       SELECT * FROM app.get_wifi_surveillance_threats(
         $1::NUMERIC,  -- min_distance_km
         $2::NUMERIC,  -- home_radius_m
@@ -66,7 +74,7 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
     const threatsWithObservations = await Promise.all(
       threatsResult.rows.map(async (threat) => {
         // First try to get observations from locations_legacy (detailed GPS tracks)
-        let observationsResult = await pool.query(`
+        let observationsResult = await query(`
           SELECT
             l.unified_id as id,
             l.bssid,
@@ -98,7 +106,7 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
         // If no observations in locations_legacy, fall back to networks_legacy
         // (which contains last-known position for each network record)
         if (observationsResult.rows.length === 0) {
-          observationsResult = await pool.query(`
+          observationsResult = await query(`
             SELECT
               ROW_NUMBER() OVER (ORDER BY lasttime DESC) as id,
               bssid,
@@ -197,11 +205,18 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
 router.get("/wifi/summary", async (req: Request, res: Response) => {
   try {
     const pool = getPool();
+    if (!pool) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     const minDistanceKm = parseFloat(String(req.query.min_distance_km || '0.5'));
 
-    // Get summary stats by threat level
-    const result = await pool.query(`
+    const result = await query(`
       WITH wifi_threats AS (
         SELECT * FROM app.get_wifi_surveillance_threats($1::NUMERIC, 500, 1, 10000)
       )
@@ -262,8 +277,16 @@ router.get("/wifi/summary", async (req: Request, res: Response) => {
 router.get("/settings", async (_req: Request, res: Response) => {
   try {
     const pool = getPool();
+    if (!pool) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
 
-    const result = await pool.query(`
+    const result = await query(`
       SELECT
         setting_id,
         radio_type,
@@ -332,6 +355,14 @@ router.get("/settings", async (_req: Request, res: Response) => {
 router.post("/settings", async (req: Request, res: Response) => {
   try {
     const pool = getPool();
+    if (!pool) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const {
       radio_type,
       min_distance_km,
@@ -352,7 +383,7 @@ router.post("/settings", async (req: Request, res: Response) => {
     }
 
     // Call the update function
-    const result = await pool.query(`
+    const result = await query(`
       SELECT app.update_detection_settings(
         $1::TEXT,    -- radio_type
         $2::NUMERIC, -- min_distance_km
@@ -411,6 +442,14 @@ router.post("/settings", async (req: Request, res: Response) => {
 router.post("/feedback", async (req: Request, res: Response) => {
   try {
     const pool = getPool();
+    if (!pool) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
     const {
       bssid,
       ssid,
@@ -439,7 +478,7 @@ router.post("/feedback", async (req: Request, res: Response) => {
     }
 
     // Call the feedback recording function
-    const result = await pool.query(`
+    const result = await query(`
       SELECT app.record_threat_feedback(
         $1::TEXT,    -- bssid
         $2::TEXT,    -- ssid
@@ -489,9 +528,17 @@ router.post("/feedback", async (req: Request, res: Response) => {
 router.post("/learning/adjust", async (_req: Request, res: Response) => {
   try {
     const pool = getPool();
+    if (!pool) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     // Call the adaptive learning function
-    const result = await pool.query(`
+    const result = await query(`
       SELECT * FROM app.adjust_thresholds_from_feedback()
     `);
 
@@ -532,8 +579,16 @@ router.post("/learning/adjust", async (_req: Request, res: Response) => {
 router.get("/feedback/stats", async (_req: Request, res: Response) => {
   try {
     const pool = getPool();
+    if (!pool) {
+      return res.status(500).json({
+        ok: false,
+        status: "error",
+        error: "Database connection not initialized",
+        timestamp: new Date().toISOString(),
+      });
+    }
 
-    const result = await pool.query(`
+    const result = await query(`
       WITH recent_feedback AS (
         SELECT * FROM app.threat_feedback
         WHERE feedback_timestamp > NOW() - INTERVAL '30 days'
