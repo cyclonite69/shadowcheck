@@ -77,8 +77,6 @@ function WigleStagingPreview() {
   }
 
   const observations = data?.observations || [];
-  const displayLimit = 50; // Limit displayed observations to prevent page freeze
-  const displayedObservations = observations.slice(0, displayLimit);
 
   if (observations.length === 0) {
     return (
@@ -107,15 +105,10 @@ function WigleStagingPreview() {
           <Map className="h-5 w-5 text-green-400" />
           Staging Data Preview ({observations.length} total observations)
         </CardTitle>
-        {observations.length > displayLimit && (
-          <p className="text-xs text-amber-400 mt-1">
-            Showing first {displayLimit} observations to prevent performance issues
-          </p>
-        )}
       </CardHeader>
       <CardContent>
         <div className="space-y-3 max-h-[600px] overflow-y-auto">
-          {displayedObservations.map((obs: any, idx: number) => (
+          {observations.map((obs: any, idx: number) => (
             <div key={`${obs.bssid}-${idx}`} className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">

@@ -18,6 +18,8 @@ import type { UseInfiniteQueryResult } from '@tanstack/react-query';
 import { useNetworkObservationColumns } from '@/hooks/useNetworkObservationColumns';
 import { iconColors } from '@/lib/iconColors';
 import { NetworkLocationModal } from './NetworkLocationModal';
+import { categorizeSecurityType, getSecurityTypeStyle } from '@/lib/securityDecoder';
+import { NetworkSecurityPill } from '@/components/NetworkSecurityPill';
 import {
   ColumnDef,
   ColumnOrderState,
@@ -56,6 +58,8 @@ interface NetworkObservationsTableViewProps {
   isLoading: boolean;
   isError: boolean;
   error: Error | null;
+  selectedRows?: Record<string, boolean>;
+  onSelectedRowsChange?: (selectedRows: Record<string, boolean>) => void;
 }
 
 
@@ -112,69 +116,74 @@ function formatTimestamp(isoString: string): string {
 }
 
 /**
- * Get radio type icon and label with intelligent Kismet → WiGLE classification
- * Kismet uses different type codes that need interpretation:
- * - E = "Ethernet" but actually means Bluetooth (freq 7936) or WiFi bridges
- * - L = LTE (should be Cellular)
- * - G = GPRS/GSM (should be Cellular)
- * - N = Unknown/NFC
+ * Get radio type icon and label based on WiGLE type codes
+ * WiGLE Type Codes (https://api.wigle.net/csvFormat.html):
+ * - W = WiFi (802.11)
+ * - B = BT (Bluetooth Classic)
+ * - E = BLE (Bluetooth Low Energy)
+ * - G = GSM (2G cellular)
+ * - C = CDMA (2G/3G cellular)
+ * - D = WCDMA (3G cellular)
+ * - L = LTE (4G cellular)
+ * - N = NR (5G New Radio)
  */
-function getRadioTypeDisplay(observation: { type: string; frequency?: number | null }): { icon: JSX.Element; label: string } {
+export function getRadioTypeDisplay(observation: { type: string; frequency?: number | null }): { icon: JSX.Element; label: string } {
   const type = observation.type?.toUpperCase();
-  const freq = observation.frequency || 0;
-
-  // Analyze Kismet 'E' type by frequency
-  if (type === 'E') {
-    if (freq === 7936 || freq === 0 || !freq) {
-      return {
-        icon: <Bluetooth className={`h-4 w-4 ${iconColors.secondary.text}`} />,
-        label: 'BT'
-      };
-    } else if ((freq >= 2412 && freq <= 2484) || (freq >= 5000 && freq <= 7125)) {
-      return {
-        icon: <Wifi className={`h-4 w-4 ${iconColors.primary.text}`} />,
-        label: 'WiFi'
-      };
-    }
-    return {
-      icon: <HelpCircle className={`h-4 w-4 ${iconColors.neutral.text}`} />,
-      label: 'Unknown'
-    };
-  }
 
   // Standard WiGLE types
   switch (type) {
+    case 'WIFI':
     case 'W':
       return {
         icon: <Wifi className={`h-4 w-4 ${iconColors.primary.text}`} />,
         label: 'WiFi'
       };
+    case 'BT':
     case 'B':
       return {
         icon: <Bluetooth className={`h-4 w-4 ${iconColors.secondary.text}`} />,
         label: 'BT'
       };
-    case 'C':
+    case 'BLE':
+    case 'E':
       return {
-        icon: <Radio className={`h-4 w-4 ${iconColors.info.text}`} />,
-        label: 'Cellular'
+        icon: <Bluetooth className={`h-4 w-4 ${iconColors.warning.text}`} />,
+        label: 'BLE'
       };
-
-    // Cellular variants
-    case 'L':
-      return {
-        icon: <Radio className={`h-4 w-4 ${iconColors.info.text}`} />,
-        label: 'LTE'
-      };
+    case 'GSM':
     case 'G':
       return {
         icon: <Radio className={`h-4 w-4 ${iconColors.info.text}`} />,
         label: 'GSM'
       };
+    case 'CDMA':
+    case 'C':
+      return {
+        icon: <Radio className={`h-4 w-4 ${iconColors.info.text}`} />,
+        label: 'CDMA'
+      };
+    case 'WCDMA':
+    case 'D':
+      return {
+        icon: <Radio className={`h-4 w-4 ${iconColors.info.text}`} />,
+        label: 'WCDMA'
+      };
+    case 'LTE':
+    case 'L':
+      return {
+        icon: <Radio className={`h-4 w-4 ${iconColors.info.text}`} />,
+        label: 'LTE'
+      };
+    case 'NR':
+    case 'N':
+      return {
+        icon: <Radio className={`h-4 w-4 ${iconColors.success.text}`} />,
+        label: '5G'
+      };
 
     // Unknown types
-    case 'N':
     case '?':
+    case 'UNKNOWN':
       return {
         icon: <HelpCircle className={`h-4 w-4 ${iconColors.neutral.text}`} />,
         label: 'Unknown'
@@ -221,31 +230,27 @@ function DraggableColumnHeader({ header }: { header: Header<NetworkObservation, 
     id: header.id,
   });
 
-  // Separate drag handle from clickable area
+  // Handle column sorting with shift-click for multi-sort
   const handleClick = (e: React.MouseEvent) => {
-    console.log('[CLICK] Header clicked:', header.id, 'at', new Date().getTime());
+    console.log('[CLICK] Header clicked:', header.id, 'shift:', e.shiftKey, 'at', new Date().getTime());
     e.stopPropagation();
-    
-    const isSorted = header.column.getIsSorted();
-    if (isSorted === 'asc') {
-      header.column.toggleSorting(true);
-    } else {
-      header.column.toggleSorting(false);
-    }
-  };
 
-  // Shift+click for multi-sort
-  const handleShiftClick = (e: React.MouseEvent) => {
     if (e.shiftKey) {
-      e.stopPropagation();
-      header.column.toggleSorting(undefined, true); // true = add to existing sort
+      // Shift-click: multi-sort mode (keep other sorts, add this column)
+      header.column.toggleSorting(undefined, true);
+    } else {
+      // Regular click: single-sort mode (clear other sorts)
+      header.column.toggleSorting(undefined, false);
     }
   };
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    transition,
-  } : undefined;
+  const style = {
+    width: header.getSize(),
+    ...(transform ? {
+      transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      transition,
+    } : {})
+  };
 
   return (
     <th
@@ -263,10 +268,7 @@ function DraggableColumnHeader({ header }: { header: Header<NetworkObservation, 
 
       {/* Clickable header content - NO listeners here */}
       <button
-        onClick={(e) => {
-          handleClick(e);
-          handleShiftClick(e);
-        }}
+        onClick={handleClick}
         className="w-full text-left hover:text-slate-200 transition-colors flex items-center gap-2"
         title="Click to sort • Shift+Click for multi-sort"
       >
@@ -305,6 +307,8 @@ export function NetworkObservationsTableView({
   isLoading,
   isError,
   error,
+  selectedRows = {},
+  onSelectedRowsChange = () => {},
 }: NetworkObservationsTableViewProps) {
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkObservation | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -353,7 +357,7 @@ export function NetworkObservationsTableView({
       accessorKey: 'ssid',
       header: 'SSID',
       cell: ({ row }) => (
-        <span className="text-slate-200 font-medium truncate block">
+        <span className="text-slate-200 font-medium text-xs truncate block">
           {row.original.ssid || <span className="text-slate-500 italic">Hidden</span>}
         </span>
       ),
@@ -409,14 +413,13 @@ export function NetworkObservationsTableView({
       size: 80,
     },
     {
-      accessorKey: 'encryption',
+      accessorKey: 'capabilities',
       header: 'Security',
-      cell: ({ row }) => (
-        <span className="text-slate-400 text-xs truncate block">
-          {row.original.encryption || '-'}
-        </span>
-      ),
-      size: 150,
+      cell: ({ row }) => {
+        const securityType = categorizeSecurityType(row.original.capabilities, row.original.type);
+        return <NetworkSecurityPill type={securityType} radioType={row.original.type} />;
+      },
+      size: 180,
     },
     {
       accessorKey: 'observation_count',
@@ -489,13 +492,22 @@ export function NetworkObservationsTableView({
       columnVisibility: columnConfig.columnVisibility,
       columnOrder: columnConfig.columnOrder,
       sorting: sorting,
+      rowSelection: selectedRows,
     },
     onSortingChange: onSortingChange,
     onColumnVisibilityChange: columnConfig.setColumnVisibility,
     onColumnOrderChange: columnConfig.setColumnOrder,
+    onRowSelectionChange: (updater) => {
+      const newSelection = typeof updater === 'function' ? updater(selectedRows) : updater;
+      onSelectedRowsChange(newSelection);
+    },
     getCoreRowModel: getCoreRowModel(),
     // getSortedRowModel: getSortedRowModel(), // Add this if you want client-side sorting too
     manualPagination: true,
+    enableMultiSort: true,
+    enableSortingRemoval: false,
+    enableRowSelection: true,
+    getRowId: (row, index) => index.toString(),
   });
 
   const sensors = useSensors(
@@ -561,10 +573,10 @@ export function NetworkObservationsTableView({
 
         {/* Virtual Scrollable Table */}
         <div ref={parentRef} className="flex-1 overflow-auto">
-          <table className="w-full">
+          <table className="w-full" style={{ tableLayout: 'fixed' }}>
             <thead className="sticky top-0 z-10 bg-slate-900 border-b border-slate-700">
               {table.getHeaderGroups().map((headerGroup: HeaderGroup<NetworkObservation>) => (
-                <tr key={headerGroup.id} className="flex">
+                <tr key={headerGroup.id}>
                   <SortableContext
                     items={columnConfig.columnOrder}
                     strategy={horizontalListSortingStrategy}
@@ -588,7 +600,7 @@ export function NetworkObservationsTableView({
                 return (
                   <tr
                     key={row.id}
-                    className="flex absolute w-full border-b border-slate-800 hover:bg-slate-800/50 transition-colors text-sm cursor-pointer"
+                    className="absolute w-full border-b border-slate-800 hover:bg-slate-800/50 transition-colors text-xs cursor-pointer"
                     onClick={() => setSelectedNetwork(row.original)}
                     style={{
                       height: `${virtualRow.size}px`,

@@ -10,6 +10,7 @@
 
 import { Router, Request, Response } from 'express';
 import { db } from '../db/connection.js';
+import { wigleTypeToRadioType, radioTypeToWigleCode } from '../utils/wigleTypeMapping.js';
 
 const router = Router();
 
@@ -95,6 +96,15 @@ router.get('/', async (req: Request, res: Response) => {
     // Parse and validate parameters
     const limit = Math.min(Number(req.query.limit) || 500, 1000);
     const offset = Number(req.query.offset) || 0;
+    // Parse sort parameters
+    const sortBy = String(req.query.sortBy || 'access_point_id');
+    const sortDir = String(req.query.sortDir || 'DESC').toUpperCase();
+    if (!['ASC', 'DESC'].includes(sortDir)) {
+      return res.status(400).json({ ok: false, error: 'Invalid sortDir' });
+    }
+    if (!ALLOWED_COLUMNS.has(sortBy)) {
+      return res.status(400).json({ ok: false, error: 'Invalid sortBy column' });
+    }
 
     // Parse column selection
     const requestedColumns = req.query.columns
@@ -120,12 +130,15 @@ router.get('/', async (req: Request, res: Response) => {
       paramIndex++;
     }
 
-    // Radio type filter
+    // Radio type filter - convert human-readable types to WiGLE codes
     if (req.query.radio_types) {
       const radioTypes = String(req.query.radio_types).split(',').map((t: string) => t.trim());
-      whereClauses.push(`type = ANY($${paramIndex}::text[])`);
-      queryParams.push(radioTypes);
-      paramIndex++;
+      const wigleCodes = radioTypes.map(radioTypeToWigleCode).filter(code => code !== '');
+      if (wigleCodes.length > 0) {
+        whereClauses.push(`type = ANY($${paramIndex}::text[])`);
+        queryParams.push(wigleCodes);
+        paramIndex++;
+      }
     }
 
     // Signal strength range filter
@@ -218,7 +231,7 @@ router.get('/', async (req: Request, res: Response) => {
       SELECT ${columnList}
       FROM app.api_networks
       ${whereClause}
-      ORDER BY access_point_id DESC
+      ORDER BY ${sortBy} ${sortDir}
       LIMIT $${paramIndex}
       OFFSET $${paramIndex + 1}
     `;
@@ -293,6 +306,92 @@ router.get('/columns', async (_req: Request, res: Response) => {
 
   } catch (error: any) {
     console.error('[AccessPoints API] Error fetching columns:', error);
+    res.status(500).json({
+      ok: false,
+      error: error?.message || String(error)
+    });
+  }
+});
+
+/**
+ * GET /api/v1/access-points/observations/bulk
+ *
+ * Get all individual observations for multiple BSSIDs
+ * Query params: bssids (comma-separated list of MAC addresses)
+ * Returns all observation points from locations_legacy table
+ */
+router.get('/observations/bulk', async (req: Request, res: Response) => {
+  try {
+    const bssidsParam = req.query.bssids as string;
+
+    if (!bssidsParam) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Missing required parameter: bssids'
+      });
+    }
+
+    const bssids = bssidsParam.split(',').map(b => b.trim()).filter(Boolean);
+
+    if (bssids.length === 0) {
+      return res.json({
+        ok: true,
+        data: [],
+        count: 0
+      });
+    }
+
+    const limit = Math.min(Number(req.query.limit) || 10000, 50000);
+
+    // Fetch all observations for the given BSSIDs
+    // Join with networks_legacy to get enriched data (ssid, type, frequency, capabilities)
+    const result = await db.query(
+      `WITH latest_networks AS (
+        SELECT DISTINCT ON (bssid)
+          bssid, ssid, type, frequency, capabilities, service
+        FROM app.networks_legacy
+        WHERE bssid = ANY($1::text[])
+        ORDER BY bssid, lasttime DESC NULLS LAST
+      )
+      SELECT
+        l.bssid,
+        n.ssid,
+        n.type as type_code,
+        n.frequency,
+        n.capabilities as encryption,
+        l.level as signal_strength,
+        l.lat as latitude,
+        l.lon as longitude,
+        l.altitude,
+        l.accuracy,
+        TO_TIMESTAMP(l.time::bigint / 1000) as observed_at,
+        ST_AsGeoJSON(ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326))::json as location_geojson
+      FROM app.locations_legacy l
+      LEFT JOIN latest_networks n ON l.bssid = n.bssid
+      WHERE l.bssid = ANY($1::text[])
+        AND l.lat IS NOT NULL
+        AND l.lon IS NOT NULL
+      ORDER BY l.time DESC
+      LIMIT $2`,
+      [bssids, limit]
+    );
+
+    // Map WiGLE type codes to human-readable radio types
+    const mappedData = result.map((row: any) => ({
+      ...row,
+      type: wigleTypeToRadioType(row.type_code),
+      type_code: undefined // Remove the raw code from response
+    }));
+
+    res.json({
+      ok: true,
+      data: mappedData,
+      count: mappedData.length,
+      bssids: bssids
+    });
+
+  } catch (error: any) {
+    console.error('[AccessPoints API] Error fetching bulk observations:', error);
     res.status(500).json({
       ok: false,
       error: error?.message || String(error)

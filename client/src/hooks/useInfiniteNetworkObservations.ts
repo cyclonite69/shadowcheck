@@ -23,6 +23,7 @@ export interface NetworkFilters {
   radiusMeters?: number;
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
+  sortColumns?: Array<{ id: string; desc: boolean }>;
 }
 
 interface NetworksResponse {
@@ -63,16 +64,21 @@ async function fetchNetworkObservations({
   }
 
   if (filters.radioTypes && filters.radioTypes.length > 0) {
+    // WiGLE type code mapping - based on https://api.wigle.net/csvFormat.html
     const codeMap: Record<string, string> = {
       'WiFi': 'W',
-      'Cellular': 'C',
+      'BT': 'B',        // Bluetooth Classic
+      'BLE': 'E',       // Bluetooth Low Energy
+      'GSM': 'G',       // GSM cellular
+      'CDMA': 'C',      // CDMA cellular
+      'WCDMA': 'D',     // WCDMA/3G cellular
+      'LTE': 'L',       // LTE/4G cellular
+      'NR': 'N',        // 5G New Radio
+      // Legacy aliases
       'Bluetooth': 'B',
-      'BLE': 'E'
+      'Cellular': 'C',
     };
-    console.log('[DEBUG] radioTypes input:', filters.radioTypes);
-    console.log('[DEBUG] codeMap:', codeMap);
     const codes = filters.radioTypes.map(type => codeMap[type] || type).join(',');
-    console.log('[DEBUG] mapped codes:', codes);
     params.append('radio_types', codes);
   }
 

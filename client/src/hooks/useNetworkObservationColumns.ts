@@ -79,13 +79,19 @@ function loadColumnOrder(): string[] {
       const parsed = JSON.parse(stored);
       // Basic validation to ensure it's an array of strings
       if (Array.isArray(parsed) && parsed.every(item => typeof item === 'string')) {
+        // Migration: ensure 'select' column is always included
+        if (!parsed.includes('select')) {
+          // Add 'select' at the beginning if it's missing
+          return ['select', ...parsed];
+        }
         return parsed;
       }
     }
   } catch (error) {
     console.error('Failed to load column order:', error);
   }
-  return OBSERVATION_COLUMNS.map(col => col.id);
+  // Include 'select' column in the default order (at the beginning)
+  return ['select', ...OBSERVATION_COLUMNS.map(col => col.id)];
 }
 
 export function useNetworkObservationColumns() {
@@ -126,7 +132,7 @@ export function useNetworkObservationColumns() {
 
   const resetToDefaults = useCallback(() => {
     setColumnVisibility(getDefaultVisibility());
-    setColumnOrder(OBSERVATION_COLUMNS.map(col => col.id));
+    setColumnOrder(['select', ...OBSERVATION_COLUMNS.map(col => col.id)]);
   }, []);
 
   const isColumnVisible = useCallback(

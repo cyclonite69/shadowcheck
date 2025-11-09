@@ -702,99 +702,66 @@ router.post('/wigle-api/query', async (req, res) => {
       });
     }
 
-    // Build query parameters
-    const params = new URLSearchParams();
-    if (ssid) params.append('ssid', ssid);
-    if (bssid) params.append('netid', bssid);
-    if (latrange1 !== undefined) params.append('latrange1', String(latrange1));
-    if (latrange2 !== undefined) params.append('latrange2', String(latrange2));
-    if (longrange1 !== undefined) params.append('longrange1', String(longrange1));
-    if (longrange2 !== undefined) params.append('longrange2', String(longrange2));
+    console.log(`[WiGLE API Query] Request: BSSID=${bssid}`);
 
-    console.log(`[WiGLE API] Querying: ${params.toString()}`);
+    // WiGLE Query now ONLY uses Alpha v3 API (requires BSSID)
+    if (!bssid) {
+      return res.status(400).json({
+        ok: false,
+        error: 'BSSID is required. Alpha v3 API only supports BSSID lookups.',
+        hint: 'Use the BSSID field to search for a specific network.'
+      });
+    }
 
-    // Query WiGLE API
-    const wigleUrl = `https://api.wigle.net/api/v2/network/search?${params.toString()}`;
-    const response = await fetch(wigleUrl, {
+    console.log(`[WiGLE API Query] Using Alpha v3 detail endpoint for BSSID: ${bssid}`);
+
+    const alphaV3Url = `https://api.wigle.net/api/v3/detail/wifi/${encodeURIComponent(bssid)}`;
+    console.log('[WiGLE API Query] Request URL:', alphaV3Url);
+
+    const response = await fetch(alphaV3Url, {
       headers: {
         'Authorization': `Basic ${Buffer.from(`${wigleApiName}:${wigleApiToken}`).toString('base64')}`,
         'Accept': 'application/json'
       }
     });
 
+    console.log('[WiGLE API Query] Response status:', response.status, response.statusText);
+
     if (!response.ok) {
-      throw new Error(`WiGLE API error: ${response.statusText}`);
+      throw new Error(`WiGLE Alpha v3 API error: ${response.statusText}`);
     }
 
     const data = await response.json() as any;
+    console.log('[WiGLE API Query] Response received, has locationClusters:', !!data.locationClusters);
 
-    if (!data.success) {
-      throw new Error(`WiGLE API returned error: ${data.message || 'Unknown error'}`);
+    // Alpha v3 API returns data directly without a success field
+    // If there's an error message field, that means it failed
+    if (data.error || data.message) {
+      throw new Error(`WiGLE Alpha v3 API error: ${data.error || data.message}`);
     }
 
-    // Import results to STAGING tables only
-    let networksImported = 0;
-    let locationsImported = 0;
-    const results = data.results || [];
-    const queryParams = JSON.stringify({ ssid, bssid, latrange1, latrange2, longrange1, longrange2 });
-
-    for (const network of results) {
-      try {
-        // Insert network into staging
-        await db.query(`
-          INSERT INTO app.wigle_alpha_v3_networks
-          (bssid, ssid, frequency, encryption, type, last_seen, first_seen,
-           trilaterated_lat, trilaterated_lon, channel)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-          ON CONFLICT (bssid, query_timestamp) DO UPDATE SET
-            ssid = COALESCE(EXCLUDED.ssid, app.wigle_alpha_v3_networks.ssid),
-            last_seen = GREATEST(EXCLUDED.last_seen, app.wigle_alpha_v3_networks.last_seen)
-        `, [
-          network.netid,
-          network.ssid || null,
-          network.channel ? (network.channel * 5 + (network.channel <= 14 ? 2407 : 5000)) : null,
-          network.encryption || null,
-          network.type || 'W',
-          network.lasttime ? new Date(network.lasttime) : null,
-          network.firsttime ? new Date(network.firsttime) : null,
-          network.trilat || null,
-          network.trilong || null,
-          network.channel || null
-        ]);
-        networksImported++;
-
-        // Insert location observation if coordinates exist
-        if (network.trilat && network.trilong) {
-          await db.query(`
-            INSERT INTO app.wigle_alpha_v3_observations
-            (bssid, lat, lon, altitude, accuracy, observation_time, last_update, signal_dbm)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-          `, [
-            network.netid,
-            network.trilat,
-            network.trilong,
-            null,
-            null,
-            network.lasttime ? new Date(network.lasttime) : null,
-            network.lasttime ? new Date(network.lasttime) : null,
-            network.rcois || null
-          ]);
-          locationsImported++;
-        }
-      } catch (err) {
-        console.error(`Error importing network ${network.netid}:`, err);
-      }
+    // Check if we got valid network data
+    if (!data.networkId && !data.locationClusters) {
+      throw new Error('WiGLE Alpha v3 API returned no network data');
     }
+
+    // Use the PostgreSQL import function to handle Alpha v3 response
+    const importResult = await db.query(`
+      SELECT * FROM app.import_wigle_alpha_v3_response($1::TEXT, $2::JSONB)
+    `, [bssid.toUpperCase(), data]);
+
+    const [networksImported, observationsImported] = importResult[0]
+      ? [importResult[0].networks_imported || 0, importResult[0].observations_imported || 0]
+      : [0, 0];
 
     res.json({
       ok: true,
       stats: {
         networks: networksImported,
-        locations: locationsImported,
-        total_results: data.resultCount || 0,
-        search_after: data.searchAfter || null
+        observations: observationsImported,
+        api_version: 'v3'
       },
-      message: `Imported ${networksImported} networks and ${locationsImported} locations to staging`
+      message: `Imported ${networksImported} network(s) with ${observationsImported} observations via Alpha v3 API`
     });
 
   } catch (err: any) {

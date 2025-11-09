@@ -15,6 +15,7 @@ import wigleStagingRouter from "./routes/wigleStagingRoutes.js";
 import wigleAlphaV3Router from "./routes/wigle_alpha_v3.js";
 import networkObservationsRouter from "./routes/networkObservations.js";
 import { db as dbConnection } from "./db/connection.js";
+import { wigleTypeToRadioType } from "./utils/wigleTypeMapping.js";
 
 const { Pool } = pg;
 
@@ -216,7 +217,7 @@ app.get("/api/v1/networks", async (req, res) => {
             ssid: networkData.ssid,
             frequency: frequency,
             channel: calculatedChannel,
-            encryption: networkData.capabilities,
+            capabilities: networkData.capabilities,
             latitude: networkData.latitude ? String(networkData.latitude) : undefined,
             longitude: networkData.longitude ? String(networkData.longitude) : undefined,
             altitude: networkData.altitude,
@@ -224,7 +225,7 @@ app.get("/api/v1/networks", async (req, res) => {
             observed_at: networkData.observed_at?.toISOString() || networkData.time,
             signal_strength: networkData.signal_strength,
             observation_count: Number(networkData.observation_count) || 0,
-            type: networkData.type,
+            type: wigleTypeToRadioType(networkData.type),
             manufacturer: networkData.manufacturer || null
           };
         })

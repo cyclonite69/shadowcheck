@@ -699,10 +699,10 @@ export function AccessPointsExplorerView() {
                 position: 'relative',
               }}
             >
-              <table className="w-full text-sm">
+              <table className="w-full text-sm border-collapse" style={{tableLayout: "fixed"}}>
                 <thead className="sticky top-0 z-10 bg-slate-900">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "50px"}}>
                       <input
                         type="checkbox"
                         checked={selectedNetworkIds.size === allAccessPoints.length}
@@ -710,85 +710,85 @@ export function AccessPointsExplorerView() {
                         className="cursor-pointer"
                       />
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "150px"}}>
                       MAC Address
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "200px"}}>
                       Network Name
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "100px"}}>
                       Radio
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "100px"}}>
                       Signal
                     </th>
                     {isColumnVisible('primary_frequency_hz') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "110px"}}>
                         Frequency
                       </th>
                     )}
                     {isColumnVisible('manufacturer') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "150px"}}>
                         Manufacturer
                       </th>
                     )}
                     {isColumnVisible('oui_prefix_hex') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "100px"}}>
                         OUI
                       </th>
                     )}
                     {isColumnVisible('is_hidden_network') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "80px"}}>
                         Hidden
                       </th>
                     )}
                     {isColumnVisible('is_mobile_device') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "80px"}}>
                         Mobile
                       </th>
                     )}
                     {isColumnVisible('data_quality') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "100px"}}>
                         Quality
                       </th>
                     )}
                     {isColumnVisible('total_observations') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "120px"}}>
                         Observations
                       </th>
                     )}
                     {isColumnVisible('unique_data_sources') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "90px"}}>
                         Sources
                       </th>
                     )}
                     {isColumnVisible('mobility_confidence_score') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "90px"}}>
                         Mobility
                       </th>
                     )}
                     {isColumnVisible('first_seen') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "160px"}}>
                         First Seen
                       </th>
                     )}
                     {isColumnVisible('last_seen') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "160px"}}>
                         Last Seen
                       </th>
                     )}
                     {isColumnVisible('record_created_at') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "160px"}}>
                         Created
                       </th>
                     )}
                     {isColumnVisible('record_updated_at') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "160px"}}>
                         Updated
                       </th>
                     )}
                     {isColumnVisible('location') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "180px"}}>
                         Location
                       </th>
                     )}
@@ -821,7 +821,7 @@ export function AccessPointsExplorerView() {
                           }}
                           onClick={() => toggleSelect(ap.access_point_id)}
                         >
-                          <td className="px-4 py-3 text-sm text-slate-300">
+                          <td className="px-4 py-3 text-xs text-slate-300" style={{width: "50px"}}>
                             <input
                               type="checkbox"
                               checked={isSelected}
@@ -830,12 +830,12 @@ export function AccessPointsExplorerView() {
                               className="cursor-pointer"
                             />
                           </td>
-                          <td className="px-4 py-3 text-sm text-slate-300">
-                            <code className="text-xs text-slate-400">
+                          <td className="px-4 py-3 text-xs text-slate-400" style={{width: "150px"}}>
+                            <code className="font-mono">
                               {formatMacAddress(ap.mac_address)}
                             </code>
                           </td>
-                          <td className="px-4 py-3 text-sm text-slate-300">
+                          <td className="px-4 py-3 text-xs text-slate-300" style={{width: "200px"}}>
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={(e) => {
@@ -857,41 +857,41 @@ export function AccessPointsExplorerView() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-slate-300">
-                            <span className="text-xs uppercase">{ap.radio_technology}</span>
+                          <td className="px-4 py-3 text-xs text-slate-300" style={{width: "100px"}}>
+                            <span className="uppercase">{ap.radio_technology}</span>
                           </td>
-                          <td className="px-4 py-3 text-sm text-slate-300">
-                            <span className={cn('font-mono text-xs', getSignalColor(ap.max_signal_observed_dbm))}>
+                          <td className="px-4 py-3 text-xs text-slate-300" style={{width: "100px"}}>
+                            <span className={cn('font-mono', getSignalColor(ap.max_signal_observed_dbm))}>
                               {formatSignal(ap.max_signal_observed_dbm)}
                             </span>
                           </td>
                           {isColumnVisible('primary_frequency_hz') && (
-                            <td className="px-4 py-3 text-sm text-slate-300">
+                            <td className="px-4 py-3 text-xs text-slate-300" style={{width: "110px"}}>
                               {formatFrequency(ap.primary_frequency_hz)}
                             </td>
                           )}
                           {isColumnVisible('manufacturer') && (
-                            <td className="px-4 py-3 text-sm text-slate-400 text-xs">
+                            <td className="px-4 py-3 text-xs text-slate-400" style={{width: "150px"}}>
                               {ap.manufacturer || '-'}
                             </td>
                           )}
                           {isColumnVisible('oui_prefix_hex') && (
-                            <td className="px-4 py-3 text-sm text-slate-500">
-                              <code className="text-xs">{ap.oui_prefix_hex || '-'}</code>
+                            <td className="px-4 py-3 text-xs text-slate-500" style={{width: "100px"}}>
+                              <code className="font-mono">{ap.oui_prefix_hex || '-'}</code>
                             </td>
                           )}
                           {isColumnVisible('is_hidden_network') && (
-                            <td className="px-4 py-3 text-sm text-slate-300 text-center">
+                            <td className="px-4 py-3 text-xs text-slate-300 text-center" style={{width: "80px"}}>
                               {ap.is_hidden_network ? '✓' : '-'}
                             </td>
                           )}
                           {isColumnVisible('is_mobile_device') && (
-                            <td className="px-4 py-3 text-sm text-slate-300 text-center">
+                            <td className="px-4 py-3 text-xs text-slate-300 text-center" style={{width: "80px"}}>
                               {ap.is_mobile_device ? '✓' : '-'}
                             </td>
                           )}
                           {isColumnVisible('data_quality') && (
-                            <td className="px-4 py-3 text-sm text-slate-300">
+                            <td className="px-4 py-3 text-xs text-slate-300" style={{width: "100px"}}>
                               <span
                                 className={cn(
                                   'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border',
@@ -903,46 +903,46 @@ export function AccessPointsExplorerView() {
                             </td>
                           )}
                           {isColumnVisible('total_observations') && (
-                            <td className="px-4 py-3 text-sm text-slate-300">
+                            <td className="px-4 py-3 text-xs text-slate-300" style={{width: "120px"}}>
                               <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
                                 {ap.total_observations}
                               </span>
                             </td>
                           )}
                           {isColumnVisible('unique_data_sources') && (
-                            <td className="px-4 py-3 text-sm text-slate-400 text-xs">
+                            <td className="px-4 py-3 text-xs text-slate-400" style={{width: "90px"}}>
                               {ap.unique_data_sources}
                             </td>
                           )}
                           {isColumnVisible('mobility_confidence_score') && (
-                            <td className="px-4 py-3 text-sm text-slate-400 text-xs">
+                            <td className="px-4 py-3 text-xs text-slate-400" style={{width: "90px"}}>
                               {ap.mobility_confidence_score !== null
                                 ? (ap.mobility_confidence_score * 100).toFixed(0) + '%'
                                 : '-'}
                             </td>
                           )}
                           {isColumnVisible('first_seen') && (
-                            <td className="px-4 py-3 text-sm text-slate-400 text-xs">
+                            <td className="px-4 py-3 text-xs text-slate-400" style={{width: "160px"}}>
                               {formatTimestamp(ap.first_seen)}
                             </td>
                           )}
                           {isColumnVisible('last_seen') && (
-                            <td className="px-4 py-3 text-sm text-slate-400 text-xs">
+                            <td className="px-4 py-3 text-xs text-slate-400" style={{width: "160px"}}>
                               {formatTimestamp(ap.last_seen)}
                             </td>
                           )}
                           {isColumnVisible('record_created_at') && (
-                            <td className="px-4 py-3 text-sm text-slate-500 text-xs">
+                            <td className="px-4 py-3 text-xs text-slate-500" style={{width: "160px"}}>
                               {formatTimestamp(ap.record_created_at)}
                             </td>
                           )}
                           {isColumnVisible('record_updated_at') && (
-                            <td className="px-4 py-3 text-sm text-slate-500 text-xs">
+                            <td className="px-4 py-3 text-xs text-slate-500" style={{width: "160px"}}>
                               {formatTimestamp(ap.record_updated_at)}
                             </td>
                           )}
                           {isColumnVisible('location') && (
-                            <td className="px-4 py-3 text-sm text-slate-400 text-xs font-mono">
+                            <td className="px-4 py-3 text-xs text-slate-400 font-mono" style={{width: "180px"}}>
                               {formatLocation(ap.location_geojson)}
                             </td>
                           )}

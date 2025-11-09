@@ -306,27 +306,39 @@ export default function Dashboard() {
                       <Pie
                         data={[
                           {
-                            name: SecurityType.ENTERPRISE,
-                            value: typeCategories[SecurityType.ENTERPRISE] || 0,
+                            name: 'WPA3-Enterprise',
+                            value: typeCategories[SecurityType.WPA3_ENTERPRISE] || 0,
                             color: '#10b981'
                           },
                           {
-                            name: SecurityType.PERSONAL_WPA3,
-                            value: typeCategories[SecurityType.PERSONAL_WPA3] || 0,
+                            name: 'WPA3-Personal',
+                            value: typeCategories[SecurityType.WPA3_PERSONAL] || 0,
                             color: '#3b82f6'
                           },
                           {
-                            name: SecurityType.PERSONAL_WPA2,
-                            value: typeCategories[SecurityType.PERSONAL_WPA2] || 0,
+                            name: 'WPA2-Enterprise',
+                            value: typeCategories[SecurityType.WPA2_ENTERPRISE] || 0,
+                            color: '#06b6d4'
+                          },
+                          {
+                            name: 'WPA2-Personal',
+                            value: typeCategories[SecurityType.WPA2_PERSONAL] || 0,
                             color: '#f59e0b'
                           },
                           {
-                            name: SecurityType.LEGACY,
-                            value: typeCategories[SecurityType.LEGACY] || 0,
+                            name: 'Legacy (WPA/WEP)',
+                            value: (typeCategories[SecurityType.WPA_ENTERPRISE] || 0) +
+                                   (typeCategories[SecurityType.WPA_PERSONAL] || 0) +
+                                   (typeCategories[SecurityType.WEP] || 0),
                             color: '#f97316'
                           },
                           {
-                            name: SecurityType.OPEN,
+                            name: 'OWE',
+                            value: typeCategories[SecurityType.OWE] || 0,
+                            color: '#8b5cf6'
+                          },
+                          {
+                            name: 'Open',
                             value: typeCategories[SecurityType.OPEN] || 0,
                             color: '#ef4444'
                           }
@@ -340,11 +352,13 @@ export default function Dashboard() {
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
                       >
                         {[
-                          { color: '#10b981' },
-                          { color: '#3b82f6' },
-                          { color: '#f59e0b' },
-                          { color: '#f97316' },
-                          { color: '#ef4444' }
+                          { color: '#10b981' }, // WPA3-Enterprise
+                          { color: '#3b82f6' }, // WPA3-Personal
+                          { color: '#06b6d4' }, // WPA2-Enterprise
+                          { color: '#f59e0b' }, // WPA2-Personal
+                          { color: '#f97316' }, // Legacy
+                          { color: '#8b5cf6' }, // OWE
+                          { color: '#ef4444' }  // Open
                         ].map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
