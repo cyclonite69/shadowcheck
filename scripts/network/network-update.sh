@@ -28,32 +28,32 @@ print_error() {
     echo -e "${RED}[✗]${NC} $1"
 }
 
-# Check if docker-compose is available
-if ! command -v docker-compose &> /dev/null; then
-    print_error "docker-compose is not installed or not in PATH"
+# Check if docker compose is available
+if ! command -v docker compose &> /dev/null; then
+    print_error "docker compose is not installed or not in PATH"
     exit 1
 fi
 
-print_status "Detected docker-compose version: $(docker-compose version --short)"
+print_status "Detected docker compose version: $(docker compose version --short)"
 echo ""
 
 # Ask which environment to update
 echo "Which environment do you want to update?"
-echo "1) Development (docker-compose.yml)"
-echo "2) Production (docker-compose.prod.yml)"
+echo "1) Development (docker compose.yml)"
+echo "2) Production (docker compose.prod.yml)"
 echo "3) Both"
 read -p "Enter choice [1-3]: " choice
 
 COMPOSE_FILES=()
 case $choice in
     1)
-        COMPOSE_FILES+=("docker-compose.yml")
+        COMPOSE_FILES+=("docker compose.yml")
         ;;
     2)
-        COMPOSE_FILES+=("docker-compose.prod.yml")
+        COMPOSE_FILES+=("docker compose.prod.yml")
         ;;
     3)
-        COMPOSE_FILES+=("docker-compose.yml" "docker-compose.prod.yml")
+        COMPOSE_FILES+=("docker compose.yml" "docker compose.prod.yml")
         ;;
     *)
         print_error "Invalid choice"
@@ -81,25 +81,25 @@ for compose_file in "${COMPOSE_FILES[@]}"; do
 
     # Validate compose file
     print_status "Validating $compose_file..."
-    if [ "$compose_file" = "docker-compose.yml" ]; then
-        docker-compose config --quiet
+    if [ "$compose_file" = "docker compose.yml" ]; then
+        docker compose config --quiet
     else
-        docker-compose -f "$compose_file" config --quiet
+        docker compose -f "$compose_file" config --quiet
     fi
     print_status "Configuration is valid"
     echo ""
 
     # Stop containers
     print_status "Stopping containers..."
-    if [ "$compose_file" = "docker-compose.yml" ]; then
-        docker-compose down
+    if [ "$compose_file" = "docker compose.yml" ]; then
+        docker compose down
     else
-        docker-compose -f "$compose_file" down
+        docker compose -f "$compose_file" down
     fi
     echo ""
 
     # Get network name
-    if [ "$compose_file" = "docker-compose.yml" ]; then
+    if [ "$compose_file" = "docker compose.yml" ]; then
         NETWORK_NAME="shadowcheck_shadowcheck_network"
     else
         NETWORK_NAME="shadowcheck_shadowcheck_internal_prod"
@@ -119,10 +119,10 @@ for compose_file in "${COMPOSE_FILES[@]}"; do
 
     # Start containers with new configuration
     print_status "Starting containers with new network configuration..."
-    if [ "$compose_file" = "docker-compose.yml" ]; then
-        docker-compose up -d
+    if [ "$compose_file" = "docker compose.yml" ]; then
+        docker compose up -d
     else
-        docker-compose -f "$compose_file" up -d
+        docker compose -f "$compose_file" up -d
     fi
     echo ""
 
@@ -143,7 +143,7 @@ print_status "Network configuration update complete!"
 echo "=========================================="
 echo ""
 print_status "Next steps:"
-echo "  1. Check container status: docker-compose ps"
+echo "  1. Check container status: docker compose ps"
 echo "  2. View network details: docker network inspect <network_name>"
 echo "  3. Test connectivity between containers"
 echo "  4. Review NETWORK_CONFIGURATION.md for details"

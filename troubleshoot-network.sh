@@ -17,7 +17,7 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-COMPOSE_FILE="docker-compose.prod.yml"
+COMPOSE_FILE="docker compose.prod.yml"
 FIX_MODE=false
 
 # Parse arguments
@@ -168,8 +168,8 @@ fi
 # ==============================================================================
 log_section "TEST 6: Docker Network Configuration"
 
-# Get network name from docker-compose
-NETWORK_NAME=$(docker-compose -f "${COMPOSE_FILE}" ps -q postgres 2>/dev/null | xargs docker inspect --format='{{range $net,$v := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -1)
+# Get network name from docker compose
+NETWORK_NAME=$(docker compose -f "${COMPOSE_FILE}" ps -q postgres 2>/dev/null | xargs docker inspect --format='{{range $net,$v := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -1)
 
 if [[ -n "${NETWORK_NAME}" ]]; then
   log_success "Docker network: ${NETWORK_NAME}"
@@ -272,7 +272,7 @@ else
 
   echo ""
   echo -e "${YELLOW}3.${NC} Recreate Docker network from scratch:"
-  echo -e "   ${CYAN}docker-compose -f ${COMPOSE_FILE} down${NC}"
+  echo -e "   ${CYAN}docker compose -f ${COMPOSE_FILE} down${NC}"
   echo -e "   ${CYAN}docker network prune -f${NC}"
   echo -e "   ${CYAN}./start-prod.sh${NC}"
 

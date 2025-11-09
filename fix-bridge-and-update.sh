@@ -14,10 +14,10 @@ else
 fi
 
 # 2. Update pgAdmin image in compose file
-sed -i 's/image: dpage\/pgadmin4:latest/image: dpage\/pgadmin4:8.14/' docker-compose.prod.yml
-sed -i 's/127.0.0.1:5050:80/127.0.0.1:8080:80/' docker-compose.prod.yml
+sed -i 's/image: dpage\/pgadmin4:latest/image: dpage\/pgadmin4:8.14/' docker compose.prod.yml
+sed -i 's/127.0.0.1:5050:80/127.0.0.1:8080:80/' docker compose.prod.yml
 
 # 3. Restart pgAdmin with new image
-docker-compose -f docker-compose.prod.yml up -d pgadmin
+docker compose -f docker compose.prod.yml up -d pgadmin
 
 echo "✅ Complete"

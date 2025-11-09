@@ -14,7 +14,7 @@ echo ""
 echo "Checking PostgreSQL status..."
 if ! docker ps | grep -q shadowcheck_postgres_18; then
     echo "Starting PostgreSQL 18 container..."
-    docker compose -f docker-compose.prod.yml up -d postgres
+    docker compose -f docker compose.prod.yml up -d postgres
     echo "Waiting for PostgreSQL to be ready..."
     sleep 5
 else

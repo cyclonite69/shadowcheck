@@ -37,7 +37,7 @@ START_TIME=$(date +%s)
 # Start all services - Docker Compose handles dependencies via depends_on
 log_info "Starting all services..."
 echo ""
-docker-compose -f "${COMPOSE_FILE}" up -d
+docker compose -f "${COMPOSE_FILE}" up -d
 
 # Wait for services using Docker's native health status
 log_info "Waiting for services to become healthy..."
@@ -50,11 +50,11 @@ wait_for_healthy() {
   local elapsed=0
 
   while [[ ${elapsed} -lt ${timeout} ]]; do
-    local health_status=$(docker-compose -f "${COMPOSE_FILE}" ps -q "${service}" | xargs docker inspect --format='{{.State.Health.Status}}' 2>/dev/null || echo "none")
+    local health_status=$(docker compose -f "${COMPOSE_FILE}" ps -q "${service}" | xargs docker inspect --format='{{.State.Health.Status}}' 2>/dev/null || echo "none")
 
     # If service has no health check, verify it's running
     if [[ "${health_status}" == "none" ]]; then
-      local running_status=$(docker-compose -f "${COMPOSE_FILE}" ps -q "${service}" | xargs docker inspect --format='{{.State.Status}}' 2>/dev/null || echo "")
+      local running_status=$(docker compose -f "${COMPOSE_FILE}" ps -q "${service}" | xargs docker inspect --format='{{.State.Status}}' 2>/dev/null || echo "")
       if [[ "${running_status}" == "running" ]]; then
         log_success "${service} is running (no health check defined)"
         return 0
@@ -97,7 +97,7 @@ echo ""
 
 log_info "Service Status:"
 echo ""
-docker-compose -f "${COMPOSE_FILE}" ps
+docker compose -f "${COMPOSE_FILE}" ps
 echo ""
 echo -e "${BOLD}${GREEN}Available Services:${NC}"
 echo -e "  ${GREEN}●${NC} PostgreSQL Database  → localhost:5432"
@@ -107,7 +107,7 @@ echo -e "  ${GREEN}●${NC} Frontend Dashboard   → ${CYAN}http://localhost:${F
 echo -e "  ${GREEN}●${NC} pgAdmin              → ${CYAN}http://localhost:8080${NC}"
 echo ""
 echo -e "${BOLD}Management:${NC}"
-echo -e "  → View logs:    ${CYAN}docker-compose -f ${COMPOSE_FILE} logs -f [service]${NC}"
+echo -e "  → View logs:    ${CYAN}docker compose -f ${COMPOSE_FILE} logs -f [service]${NC}"
 echo -e "  → Stop:         ${CYAN}./stop-prod.sh${NC}"
 echo -e "  → Restart:      ${CYAN}./restart-prod.sh${NC}"
 echo ""

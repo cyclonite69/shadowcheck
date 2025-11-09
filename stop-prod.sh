@@ -21,7 +21,7 @@ POSTGRES_TIMEOUT=30   # PostgreSQL (longer for data integrity)
 PGADMIN_TIMEOUT=10    # pgAdmin
 
 # Configuration
-COMPOSE_FILE="docker-compose.prod.yml"
+COMPOSE_FILE="docker compose.prod.yml"
 
 log_info() {
   echo -e "${BLUE}ℹ${NC} $*"
@@ -44,14 +44,14 @@ stop_service() {
   local timeout="$2"
   local description="$3"
 
-  if ! docker-compose -f "${COMPOSE_FILE}" ps | grep -q "${service}.*Up"; then
+  if ! docker compose -f "${COMPOSE_FILE}" ps | grep -q "${service}.*Up"; then
     log_success "${description} is already stopped"
     return 0
   fi
 
   log_info "Stopping ${description} (timeout: ${timeout}s)..."
 
-  if docker-compose -f "${COMPOSE_FILE}" stop -t "${timeout}" "${service}" 2>&1; then
+  if docker compose -f "${COMPOSE_FILE}" stop -t "${timeout}" "${service}" 2>&1; then
     log_success "${description} stopped gracefully"
     return 0
   else
@@ -64,7 +64,7 @@ verify_stopped() {
   local service="$1"
   local description="$2"
 
-  if docker-compose -f "${COMPOSE_FILE}" ps | grep -q "${service}.*Up"; then
+  if docker compose -f "${COMPOSE_FILE}" ps | grep -q "${service}.*Up"; then
     log_error "${description} is still running!"
     return 1
   else
@@ -136,13 +136,13 @@ fi
 echo ""
 log_info "Final Status:"
 echo ""
-docker-compose -f "${COMPOSE_FILE}" ps postgres backend frontend pgadmin
+docker compose -f "${COMPOSE_FILE}" ps postgres backend frontend pgadmin
 
 echo ""
 log_success "Shutdown complete!"
 echo ""
 echo -e "${BOLD}Control:${NC}"
 echo -e "  → Start again:  ${CYAN}./start-prod.sh${NC}"
-echo -e "  → Full cleanup: ${CYAN}docker-compose -f ${COMPOSE_FILE} down${NC}"
-echo -e "  → View logs:    ${CYAN}docker-compose -f ${COMPOSE_FILE} logs [service]${NC}"
+echo -e "  → Full cleanup: ${CYAN}docker compose -f ${COMPOSE_FILE} down${NC}"
+echo -e "  → View logs:    ${CYAN}docker compose -f ${COMPOSE_FILE} logs [service]${NC}"
 echo ""

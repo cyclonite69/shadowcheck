@@ -32,8 +32,8 @@ echo "   ✓ Git bundle created (can restore entire repo from this)"
 
 # 4. Extract working code from Docker
 echo "🐳 Step 4/7: Extracting code from running Docker containers..."
-if docker-compose ps | grep -q "Up"; then
-    backend_container=$(docker-compose ps -q backend 2>/dev/null || echo "")
+if docker compose ps | grep -q "Up"; then
+    backend_container=$(docker compose ps -q backend 2>/dev/null || echo "")
     if [ ! -z "$backend_container" ]; then
         mkdir -p "$BACKUP_ROOT/working_code_from_docker"
         docker cp "$backend_container:/app" "$BACKUP_ROOT/working_code_from_docker/"
@@ -47,8 +47,8 @@ fi
 
 # 5. Backup database (if running)
 echo "🗄️  Step 5/7: Backing up database..."
-if docker-compose ps | grep -q "db.*Up"; then
-    docker-compose exec -T db pg_dump -U shadowcheck shadowcheck > "$BACKUP_ROOT/database_backup.sql" 2>/dev/null || \
+if docker compose ps | grep -q "db.*Up"; then
+    docker compose exec -T db pg_dump -U shadowcheck shadowcheck > "$BACKUP_ROOT/database_backup.sql" 2>/dev/null || \
         echo "   ⚠ Could not backup database (might need different credentials)"
     echo "   ✓ Database backed up"
 else
@@ -133,8 +133,8 @@ cd working_code_from_docker/app
 
 SCENARIO 4: Restore Database
 ------------------------------
-docker-compose up -d db
-docker-compose exec -T db psql -U shadowcheck shadowcheck < database_backup.sql
+docker compose up -d db
+docker compose exec -T db psql -U shadowcheck shadowcheck < database_backup.sql
 
 WHAT TO DO FIRST:
 -----------------

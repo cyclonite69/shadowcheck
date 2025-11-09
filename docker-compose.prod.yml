@@ -264,41 +264,6 @@ services:
         max-file: "3"
         labels: "service=pgadmin,app=shadowcheck,layer=admin"
 
-
-# ==============================================================================
-# NETWORKS
-# ==============================================================================
-networks:
-  shadowcheck_internal_prod:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.29.0.0/16
-
-# ==============================================================================
-# VOLUMES
-# ==============================================================================
-volumes:
-  shadowcheck-prod_postgres_data:
-    external: true
-  # Backend
-  backend_logs:
-    driver: local
-  signal_cache:
-    driver: local
-
-  # pgAdmin
-  pgadmin_data:
-    driver: local
-
-  # Monitoring
-  prometheus_data:
-    driver: local
-  loki_data:
-    driver: local
-  grafana_data:
-    driver: local
-
   # ============================================================================
   # MONITORING STACK - Prometheus, Grafana, Loki
   # ============================================================================
@@ -426,6 +391,41 @@ volumes:
         max-size: "5m"
         max-file: "3"
         labels: "service=grafana,app=shadowcheck,layer=monitoring"
+
+
+# ==============================================================================
+# NETWORKS
+# ==============================================================================
+networks:
+  shadowcheck_internal_prod:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/16
+
+# ==============================================================================
+# VOLUMES
+# ==============================================================================
+volumes:
+  shadowcheck-prod_postgres_data:
+    external: true
+  # Backend
+  backend_logs:
+    driver: local
+  signal_cache:
+    driver: local
+
+  # pgAdmin
+  pgadmin_data:
+    driver: local
+
+  # Monitoring
+  prometheus_data:
+    driver: local
+  loki_data:
+    driver: local
+  grafana_data:
+    driver: local
 
 # ==============================================================================
 # SECRETS

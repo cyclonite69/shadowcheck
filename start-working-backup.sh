@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # ShadowCheck - Startup Script with Health Checks
-# Starts all services via docker-compose with proper health validation
+# Starts all services via docker compose with proper health validation
 #
 
 set -euo pipefail
@@ -155,7 +155,7 @@ echo ""
 log_info "Step 3: Starting application services..."
 echo ""
 
-if ! docker-compose -f docker-compose.prod.yml up -d backend pgadmin; then
+if ! docker compose -f docker compose.prod.yml up -d backend pgadmin; then
     log_error "Failed to start application services"
     exit 1
 fi
@@ -172,7 +172,7 @@ echo ""
 log_info "Step 4: Starting frontend..."
 echo ""
 
-if ! docker-compose -f docker-compose.prod.yml up -d frontend; then
+if ! docker compose -f docker compose.prod.yml up -d frontend; then
     log_error "Failed to start frontend"
     exit 1
 fi
@@ -190,7 +190,7 @@ echo ""
 # Show final status
 log_info "Service Status:"
 echo ""
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker compose.prod.yml ps
 
 echo ""
 echo -e "${BOLD}${GREEN}Available Services:${NC}"
@@ -206,5 +206,5 @@ echo ""
 echo -e "${BOLD}Control:${NC}"
 echo -e "  → Stop all:    ${CYAN}./stop.sh${NC}"
 echo -e "  → Restart all: ${CYAN}./restart.sh${NC}"
-echo -e "  → View logs:   ${CYAN}docker-compose -f docker-compose.prod.yml logs -f [service]${NC}"
+echo -e "  → View logs:   ${CYAN}docker compose -f docker compose.prod.yml logs -f [service]${NC}"
 echo ""

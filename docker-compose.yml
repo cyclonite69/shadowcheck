@@ -15,7 +15,7 @@ services:
       POSTGRES_WORK_MEM: "128MB"
       POSTGRES_MAINTENANCE_WORK_MEM: "1GB"
     volumes:
-      - shadowcheck_postgres_data:/var/lib/postgresql/data
+      - shadowcheck-prod_postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
       - ./config/postgres-config:/etc/postgresql/conf.d:ro
       - /dev/shm:/dev/shm  # Use host shared memory for better performance
@@ -246,7 +246,7 @@ networks:
     driver: bridge
 
 volumes:
-  shadowcheck_postgres_data:
+  shadowcheck-prod_postgres_data:
     external: true
   shadowcheck_pgadmin:
     driver: local

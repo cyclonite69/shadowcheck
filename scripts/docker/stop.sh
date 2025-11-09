@@ -42,14 +42,14 @@ stop_service() {
   local timeout="$2"
   local description="$3"
 
-  if ! docker-compose ps | grep -q "${service}.*Up"; then
+  if ! docker compose ps | grep -q "${service}.*Up"; then
     log_success "${description} is already stopped"
     return 0
   fi
 
   log_info "Stopping ${description} (timeout: ${timeout}s)..."
 
-  if docker-compose stop -t "${timeout}" "${service}" 2>&1; then
+  if docker compose stop -t "${timeout}" "${service}" 2>&1; then
     log_success "${description} stopped gracefully"
     return 0
   else
@@ -62,7 +62,7 @@ verify_stopped() {
   local service="$1"
   local description="$2"
 
-  if docker-compose ps | grep -q "${service}.*Up"; then
+  if docker compose ps | grep -q "${service}.*Up"; then
     log_error "${description} is still running!"
     return 1
   else
@@ -154,13 +154,13 @@ fi
 echo ""
 log_info "Final Status:"
 echo ""
-docker-compose ps
+docker compose ps
 
 echo ""
 log_success "Shutdown complete!"
 echo ""
 echo -e "${BOLD}Control:${NC}"
 echo -e "  → Start again:  ${CYAN}./start.sh${NC}"
-echo -e "  → Full cleanup: ${CYAN}docker-compose down${NC}"
-echo -e "  → View logs:    ${CYAN}docker-compose logs [service]${NC}"
+echo -e "  → Full cleanup: ${CYAN}docker compose down${NC}"
+echo -e "  → View logs:    ${CYAN}docker compose logs [service]${NC}"
 echo ""

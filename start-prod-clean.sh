@@ -16,7 +16,7 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 # Configuration
-COMPOSE_FILE="docker-compose.prod.yml"
+COMPOSE_FILE="docker compose.prod.yml"
 FRONTEND_PORT="${FRONTEND_PORT:-5173}"
 
 log_info() { echo -e "${BLUE}ℹ${NC} $*"; }
@@ -37,7 +37,7 @@ START_TIME=$(date +%s)
 # Start all services - Docker Compose handles dependencies via depends_on
 log_info "Starting all services..."
 echo ""
-docker-compose -f "${COMPOSE_FILE}" up -d
+docker compose -f "${COMPOSE_FILE}" up -d
 
 # Wait for services using Docker's native health status
 log_info "Waiting for services to become healthy..."
@@ -50,11 +50,11 @@ wait_for_healthy() {
   local elapsed=0
 
   while [[ ${elapsed} -lt ${timeout} ]]; do
-    local health_status=$(docker-compose -f "${COMPOSE_FILE}" ps -q "${service}" | xargs docker inspect --format='{{.State.Health.Status}}' 2>/dev/null || echo "none")
+    local health_status=$(docker compose -f "${COMPOSE_FILE}" ps -q "${service}" | xargs docker inspect --format='{{.State.Health.Status}}' 2>/dev/null || echo "none")
 
     # If service has no health check, verify it's running
     if [[ "${health_status}" == "none" ]]; then
-      local running_status=$(docker-compose -f "${COMPOSE_FILE}" ps -q "${service}" | xargs docker inspect --format='{{.State.Status}}' 2>/dev/null || echo "")
+      local running_status=$(docker compose -f "${COMPOSE_FILE}" ps -q "${service}" | xargs docker inspect --format='{{.State.Status}}' 2>/dev/null || echo "")
       if [[ "${running_status}" == "running" ]]; then
         log_success "${service} is running (no health check defined)"
         return 0
@@ -97,7 +97,7 @@ echo ""
 
 log_info "Service Status:"
 echo ""
-docker-compose -f "${COMPOSE_FILE}" ps
+docker compose -f "${COMPOSE_FILE}" ps
 echo ""
 echo -e "${BOLD}${GREEN}Available Services:${NC}"
 echo -e "  ${GREEN}●${NC} PostgreSQL Database  → localhost:5432"

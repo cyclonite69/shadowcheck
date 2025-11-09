@@ -4,11 +4,11 @@
 echo "🔄 Restarting ShadowCheck stack..."
 
 # Stop everything
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.yml stop grafana prometheus loki promtail pgadmin
+docker compose -f docker compose.prod.yml down
+docker compose -f docker compose.yml stop grafana prometheus loki promtail pgadmin
 
 # Start core services
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker compose.prod.yml up -d
 
 # Wait for backend to be healthy
 echo "⏳ Waiting for backend to be healthy..."
@@ -24,7 +24,7 @@ while [ $elapsed -lt $timeout ]; do
 done
 
 # Start monitoring
-docker-compose -f docker-compose.yml up -d grafana prometheus loki promtail pgadmin
+docker compose -f docker compose.yml up -d grafana prometheus loki promtail pgadmin
 
 # Connect monitoring to prod network
 echo "🔗 Connecting monitoring to prod network..."

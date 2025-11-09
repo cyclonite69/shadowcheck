@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # ShadowCheck - Startup Script with Health Checks
-# Starts all services via docker-compose with proper health validation
+# Starts all services via docker compose with proper health validation
 #
 
 set -euo pipefail
@@ -119,7 +119,7 @@ START_TIME=$(date +%s)
 log_info "Step 1: Starting infrastructure services..."
 echo ""
 
-if ! docker-compose up -d postgres loki; then
+if ! docker compose up -d postgres loki; then
     log_error "Failed to start infrastructure"
     exit 1
 fi
@@ -136,7 +136,7 @@ echo ""
 log_info "Step 2: Starting monitoring services..."
 echo ""
 
-if ! docker-compose up -d promtail prometheus grafana; then
+if ! docker compose up -d promtail prometheus grafana; then
     log_error "Failed to start monitoring services"
     exit 1
 fi
@@ -153,7 +153,7 @@ echo ""
 log_info "Step 3: Starting application services..."
 echo ""
 
-if ! docker-compose up -d backend pgadmin; then
+if ! docker compose up -d backend pgadmin; then
     log_error "Failed to start application services"
     exit 1
 fi
@@ -170,7 +170,7 @@ echo ""
 log_info "Step 4: Starting frontend..."
 echo ""
 
-if ! docker-compose up -d frontend; then
+if ! docker compose up -d frontend; then
     log_error "Failed to start frontend"
     exit 1
 fi
@@ -188,7 +188,7 @@ echo ""
 # Show final status
 log_info "Service Status:"
 echo ""
-docker-compose ps
+docker compose ps
 
 echo ""
 echo -e "${BOLD}${GREEN}Available Services:${NC}"
@@ -204,5 +204,5 @@ echo ""
 echo -e "${BOLD}Control:${NC}"
 echo -e "  → Stop all:    ${CYAN}./stop.sh${NC}"
 echo -e "  → Restart all: ${CYAN}./restart.sh${NC}"
-echo -e "  → View logs:   ${CYAN}docker-compose logs -f [service]${NC}"
+echo -e "  → View logs:   ${CYAN}docker compose logs -f [service]${NC}"
 echo ""

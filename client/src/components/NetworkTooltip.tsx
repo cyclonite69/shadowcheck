@@ -121,9 +121,9 @@ export function NetworkTooltip({ network, position = {}, className = '' }: Netwo
         )}
 
         {/* Location Group - with left accent */}
-        {(network.latitude !== null || network.longitude !== null || network.altitude !== null) && (
+        {(network.latitude != null || network.longitude != null || network.altitude != null) && (
           <div className="border-l-2 border-cyan-500 pl-3 py-1 space-y-1.5">
-            {network.latitude !== null && (
+            {network.latitude != null && (
               <div className="flex justify-between">
                 <span className="text-gray-400 text-xs">Latitude:</span>
                 <span className="text-gray-200 text-xs font-mono">
@@ -131,7 +131,7 @@ export function NetworkTooltip({ network, position = {}, className = '' }: Netwo
                 </span>
               </div>
             )}
-            {network.longitude !== null && (
+            {network.longitude != null && (
               <div className="flex justify-between">
                 <span className="text-gray-400 text-xs">Longitude:</span>
                 <span className="text-gray-200 text-xs font-mono">
@@ -139,7 +139,7 @@ export function NetworkTooltip({ network, position = {}, className = '' }: Netwo
                 </span>
               </div>
             )}
-            {network.altitude !== null && (
+            {network.altitude != null && (
               <div className="flex justify-between">
                 <span className="text-gray-400 text-xs">Altitude:</span>
                 <span className="text-gray-200 text-xs font-mono">
@@ -154,7 +154,7 @@ export function NetworkTooltip({ network, position = {}, className = '' }: Netwo
         <div className="pt-2 border-t border-gray-800">
           <span className="text-gray-400 text-xs uppercase tracking-wide">Last Seen:</span>
           <div className="text-gray-300 text-xs mt-0.5">
-            {formatLastSeen(network.lastSeen)}
+            {formatLastSeen(network.lastSeen ?? null)}
           </div>
         </div>
       </div>
