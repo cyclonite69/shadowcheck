@@ -1,5 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Map, Search, Table, LayoutGrid } from 'lucide-react';
+import { MapPin, Map, Search, Table, Clock } from 'lucide-react';
+import { NetworkTimelineChart } from '@/components/NetworkTimelineChart';
+import { NetworkActivityHeatmap } from '@/components/NetworkActivityHeatmap';
 
 export default function VisualizationPage() {
   return (
@@ -26,16 +28,16 @@ export default function VisualizationPage() {
           </div>
 
           {/* Enhanced Tabs Section */}
-          <Tabs defaultValue="unified" className="w-full">
+          <Tabs defaultValue="timeline" className="w-full">
             <div className="premium-card p-2 mb-6">
-              <TabsList className="grid w-full grid-cols-4 bg-transparent gap-2">
+              <TabsList className="grid w-full grid-cols-5 bg-transparent gap-2">
                 <TabsTrigger
-                  value="unified"
-                  data-testid="tab-unified"
+                  value="timeline"
+                  data-testid="tab-timeline"
                   className="premium-card hover:scale-105 data-[state=active]:bg-gradient-to-br data-[state=active]:from-violet-600/20 data-[state=active]:to-fuchsia-600/20 data-[state=active]:shadow-lg data-[state=active]:shadow-violet-500/20 transition-all"
                 >
-                  <LayoutGrid className="mr-2 h-4 w-4" />
-                  Unified View
+                  <Clock className="mr-2 h-4 w-4" />
+                  Timeline
                 </TabsTrigger>
                 <TabsTrigger
                   value="mapbox"
@@ -64,14 +66,13 @@ export default function VisualizationPage() {
               </TabsList>
             </div>
 
-            {/* Empty tab content areas - ready for future implementation */}
-            <TabsContent value="unified" className="space-y-6">
-              <div className="premium-card p-8 text-center text-slate-400">
-                <LayoutGrid className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Unified View - Coming Soon</p>
-              </div>
+            {/* Timeline Tab - Shows when networks turn on/off */}
+            <TabsContent value="timeline" className="space-y-6">
+              <NetworkTimelineChart days={7} />
+              <NetworkActivityHeatmap weeks={4} limit={5} />
             </TabsContent>
 
+            {/* Empty tab content areas - ready for future implementation */}
             <TabsContent value="mapbox" className="space-y-6">
               <div className="premium-card p-8 text-center text-slate-400">
                 <Map className="h-12 w-12 mx-auto mb-4 opacity-50" />
