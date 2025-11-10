@@ -431,13 +431,6 @@ export function AccessPointsMapView({
           <div className="text-slate-400 text-sm">Loading map...</div>
         </div>
       )}
-      {mapLoaded && selectedObservations.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-slate-500 text-sm bg-slate-800/90 px-4 py-2 rounded">
-            Select networks to display on map
-          </div>
-        </div>
-      )}
 
       {/* Map Style Selector - Top Left */}
       {mapLoaded && (

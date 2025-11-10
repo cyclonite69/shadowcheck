@@ -19,6 +19,7 @@ import { useNetworkObservationColumns } from '@/hooks/useNetworkObservationColum
 import { iconColors } from '@/lib/iconColors';
 import { categorizeSecurityType, getSecurityTypeStyle } from '@/lib/securityDecoder';
 import { NetworkSecurityPill } from '@/components/NetworkSecurityPill';
+import { TruncatedCell } from '@/components/TruncatedCell';
 import {
   ColumnDef,
   ColumnOrderState,
@@ -334,6 +335,8 @@ export function NetworkObservationsTableView({
       enableSorting: false,
       enableHiding: false,
       size: 50,
+      minSize: 50,
+      maxSize: 50,
     },
     {
       accessorKey: 'type',
@@ -349,17 +352,23 @@ export function NetworkObservationsTableView({
           </div>
         );
       },
-      size: 80,
+      size: 90,
+      minSize: 90,
+      maxSize: 90,
     },
     {
       accessorKey: 'ssid',
       header: 'SSID',
       cell: ({ row }) => (
-        <span className="text-slate-200 font-medium text-xs truncate block">
-          {row.original.ssid || <span className="text-slate-500 italic">Hidden</span>}
-        </span>
+        <TruncatedCell
+          text={row.original.ssid}
+          className="text-slate-200 font-medium text-xs"
+          fallback={<span className="text-slate-500 italic">Hidden</span>}
+        />
       ),
-      size: 200,
+      size: 140,
+      minSize: 120,
+      maxSize: 180,
     },
     {
       accessorKey: 'bssid',
@@ -367,18 +376,24 @@ export function NetworkObservationsTableView({
       cell: ({ row }) => (
         <code className="text-xs text-slate-400 truncate block">{row.original.bssid.toUpperCase()}</code>
       ),
-      size: 180,
+      size: 135,
+      minSize: 135,
+      maxSize: 135,
     },
     {
       accessorKey: 'manufacturer',
       header: 'Manufacturer',
       cell: ({ row }) => (
-        <span className="text-slate-300 text-xs truncate block" title={row.original.manufacturer || 'Unknown'}>
-          {row.original.manufacturer || <span className="text-slate-500 italic">Unknown</span>}
-        </span>
+        <TruncatedCell
+          text={row.original.manufacturer}
+          className="text-slate-300 text-xs"
+          fallback={<span className="text-slate-500 italic">Unknown</span>}
+        />
       ),
       enableSorting: true,
-      size: 200,
+      size: 150,
+      minSize: 140,
+      maxSize: 180,
     },
     {
       accessorKey: 'signal_strength',
@@ -388,7 +403,9 @@ export function NetworkObservationsTableView({
           {formatSignal(row.original.signal_strength)}
         </span>
       ),
-      size: 100,
+      size: 85,
+      minSize: 85,
+      maxSize: 85,
     },
     {
       accessorKey: 'frequency',
@@ -398,17 +415,21 @@ export function NetworkObservationsTableView({
           {formatFrequency(row.original.frequency)}
         </span>
       ),
-      size: 120,
+      size: 100,
+      minSize: 100,
+      maxSize: 100,
     },
     {
       accessorKey: 'channel',
       header: 'Channel',
       cell: ({ row }) => (
-        <span className="text-slate-300 text-xs truncate block">
+        <span className="text-slate-300 text-xs text-center block">
           {row.original.channel || '-'}
         </span>
       ),
-      size: 80,
+      size: 70,
+      minSize: 70,
+      maxSize: 70,
     },
     {
       accessorKey: 'capabilities',
@@ -417,7 +438,9 @@ export function NetworkObservationsTableView({
         const securityType = categorizeSecurityType(row.original.capabilities, row.original.type);
         return <NetworkSecurityPill type={securityType} radioType={row.original.type} />;
       },
-      size: 180,
+      size: 120,
+      minSize: 100,
+      maxSize: 140,
     },
     {
       accessorKey: 'observation_count',
@@ -429,7 +452,9 @@ export function NetworkObservationsTableView({
           </span>
         </span>
       ),
-      size: 100,
+      size: 70,
+      minSize: 70,
+      maxSize: 70,
     },
     {
       accessorKey: 'latitude',
@@ -439,7 +464,9 @@ export function NetworkObservationsTableView({
           {formatCoordinate(row.original.latitude)}
         </span>
       ),
-      size: 120,
+      size: 95,
+      minSize: 95,
+      maxSize: 95,
     },
     {
       accessorKey: 'longitude',
@@ -449,7 +476,9 @@ export function NetworkObservationsTableView({
           {formatCoordinate(row.original.longitude)}
         </span>
       ),
-      size: 120,
+      size: 95,
+      minSize: 95,
+      maxSize: 95,
     },
     {
       accessorKey: 'altitude',
@@ -459,7 +488,9 @@ export function NetworkObservationsTableView({
           {formatAltitude(row.original.altitude)}
         </span>
       ),
-      size: 100,
+      size: 85,
+      minSize: 85,
+      maxSize: 85,
     },
     {
       accessorKey: 'accuracy',
@@ -469,7 +500,9 @@ export function NetworkObservationsTableView({
           {formatAccuracy(row.original.accuracy)}
         </span>
       ),
-      size: 100,
+      size: 80,
+      minSize: 80,
+      maxSize: 80,
     },
     {
       accessorKey: 'observed_at',
@@ -479,7 +512,9 @@ export function NetworkObservationsTableView({
           {formatTimestamp(row.original.observed_at)}
         </span>
       ),
-      size: 150,
+      size: 145,
+      minSize: 145,
+      maxSize: 145,
     },
   ], []);
 
