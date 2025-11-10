@@ -1,161 +1,74 @@
-/**
- * NetworkTooltip - Interactive WiFi network details tooltip
- * Dark modal-style tooltip for displaying network information on maps or other interfaces
- */
+import React from 'react';
 
-import { Wifi } from 'lucide-react';
+export default function NetworkTooltip() {
+  const wifiIcon = (
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="white">
+      <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
+    </svg>
+  );
 
-interface NetworkTooltipProps {
-  network: {
-    ssid?: string | null;
-    isHidden?: boolean;
-    bssid: string;
-    frequency?: number | null;
-    signalStrength?: number | null;
-    encryption?: string | null;
-    latitude?: number | null;
-    longitude?: number | null;
-    altitude?: number | null;
-    lastSeen?: string | null;
-  };
-  position?: {
-    top?: number;
-    left?: number;
-    bottom?: number;
-    right?: number;
-  };
-  className?: string;
-}
-
-export function NetworkTooltip({ network, position = {}, className = '' }: NetworkTooltipProps) {
-  // Format frequency to GHz
-  const frequencyGHz = network.frequency
-    ? (network.frequency / 1000).toFixed(2)
-    : null;
-
-  // Truncate MAC address if needed
-  const displayBssid = network.bssid.length > 20
-    ? `${network.bssid.slice(0, 17)}...`
-    : network.bssid;
-
-  // Format timestamp
-  const formatLastSeen = (timestamp: string | null) => {
-    if (!timestamp) return 'Unknown';
-    try {
-      const date = new Date(timestamp);
-      return date.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return timestamp;
-    }
-  };
-
-  const positionStyle = {
-    top: position.top !== undefined ? `${position.top}px` : undefined,
-    left: position.left !== undefined ? `${position.left}px` : undefined,
-    bottom: position.bottom !== undefined ? `${position.bottom}px` : undefined,
-    right: position.right !== undefined ? `${position.right}px` : undefined,
+  const tooltipStyle = {
+    transform: 'scale(0.7)',
+    transformOrigin: 'top left'
   };
 
   return (
-    <div
-      className={`absolute z-50 bg-black border border-gray-700 rounded-lg shadow-2xl p-4 min-w-[320px] max-w-[400px] ${className}`}
-      style={positionStyle}
-    >
-      {/* WiFi Icon - Upper Right */}
-      <div className="absolute top-3 right-3 text-gray-400">
-        <Wifi size={20} />
-      </div>
+    <div className="flex items-center justify-center min-h-screen bg-slate-900 p-4">
+      {/* Semi-transparent dark background overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
 
-      {/* Content */}
-      <div className="space-y-2.5 text-sm">
-        {/* Network Name */}
-        <div>
-          <span className="text-gray-400 text-xs uppercase tracking-wide">Network:</span>
-          <div className="text-white font-bold mt-0.5">
-            {network.isHidden || !network.ssid ? (
-              <span className="italic">(hidden)</span>
-            ) : (
-              network.ssid
-            )}
+      {/* Tooltip card */}
+      <div className="relative w-80 bg-gray-950 bg-opacity-95 rounded-xl border border-gray-700 p-5 shadow-2xl backdrop-blur-sm" style={tooltipStyle}>
+
+        {/* Header: Network name and icon */}
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <h3 className="text-base font-semibold text-white">(hidden)</h3>
+          <div className="w-8 h-8 text-cyan-400 flex-shrink-0 pt-0.5">
+            {wifiIcon}
           </div>
         </div>
 
         {/* MAC Address */}
-        <div>
-          <span className="text-gray-400 text-xs uppercase tracking-wide">MAC Address:</span>
-          <div className="text-gray-200 font-mono text-xs mt-0.5" title={network.bssid}>
-            {displayBssid}
+        <div className="text-xs text-gray-300 font-mono mb-4 border-b border-gray-700 pb-3">
+          MAC: CE:94:35:1E:8B:2F
+        </div>
+
+        {/* Technical specs */}
+        <div className="space-y-2.5 text-sm mb-4">
+          <div className="flex justify-between">
+            <span className="text-gray-400">Frequency</span>
+            <span className="text-gray-200 font-medium">2.412 GHz</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-400">Signal</span>
+            <span className="text-amber-300 font-semibold">-68 dBm</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-400">Encryption</span>
+            <span className="text-gray-200 font-medium">WPA2</span>
           </div>
         </div>
 
-        {/* Frequency */}
-        {frequencyGHz && (
-          <div>
-            <span className="text-gray-400 text-xs uppercase tracking-wide">Frequency:</span>
-            <div className="text-gray-200 mt-0.5">{frequencyGHz} GHz</div>
+        {/* Location data - highlighted blue box */}
+        <div className="bg-blue-950 bg-opacity-50 border border-blue-700 rounded-lg p-3 mb-4 space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-blue-300">Lat</span>
+            <span className="text-gray-100 font-mono text-xs">42°59&apos;2.87&quot; N</span>
           </div>
-        )}
+          <div className="flex justify-between">
+            <span className="text-blue-300">Lon</span>
+            <span className="text-gray-100 font-mono text-xs">83°45&apos;3.05&quot; W</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-blue-300">Altitude</span>
+            <span className="text-gray-100 font-medium">656.17 ft MSL</span>
+          </div>
+        </div>
 
-        {/* Signal Strength */}
-        {network.signalStrength !== null && network.signalStrength !== undefined && (
-          <div>
-            <span className="text-gray-400 text-xs uppercase tracking-wide">Signal:</span>
-            <div className="text-amber-400 font-semibold mt-0.5">
-              {network.signalStrength} dBm
-            </div>
-          </div>
-        )}
-
-        {/* Encryption Type */}
-        {network.encryption && (
-          <div>
-            <span className="text-gray-400 text-xs uppercase tracking-wide">Encryption:</span>
-            <div className="text-gray-200 mt-0.5">{network.encryption}</div>
-          </div>
-        )}
-
-        {/* Location Group - with left accent */}
-        {(network.latitude != null || network.longitude != null || network.altitude != null) && (
-          <div className="border-l-2 border-cyan-500 pl-3 py-1 space-y-1.5">
-            {network.latitude != null && (
-              <div className="flex justify-between">
-                <span className="text-gray-400 text-xs">Latitude:</span>
-                <span className="text-gray-200 text-xs font-mono">
-                  {network.latitude.toFixed(6)}°
-                </span>
-              </div>
-            )}
-            {network.longitude != null && (
-              <div className="flex justify-between">
-                <span className="text-gray-400 text-xs">Longitude:</span>
-                <span className="text-gray-200 text-xs font-mono">
-                  {network.longitude.toFixed(6)}°
-                </span>
-              </div>
-            )}
-            {network.altitude != null && (
-              <div className="flex justify-between">
-                <span className="text-gray-400 text-xs">Altitude:</span>
-                <span className="text-gray-200 text-xs font-mono">
-                  {network.altitude.toFixed(1)} m
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Last Seen */}
-        <div className="pt-2 border-t border-gray-800">
-          <span className="text-gray-400 text-xs uppercase tracking-wide">Last Seen:</span>
-          <div className="text-gray-300 text-xs mt-0.5">
-            {formatLastSeen(network.lastSeen ?? null)}
-          </div>
+        {/* Timestamp */}
+        <div className="text-xs border-t border-gray-700 pt-3 flex justify-between">
+          <span className="text-orange-400 font-semibold">Seen:</span>
+          <span className="text-orange-400 font-semibold">01/28/2025, 03:00:00 AM</span>
         </div>
       </div>
     </div>
