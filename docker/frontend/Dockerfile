@@ -55,9 +55,7 @@ RUN ls -la /build/client/dist
 # ==============================================================================
 FROM nginx:stable AS production
 
-# Install runtime dependencies
-RUN apt update --allow-releaseinfo-change && apt install -y wget && \
-    rm -rf /var/lib/apt/lists/*
+# curl is already available in nginx:stable base image - no additional packages needed
 
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
@@ -125,7 +123,7 @@ EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
+    CMD curl -f http://localhost:80/ || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
