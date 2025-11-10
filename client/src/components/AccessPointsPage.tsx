@@ -9,31 +9,20 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Filter, Shield, X, Radio, Signal, ChevronDown, MapPin, Navigation, Calendar, Home } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useInfiniteNetworkObservations, type NetworkFilters } from '@/hooks/useInfiniteNetworkObservations';
 import { flattenNetworkObservations, type NetworkObservation } from '@/types';
 import { useNetworkObservationColumns } from '@/hooks/useNetworkObservationColumns';
 import { useNetworkObservationsByBssid } from '@/hooks/useNetworkObservationsByBssid';
-import { NetworkObservationsTableView, getRadioTypeDisplay } from '@/components/NetworkObservationsTableView';
+import { NetworkObservationsTableView } from '@/components/NetworkObservationsTableView';
 import { ObservationColumnSelector } from '@/components/ObservationColumnSelector';
 import { AccessPointsMapView } from '@/components/AccessPointsMapView';
-import { SecurityBadge } from '@/components/SecurityTooltip';
-import { SECURITY_TYPE_MAP, categorizeSecurityType, getSecurityTypeStyle } from '@/lib/securityDecoder';
+import { FilterBar } from '@/components/FilterBar';
+import { categorizeSecurityType } from '@/lib/securityDecoder';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { type SortingState, type Updater } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -65,7 +54,6 @@ export function AccessPointsPage() {
 
   // Security filter state (factual security types)
   const [securityFilters, setSecurityFilters] = useState<Set<string>>(new Set());
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // Spatial filter state
   const [centerPoint, setCenterPoint] = useState<{ lat: number; lng: number } | null>(null);
@@ -196,380 +184,54 @@ export function AccessPointsPage() {
             </div>
           </div>
 
-          {/* Search and filters - Compact Version */}
-          <div className="space-y-2">
-            {/* Row 1: Search + Filters + GPS + Radius */}
-            <div className="flex items-center gap-2">
-              {/* Search input */}
-              <div className="relative flex-1 max-w-xs">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+          {/* Search and Unified Filter Bar */}
+          <div className="space-y-3">
+            {/* Row 1: Search input */}
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <Input
                   type="text"
-                  placeholder="SSID or BSSID..."
+                  placeholder="Search SSID or BSSID..."
                   value={filters.search}
                   onChange={(e) =>
                     setFilters((prev) => ({ ...prev, search: e.target.value }))
                   }
-                  className="pl-8 pr-3 py-1.5 h-8 text-sm bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-500"
+                  className="pl-8 pr-3 py-2 h-9 text-sm bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-500"
                 />
               </div>
 
-              {/* Radio Type Filter Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 h-8 px-2.5 text-xs bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"
-                  >
-                    <Radio className="h-3.5 w-3.5" />
-                    Radio
-                    {filters.radioTypes && filters.radioTypes.length > 0 && (
-                      <Badge className="ml-0.5 bg-blue-500 text-white text-xs px-1 py-0">
-                        {filters.radioTypes.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 bg-slate-800 border-slate-700">
-                  <DropdownMenuLabel className="text-slate-300">
-                    Filter by Radio Type
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-slate-700" />
-
-                  {['WiFi', 'BT', 'BLE', 'GSM', 'LTE'].map((type) => {
-                    const display = getRadioTypeDisplay({ type });
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={type}
-                        checked={filters.radioTypes?.includes(type)}
-                        onCheckedChange={(checked) => {
-                          const current = filters.radioTypes || [];
-                          const newTypes = checked
-                            ? [...current, type]
-                            : current.filter((t) => t !== type);
-                          setFilters((prev) => ({ ...prev, radioTypes: newTypes }));
-                        }}
-                        className="text-slate-300"
-                      >
-                        <div className="flex items-center gap-2">
-                          {display.icon}
-                          <span className="text-xs uppercase">{display.label}</span>
-                        </div>
-                      </DropdownMenuCheckboxItem>
-                    );
-                  })}
-
-                  {filters.radioTypes && filters.radioTypes.length > 0 && (
-                    <>
-                      <DropdownMenuSeparator className="bg-slate-700" />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setFilters((prev) => ({ ...prev, radioTypes: [] }))}
-                        className="w-full text-slate-400 hover:text-slate-200 justify-start gap-2"
-                      >
-                        <X className="h-3 w-3" />
-                        Clear Filter
-                      </Button>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Security Filter Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 h-8 px-2.5 text-xs bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"
-                  >
-                    <Shield className="h-3.5 w-3.5" />
-                    Security
-                    {securityFilters.size > 0 && (
-                      <Badge className="ml-0.5 bg-blue-500 text-white text-xs px-1 py-0">
-                        {securityFilters.size}
-                      </Badge>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 bg-slate-800 border-slate-700">
-                  <DropdownMenuLabel className="text-slate-300">
-                    Filter by Security Type
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-slate-700" />
-
-                  {[
-                    'WPA3-SAE',
-                    'WPA2-EAP',
-                    'WPA2-PSK',
-                    'WPA2-OWE',
-                    'WPA-EAP',
-                    'WPA-PSK',
-                    'WPA-EAP,WPA2-EAP',
-                    'WPA-PSK,WPA2-PSK',
-                    'WEP',
-                    'Open'
-                  ].map((securityType) => {
-                    const style = getSecurityTypeStyle(securityType);
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={securityType}
-                        checked={securityFilters.has(securityType)}
-                        onCheckedChange={(checked) => {
-                          const newFilters = new Set(securityFilters);
-                          if (checked) {
-                            newFilters.add(securityType);
-                          } else {
-                            newFilters.delete(securityType);
-                          }
-                          setSecurityFilters(newFilters);
-                        }}
-                        className="text-slate-300"
-                      >
-                        <div className="flex items-center gap-2" title={style.description}>
-                          <span className="text-base">{style.icon}</span>
-                          <span className={`text-xs font-medium ${style.text}`}>
-                            {style.abbr}
-                          </span>
-                        </div>
-                      </DropdownMenuCheckboxItem>
-                    );
-                  })}
-
-                  {securityFilters.size > 0 && (
-                    <>
-                      <DropdownMenuSeparator className="bg-slate-700" />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSecurityFilters(new Set())}
-                        className="w-full text-slate-400 hover:text-slate-200 justify-start gap-2"
-                      >
-                        <X className="h-3 w-3" />
-                        Clear Filters
-                      </Button>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Location Dropdown (GPS / Home) */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={gpsLoading}
-                    className="gap-1.5 h-8 px-2.5 text-xs bg-slate-800 border-slate-700 hover:bg-slate-700"
-                  >
-                    {gpsLoading ? (
-                      <div className="h-3.5 w-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <MapPin className={`h-3.5 w-3.5 ${centerPoint ? 'text-green-400' : 'text-slate-400'}`} />
-                    )}
-                    <span className={centerPoint ? 'text-green-400' : 'text-slate-300'}>Location</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-slate-800 border-slate-700">
-                  <DropdownMenuLabel className="text-slate-300">Search Center</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-slate-700" />
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleGetGPS}
-                    className="w-full justify-start gap-2 text-slate-300 hover:text-slate-100"
-                  >
-                    <Navigation className="h-4 w-4 text-blue-400" />
-                    Use GPS Location
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (homeLocation) {
-                        console.log('[Location] Setting center to home location:', homeLocation);
-                        setCenterPoint(homeLocation);
-                      } else {
-                        console.warn('[Location] No home location available');
-                        alert('No home location found in database');
-                      }
-                    }}
-                    disabled={!homeLocation}
-                    className="w-full justify-start gap-2 text-slate-300 hover:text-slate-100 disabled:opacity-50"
-                  >
-                    <Home className="h-4 w-4 text-purple-400" />
-                    Use Home Location
-                    {homeLocation && <span className="ml-auto text-xs text-purple-400">✓</span>}
-                  </Button>
-
-                  {homeLocation && (
-                    <>
-                      <DropdownMenuSeparator className="bg-slate-700" />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setHomeLocation(null)}
-                        className="w-full justify-start gap-2 text-red-400 hover:text-red-300"
-                      >
-                        <X className="h-3 w-3" />
-                        Clear Home Location
-                      </Button>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Radius Search Input */}
-              {centerPoint && (
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-blue-400" />
-                  <Input
-                    type="number"
-                    placeholder="Radius (m)"
-                    value={searchRadius}
-                    onChange={(e) => setSearchRadius(Number(e.target.value) || 1000)}
-                    className="w-24 h-8 px-2 text-xs bg-slate-900 border-slate-700 text-slate-200"
-                    min="100"
-                    max="50000"
-                    step="100"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCenterPoint(null)}
-                    className="h-8 w-8 p-0 text-slate-400 hover:text-slate-200"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-
-              {/* Expand/Collapse Advanced Filters */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setFiltersExpanded(!filtersExpanded)}
-                className="gap-1 h-8 px-2 text-xs text-slate-400 hover:text-slate-200"
-              >
-                <Signal className="h-3.5 w-3.5" />
-                {filtersExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronDown className="h-3 w-3 rotate-180" />}
-              </Button>
-
               {/* Stats */}
-              <div className="text-xs text-slate-400 ml-auto">
+              <div className="text-sm text-slate-400 ml-auto">
                 {isLoading ? (
                   <span>Loading...</span>
                 ) : (
-                  <span>
-                    {loadedCount.toLocaleString()} / {totalCount.toLocaleString()}
+                  <span className="font-medium">
+                    Showing {loadedCount.toLocaleString()} / {totalCount.toLocaleString()}
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Row 2: Advanced Filters (Collapsible) */}
-            {filtersExpanded && (
-              <div className="space-y-2">
-                {/* Signal Strength Filter */}
-                <div className="px-4 py-3 bg-gradient-to-r from-slate-800/40 to-slate-800/20 rounded-lg border border-slate-700/50">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <Signal className="h-4 w-4 text-blue-400" />
-                      <Label className="text-sm font-medium text-slate-200">Signal Strength</Label>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400">Min:</span>
-                        <Input
-                          type="number"
-                          placeholder="-100"
-                          value={filters.minSignal ?? ''}
-                          onChange={(e) => setFilters(prev => ({ ...prev, minSignal: e.target.value ? Number(e.target.value) : undefined }))}
-                          className="w-20 h-7 px-2 text-xs text-center bg-slate-900/80 border-slate-600 text-slate-100 font-mono"
-                          min="-120"
-                          max="0"
-                        />
-                        <span className="text-xs text-slate-500">dBm</span>
-                      </div>
-                      <span className="text-xs text-slate-600">to</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400">Max:</span>
-                        <Input
-                          type="number"
-                          placeholder="0"
-                          value={filters.maxSignal ?? ''}
-                          onChange={(e) => setFilters(prev => ({ ...prev, maxSignal: e.target.value ? Number(e.target.value) : undefined }))}
-                          className="w-20 h-7 px-2 text-xs text-center bg-slate-900/80 border-slate-600 text-slate-100 font-mono"
-                          min="-120"
-                          max="0"
-                        />
-                        <span className="text-xs text-slate-500">dBm</span>
-                      </div>
-                    </div>
-                    {(filters.minSignal !== undefined || filters.maxSignal !== undefined) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setFilters((prev) => ({
-                            ...prev,
-                            minSignal: undefined,
-                            maxSignal: undefined,
-                          }))
-                        }
-                        className="h-8 px-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 ml-auto"
-                      >
-                        <X className="h-3.5 w-3.5 mr-1" />
-                        Clear
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Date Range Filter */}
-                <div className="px-4 py-3 bg-gradient-to-r from-slate-800/40 to-slate-800/20 rounded-lg border border-slate-700/50">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <Calendar className="h-4 w-4 text-purple-400" />
-                      <Label className="text-sm font-medium text-slate-200">Date Range</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="datetime-local"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="h-7 px-2 text-xs bg-slate-900/80 border-slate-600 text-slate-100"
-                      />
-                      <span className="text-xs text-slate-500">to</span>
-                      <Input
-                        type="datetime-local"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className="h-7 px-2 text-xs bg-slate-900/80 border-slate-600 text-slate-100"
-                      />
-                    </div>
-                    {(startDate || endDate) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setStartDate('');
-                          setEndDate('');
-                        }}
-                        className="h-8 px-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                      >
-                        <X className="h-3.5 w-3.5 mr-1" />
-                        Clear
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Row 2: Unified Filter Bar */}
+            <FilterBar
+              filters={filters}
+              onFiltersChange={setFilters}
+              securityFilters={securityFilters}
+              onSecurityFiltersChange={setSecurityFilters}
+              centerPoint={centerPoint}
+              onCenterPointChange={setCenterPoint}
+              searchRadius={searchRadius}
+              onSearchRadiusChange={setSearchRadius}
+              dateRange={{ start: startDate, end: endDate }}
+              onDateRangeChange={(range) => {
+                setStartDate(range.start);
+                setEndDate(range.end);
+              }}
+              homeLocation={homeLocation}
+              onGetGPS={handleGetGPS}
+              gpsLoading={gpsLoading}
+            />
           </div>
         </div>
       </div>
