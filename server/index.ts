@@ -14,6 +14,8 @@ import wigleEnrichmentRouter from "./routes/wigleEnrichment.js";
 import wigleStagingRouter from "./routes/wigleStagingRoutes.js";
 import wigleAlphaV3Router from "./routes/wigle_alpha_v3.js";
 import networkObservationsRouter from "./routes/networkObservations.js";
+import locationMarkersRouter from "./routes/locationMarkers.js";
+import networkTimelineRouter from "./routes/networkTimeline.js";
 import { db as dbConnection } from "./db/connection.js";
 import { wigleTypeToRadioType } from "./utils/wigleTypeMapping.js";
 
@@ -85,6 +87,8 @@ app.use("/api/v1/wigle", wigleEnrichmentRouter);
 app.use("/api/v1/wigle", wigleStagingRouter);
 app.use("/api/v3", wigleAlphaV3Router);
 app.use("/api/v1/network", networkObservationsRouter);
+app.use("/api/v1/locations", locationMarkersRouter);
+app.use("/api/v1/network-timeline", networkTimelineRouter);
 
 // Legacy health endpoint for backward compatibility
 app.get("/healthz", (_req, res) => res.json({ ok: true }));

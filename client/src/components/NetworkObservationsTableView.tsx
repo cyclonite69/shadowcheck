@@ -17,7 +17,6 @@ import { cn } from '@/lib/utils';
 import type { UseInfiniteQueryResult } from '@tanstack/react-query';
 import { useNetworkObservationColumns } from '@/hooks/useNetworkObservationColumns';
 import { iconColors } from '@/lib/iconColors';
-import { NetworkLocationModal } from './NetworkLocationModal';
 import { categorizeSecurityType, getSecurityTypeStyle } from '@/lib/securityDecoder';
 import { NetworkSecurityPill } from '@/components/NetworkSecurityPill';
 import {
@@ -310,7 +309,6 @@ export function NetworkObservationsTableView({
   selectedRows = {},
   onSelectedRowsChange = () => {},
 }: NetworkObservationsTableViewProps) {
-  const [selectedNetwork, setSelectedNetwork] = useState<NetworkObservation | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const columns = useMemo<ColumnDef<NetworkObservation>[]>(() => [
@@ -600,13 +598,11 @@ export function NetworkObservationsTableView({
                 return (
                   <tr
                     key={row.id}
-                    className="absolute w-full border-b border-slate-800 hover:bg-slate-800/50 transition-colors text-xs cursor-pointer"
-                    onClick={() => setSelectedNetwork(row.original)}
+                    className="absolute w-full border-b border-slate-800 hover:bg-slate-800/50 transition-colors text-xs"
                     style={{
                       height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
-                    title="Click to view location on map"
                   >
                     {row.getVisibleCells().map((cellItem: Cell<NetworkObservation, unknown>) => {
                       return (
@@ -632,13 +628,6 @@ export function NetworkObservationsTableView({
         <div className="px-4 py-3 border-t border-slate-700 bg-slate-800/50">
           {/* Footer content */}
         </div>
-
-        {selectedNetwork && (
-          <NetworkLocationModal
-            network={{ ...selectedNetwork, latitude: String(selectedNetwork.latitude || ''), longitude: String(selectedNetwork.longitude || '') }}
-            onClose={() => setSelectedNetwork(null)}
-          />
-        )}
       </div>
       <DragOverlay>
         {activeId && table ? (

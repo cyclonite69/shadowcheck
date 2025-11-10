@@ -141,7 +141,15 @@ export function useInfiniteNetworkObservations({
   enabled = true,
 }: UseInfiniteNetworkObservationsOptions = {}) {
   return useInfiniteQuery({
-    queryKey: ['network-observations', filters, pageSize, filters.sortBy, filters.sortDir],
+    queryKey: [
+      'network-observations',
+      filters,
+      pageSize,
+      filters.sortBy,
+      filters.sortDir,
+      filters.dateStart,
+      filters.dateEnd
+    ],
     queryFn: ({ pageParam = 0 }) =>
       fetchNetworkObservations({ pageParam, filters, pageSize }),
     getNextPageParam: (lastPage, allPages) => {

@@ -5,7 +5,7 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    url: http://prometheus:9090
+    url: ${PROMETHEUS_URL}
     isDefault: true
     editable: true
     jsonData:
@@ -15,23 +15,26 @@ datasources:
   - name: Loki
     type: loki
     access: proxy
-    url: http://loki:3100
+    url: ${LOKI_URL}
     editable: true
     jsonData:
       maxLines: 1000
 
-  # PostgreSQL datasource
+  # PostgreSQL datasource (ShadowCheck main database)
   - name: PostgreSQL
     type: postgres
     access: proxy
     uid: PostgreSQL
-    url: shadowcheck_postgres_18:5432
-    database: shadowcheck
-    user: shadowcheck_user
+    url: ${POSTGRES_DATASOURCE_HOST}:${POSTGRES_DATASOURCE_PORT}
+    database: ${POSTGRES_DATASOURCE_DATABASE}
+    user: ${POSTGRES_DATASOURCE_USER}
     secureJsonData:
-      password: '***REMOVED***'
+      password: ${POSTGRES_DATASOURCE_PASSWORD}
     jsonData:
       sslmode: 'disable'
       postgresVersion: 1800
       timescaledb: false
+      maxOpenConns: 100
+      maxIdleConns: 100
+      connMaxLifetime: 14400
     editable: true

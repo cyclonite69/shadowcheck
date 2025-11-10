@@ -9,6 +9,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { NetworkObservation } from '@/types';
 import { macToColor } from '@/lib/mapUtils';
 import { wireTooltipNetwork } from '@/components/Map/wireTooltipNetwork';
+import { MapStyleSelector, type MapStyle, getMapStyleUrl } from '@/components/MapStyleSelector';
 
 interface AccessPointsMapViewProps {
   selectedObservations: NetworkObservation[];
@@ -29,6 +30,41 @@ export function AccessPointsMapView({
   const centerMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const tooltipCleanupRef = useRef<(() => void) | null>(null);
 
+  // Map style state with persistence
+  const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
+    const saved = sessionStorage.getItem('mapStyle');
+    return (saved as MapStyle) || 'standard';
+  });
+
+  // Handle style changes
+  const handleStyleChange = (newStyle: MapStyle) => {
+    setMapStyle(newStyle);
+    sessionStorage.setItem('mapStyle', newStyle);
+
+    if (map.current) {
+      // Preserve current map state
+      const center = map.current.getCenter();
+      const zoom = map.current.getZoom();
+      const bearing = map.current.getBearing();
+      const pitch = map.current.getPitch();
+
+      // Change style while preserving position
+      map.current.setStyle(getMapStyleUrl(newStyle));
+
+      // Restore map state and re-add controls after style loads
+      map.current.once('style.load', () => {
+        if (!map.current) return;
+        map.current.setCenter(center);
+        map.current.setZoom(zoom);
+        map.current.setBearing(bearing);
+        map.current.setPitch(pitch);
+
+        // Trigger map loaded state to re-add layers
+        setMapLoaded(true);
+      });
+    }
+  };
+
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken) return;
@@ -38,7 +74,7 @@ export function AccessPointsMapView({
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
+      style: getMapStyleUrl(mapStyle),
       center: [-83.6875, 43.0125], // Default center
       zoom: 10,
       maxZoom: 20
@@ -138,22 +174,78 @@ export function AccessPointsMapView({
       features
     };
 
-    // Add or update source
+    // Add or update source with clustering enabled
     if (!map.current.getSource('networks')) {
       map.current.addSource('networks', {
         type: 'geojson',
-        data: geojson
+        data: geojson,
+        cluster: true,
+        clusterMaxZoom: 17, // Max zoom to cluster points on
+        clusterRadius: 50 // Radius of each cluster when clustering points (in pixels)
       });
     } else {
       (map.current.getSource('networks') as mapboxgl.GeoJSONSource).setData(geojson);
     }
 
-    // Add layer if it doesn't exist
-    if (!map.current.getLayer('networks')) {
+    // Add layers if they don't exist
+    if (!map.current.getLayer('clusters')) {
+      // Cluster circles layer
       map.current.addLayer({
-        id: 'networks',
+        id: 'clusters',
         type: 'circle',
         source: 'networks',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': [
+            'step',
+            ['get', 'point_count'],
+            '#3b82f6', // Blue for < 10 points
+            10,
+            '#8b5cf6', // Purple for 10-50 points
+            50,
+            '#ec4899', // Pink for 50-100 points
+            100,
+            '#ef4444'  // Red for 100+ points
+          ],
+          'circle-radius': [
+            'step',
+            ['get', 'point_count'],
+            15,  // Small clusters
+            10,
+            20,  // Medium clusters
+            50,
+            25,  // Large clusters
+            100,
+            30   // Very large clusters
+          ],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff',
+          'circle-opacity': 0.8
+        }
+      });
+
+      // Cluster count labels
+      map.current.addLayer({
+        id: 'cluster-count',
+        type: 'symbol',
+        source: 'networks',
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+          'text-size': 12
+        },
+        paint: {
+          'text-color': '#ffffff'
+        }
+      });
+
+      // Unclustered points layer
+      map.current.addLayer({
+        id: 'unclustered-points',
+        type: 'circle',
+        source: 'networks',
+        filter: ['!', ['has', 'point_count']],
         paint: {
           'circle-radius': 6,
           'circle-color': ['get', 'colour'],
@@ -163,8 +255,37 @@ export function AccessPointsMapView({
         }
       });
 
-      // Wire up the tooltip - only once when layer is created
-      tooltipCleanupRef.current = wireTooltipNetwork(map.current, 'networks', { env: 'urban' });
+      // Wire up the tooltip for unclustered points only
+      tooltipCleanupRef.current = wireTooltipNetwork(map.current, 'unclustered-points', { env: 'urban' });
+
+      // Add click handler for clusters to zoom in
+      map.current.on('click', 'clusters', (e) => {
+        if (!map.current) return;
+        const features = map.current.queryRenderedFeatures(e.point, {
+          layers: ['clusters']
+        });
+        const clusterId = features[0]?.properties?.cluster_id;
+        if (!clusterId) return;
+
+        const source = map.current.getSource('networks') as mapboxgl.GeoJSONSource;
+        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (err || !map.current || zoom == null) return;
+
+          const coordinates = (features[0].geometry as any).coordinates;
+          map.current.easeTo({
+            center: coordinates,
+            zoom: zoom
+          });
+        });
+      });
+
+      // Change cursor on hover
+      map.current.on('mouseenter', 'clusters', () => {
+        if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+      });
+      map.current.on('mouseleave', 'clusters', () => {
+        if (map.current) map.current.getCanvas().style.cursor = '';
+      });
     }
 
     // Fit map to show all points
@@ -317,6 +438,18 @@ export function AccessPointsMapView({
           </div>
         </div>
       )}
+
+      {/* Map Style Selector - Top Left */}
+      {mapLoaded && (
+        <div className="absolute top-2 left-2 z-10">
+          <MapStyleSelector
+            currentStyle={mapStyle}
+            onStyleChange={handleStyleChange}
+          />
+        </div>
+      )}
+
+      {/* Selected Count - Top Right */}
       {mapLoaded && selectedObservations.length > 0 && (
         <div className="absolute top-2 right-2 bg-slate-800/90 text-slate-200 px-3 py-1.5 rounded text-xs font-medium border border-slate-700">
           {selectedObservations.length} selected

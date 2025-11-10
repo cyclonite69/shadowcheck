@@ -9,7 +9,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Filter, Shield, X, Radio, Signal, ChevronDown, MapPin, Navigation, Calendar } from 'lucide-react';
+import { Search, Filter, Shield, X, Radio, Signal, ChevronDown, MapPin, Navigation, Calendar, Home } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useInfiniteNetworkObservations, type NetworkFilters } from '@/hooks/useInfiniteNetworkObservations';
 import { flattenNetworkObservations, type NetworkObservation } from '@/types';
@@ -23,7 +23,6 @@ import { SECURITY_TYPE_MAP, categorizeSecurityType, getSecurityTypeStyle } from 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
@@ -72,10 +71,29 @@ export function AccessPointsPage() {
   const [centerPoint, setCenterPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [searchRadius, setSearchRadius] = useState<number>(1000); // meters
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [homeLocation, setHomeLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   // Date range filter state
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+
+  // Fetch home location from database on mount
+  useEffect(() => {
+    fetch('/api/v1/locations/home')
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok && data.data) {
+          setHomeLocation({
+            lat: data.data.latitude,
+            lng: data.data.longitude
+          });
+          console.log('[Location] Home location loaded:', data.data);
+        }
+      })
+      .catch(err => {
+        console.error('[Location] Failed to fetch home location:', err);
+      });
+  }, []);
 
   // Debounce search to reduce API calls
   const debouncedSearch = useDebounce(filters.search, 300);
@@ -115,6 +133,8 @@ export function AccessPointsPage() {
     filters: {
       ...filters,
       search: debouncedSearch,
+      dateStart: startDate || undefined,
+      dateEnd: endDate || undefined,
     },
     pageSize: 500,
     enabled: true,
@@ -335,21 +355,73 @@ export function AccessPointsPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* GPS Button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGetGPS}
-                disabled={gpsLoading}
-                className="gap-1.5 h-8 px-2.5 text-xs bg-slate-800 border-slate-700 hover:bg-slate-700"
-              >
-                {gpsLoading ? (
-                  <div className="h-3.5 w-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Navigation className={`h-3.5 w-3.5 ${centerPoint ? 'text-green-400' : 'text-slate-400'}`} />
-                )}
-                <span className={centerPoint ? 'text-green-400' : 'text-slate-300'}>GPS</span>
-              </Button>
+              {/* Location Dropdown (GPS / Home) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={gpsLoading}
+                    className="gap-1.5 h-8 px-2.5 text-xs bg-slate-800 border-slate-700 hover:bg-slate-700"
+                  >
+                    {gpsLoading ? (
+                      <div className="h-3.5 w-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <MapPin className={`h-3.5 w-3.5 ${centerPoint ? 'text-green-400' : 'text-slate-400'}`} />
+                    )}
+                    <span className={centerPoint ? 'text-green-400' : 'text-slate-300'}>Location</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-slate-800 border-slate-700">
+                  <DropdownMenuLabel className="text-slate-300">Search Center</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-slate-700" />
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleGetGPS}
+                    className="w-full justify-start gap-2 text-slate-300 hover:text-slate-100"
+                  >
+                    <Navigation className="h-4 w-4 text-blue-400" />
+                    Use GPS Location
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (homeLocation) {
+                        console.log('[Location] Setting center to home location:', homeLocation);
+                        setCenterPoint(homeLocation);
+                      } else {
+                        console.warn('[Location] No home location available');
+                        alert('No home location found in database');
+                      }
+                    }}
+                    disabled={!homeLocation}
+                    className="w-full justify-start gap-2 text-slate-300 hover:text-slate-100 disabled:opacity-50"
+                  >
+                    <Home className="h-4 w-4 text-purple-400" />
+                    Use Home Location
+                    {homeLocation && <span className="ml-auto text-xs text-purple-400">✓</span>}
+                  </Button>
+
+                  {homeLocation && (
+                    <>
+                      <DropdownMenuSeparator className="bg-slate-700" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setHomeLocation(null)}
+                        className="w-full justify-start gap-2 text-red-400 hover:text-red-300"
+                      >
+                        <X className="h-3 w-3" />
+                        Clear Home Location
+                      </Button>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {/* Radius Search Input */}
               {centerPoint && (
@@ -409,42 +481,29 @@ export function AccessPointsPage() {
                       <Signal className="h-4 w-4 text-blue-400" />
                       <Label className="text-sm font-medium text-slate-200">Signal Strength</Label>
                     </div>
-                    <div className="flex items-center gap-2 flex-1">
+                    <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400">Min:</span>
                         <Input
                           type="number"
                           placeholder="-100"
                           value={filters.minSignal ?? ''}
                           onChange={(e) => setFilters(prev => ({ ...prev, minSignal: e.target.value ? Number(e.target.value) : undefined }))}
-                          className="w-16 h-7 px-2 text-xs text-center bg-slate-900/80 border-slate-600 text-slate-100 font-mono"
+                          className="w-20 h-7 px-2 text-xs text-center bg-slate-900/80 border-slate-600 text-slate-100 font-mono"
                           min="-120"
                           max="0"
                         />
                         <span className="text-xs text-slate-500">dBm</span>
                       </div>
-                      <div className="flex-1 px-3">
-                        <Slider
-                          min={-100}
-                          max={0}
-                          step={5}
-                          value={[filters.minSignal ?? -100, filters.maxSignal ?? 0]}
-                          onValueChange={([min, max]) => {
-                            setFilters((prev) => ({
-                              ...prev,
-                              minSignal: min === -100 ? undefined : min,
-                              maxSignal: max === 0 ? undefined : max,
-                            }));
-                          }}
-                          className="cursor-pointer"
-                        />
-                      </div>
+                      <span className="text-xs text-slate-600">to</span>
                       <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400">Max:</span>
                         <Input
                           type="number"
                           placeholder="0"
                           value={filters.maxSignal ?? ''}
                           onChange={(e) => setFilters(prev => ({ ...prev, maxSignal: e.target.value ? Number(e.target.value) : undefined }))}
-                          className="w-16 h-7 px-2 text-xs text-center bg-slate-900/80 border-slate-600 text-slate-100 font-mono"
+                          className="w-20 h-7 px-2 text-xs text-center bg-slate-900/80 border-slate-600 text-slate-100 font-mono"
                           min="-120"
                           max="0"
                         />
@@ -462,15 +521,12 @@ export function AccessPointsPage() {
                             maxSignal: undefined,
                           }))
                         }
-                        className="h-8 px-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        className="h-8 px-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 ml-auto"
                       >
                         <X className="h-3.5 w-3.5 mr-1" />
                         Clear
                       </Button>
                     )}
-                  </div>
-                  <div className="mt-1 text-xs text-slate-400 text-center font-mono">
-                    Range: {filters.minSignal ?? -100} dBm → {filters.maxSignal ?? 0} dBm
                   </div>
                 </div>
 
