@@ -1,30 +1,7 @@
-import { MapboxNetworkVisualization } from "@/components/Map/MapboxNetworkVisualization";
-import { SpatialQueryInterface } from "@/components/spatial-query-interface";
-import { NetworkObservationsTable } from "@/components/network-observations-table";
-import { UnifiedNetworkView } from "@/components/UnifiedNetworkView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Map, Search, Table, Wifi, Bluetooth, LayoutGrid } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { iconColors } from '@/lib/iconColors';
+import { MapPin, Map, Search, Table, LayoutGrid } from 'lucide-react';
 
 export default function VisualizationPage() {
-  // Fetch network data for stats
-  const { data: networks } = useQuery({
-    queryKey: ['/api/v1/visualize'],
-    queryFn: async () => {
-      const res = await fetch('/api/v1/visualize?limit=500');
-      const json = await res.json();
-      return json.ok ? json.data.features : [];
-    },
-    refetchInterval: 30000,
-  });
-
-  // Calculate stats from network data
-  const stats = {
-    total: networks?.length || 0,
-    locations: networks ? new Set(networks.map((n: any) => `${n.geometry.coordinates[0]},${n.geometry.coordinates[1]}`)).size : 0
-  };
-
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Main Content */}
@@ -44,18 +21,6 @@ export default function VisualizationPage() {
                 <p className="text-sm text-slate-400 mt-1">
                   Interactive mapping and spatial analysis of network observations
                 </p>
-              </div>
-            </div>
-
-            {/* Stats Bar */}
-            <div className="flex items-center gap-6 text-sm px-2">
-              <div className="flex items-center gap-2">
-                <Wifi className={`h-4 w-4 ${iconColors.primary.text}`} />
-                <span className="font-medium text-slate-300">{stats.total} Networks</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className={`h-4 w-4 ${iconColors.success.text}`} />
-                <span className="font-medium text-slate-300">{stats.locations} Locations</span>
               </div>
             </div>
           </div>
@@ -99,28 +64,35 @@ export default function VisualizationPage() {
               </TabsList>
             </div>
 
-          <TabsContent value="unified" className="space-y-6">
-            <div className="premium-card overflow-hidden" style={{ height: 'calc(100vh - 20rem)' }}>
-              <UnifiedNetworkView />
-            </div>
-          </TabsContent>
+            {/* Empty tab content areas - ready for future implementation */}
+            <TabsContent value="unified" className="space-y-6">
+              <div className="premium-card p-8 text-center text-slate-400">
+                <LayoutGrid className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Unified View - Coming Soon</p>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="mapbox" className="space-y-6">
-            <div className="premium-card p-6">
-              <MapboxNetworkVisualization />
-            </div>
-          </TabsContent>
+            <TabsContent value="mapbox" className="space-y-6">
+              <div className="premium-card p-8 text-center text-slate-400">
+                <Map className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Network Map - Coming Soon</p>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="spatial" className="space-y-6">
-            <div className="premium-card p-6">
-              <SpatialQueryInterface />
-            </div>
-          </TabsContent>
+            <TabsContent value="spatial" className="space-y-6">
+              <div className="premium-card p-8 text-center text-slate-400">
+                <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Spatial Queries - Coming Soon</p>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="observations" className="space-y-6">
-            <NetworkObservationsTable />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="observations" className="space-y-6">
+              <div className="premium-card p-8 text-center text-slate-400">
+                <Table className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Observations - Coming Soon</p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>
