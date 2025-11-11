@@ -20,6 +20,8 @@ import {
   BarChart3
 } from 'lucide-react';
 import { GrafanaDashboard } from '@/components/grafana-dashboard';
+import { NetworkTimelineChart } from '@/components/NetworkTimelineChart';
+import { NetworkActivityHeatmap } from '@/components/NetworkActivityHeatmap';
 import { iconColors } from '@/lib/iconColors';
 
 // Home coordinates as reference point
@@ -60,31 +62,17 @@ interface SurveillanceStats {
 export default function SurveillancePage() {
   const [selectedTab, setSelectedTab] = useState('overview');
 
-  // Fetch surveillance statistics
-  const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['/api/v1/surveillance/stats'],
-    queryFn: async () => {
-      const res = await fetch('/api/v1/surveillance/stats');
-      return res.json();
-    },
-    refetchInterval: 30000,
-  });
+  // These endpoints don't exist - using stubs
+  const networks = { data: [] };
+  const networksLoading = false;
+  const locations = { data: [] };
+  const locationsLoading = false;
 
-  // Fetch location visit data
-  const { data: locations, isLoading: locationsLoading } = useQuery({
-    queryKey: ['/api/v1/surveillance/location-visits'],
+  // Fetch location clusters (100m radius, 10+ minutes duration)
+  const { data: locationClusters, isLoading: clustersLoading } = useQuery({
+    queryKey: ['/api/v1/surveillance/location-clusters'],
     queryFn: async () => {
-      const res = await fetch('/api/v1/surveillance/location-visits?limit=50');
-      return res.json();
-    },
-    refetchInterval: 30000,
-  });
-
-  // Fetch network patterns
-  const { data: networks, isLoading: networksLoading } = useQuery({
-    queryKey: ['/api/v1/surveillance/network-patterns'],
-    queryFn: async () => {
-      const res = await fetch('/api/v1/surveillance/network-patterns?limit=50');
+      const res = await fetch('/api/v1/surveillance/location-clusters?radius=100&min_duration=10');
       return res.json();
     },
     refetchInterval: 30000,
@@ -110,12 +98,13 @@ export default function SurveillancePage() {
     refetchInterval: 30000,
   });
 
-  const statsData: SurveillanceStats = stats?.data || {
-    total_locations: 0,
-    total_networks: 0,
-    high_risk_networks: 0,
+  // Use WiFi summary and location cluster data
+  const statsData: SurveillanceStats = {
+    total_locations: locationClusters?.data?.total_clusters || 0,
+    total_networks: wifiSummary?.data?.total_threats || 0,
+    high_risk_networks: (wifiSummary?.data?.by_level?.extreme || 0) + (wifiSummary?.data?.by_level?.critical || 0),
     locations_near_home: 0,
-    avg_distance_from_home: 0,
+    avg_distance_from_home: wifiSummary?.data?.avg_threat_distance || 0,
   };
 
   const getThreatColor = (level: string) => {
@@ -281,6 +270,12 @@ export default function SurveillancePage() {
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
+              {/* Timeline Analysis Graphs */}
+              <div className="space-y-6">
+                <NetworkTimelineChart days={7} />
+                <NetworkActivityHeatmap weeks={4} limit={10} />
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="premium-card">
                   <CardHeader>
@@ -300,8 +295,8 @@ export default function SurveillancePage() {
                         ))}
                       </div>
                     ) : threats?.data?.length > 0 ? (
-                      <div className="space-y-3">
-                        {threats.data.slice(0, 5).map((threat: any, idx: number) => (
+                      <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-800/50">
+                        {threats.data.map((threat: any, idx: number) => (
                           <div
                             key={idx}
                             className="p-4 rounded-lg border border-slate-700/50 bg-slate-800/50 hover:bg-slate-800/80 transition-colors cursor-pointer"

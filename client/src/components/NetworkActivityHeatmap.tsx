@@ -20,16 +20,37 @@ interface HeatmapResponse {
 interface NetworkActivityHeatmapProps {
   weeks?: number;
   limit?: number;
+  latitude?: string;
+  longitude?: string;
+  radius?: string;
+  selectedBssids?: string[];
 }
 
-export function NetworkActivityHeatmap({ weeks = 4, limit = 10 }: NetworkActivityHeatmapProps) {
+export function NetworkActivityHeatmap({
+  weeks = 4,
+  limit = 10,
+  latitude = '',
+  longitude = '',
+  radius = '',
+  selectedBssids = []
+}: NetworkActivityHeatmapProps) {
+  const hasRadiusFilter = latitude !== '' && longitude !== '' && radius !== '';
+
   // Fetch heatmap data
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['/api/v1/network-timeline/heatmap', weeks, limit],
+    queryKey: ['/api/v1/network-timeline/heatmap', weeks, limit, latitude, longitude, radius, selectedBssids],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.set('weeks', weeks.toString());
       params.set('limit', limit.toString());
+      if (hasRadiusFilter) {
+        params.set('lat', latitude);
+        params.set('lon', longitude);
+        params.set('radius', radius);
+      }
+      if (selectedBssids.length > 0) {
+        params.set('bssids', selectedBssids.join(','));
+      }
 
       const res = await fetch(`/api/v1/network-timeline/heatmap?${params}`);
       const json = await res.json();

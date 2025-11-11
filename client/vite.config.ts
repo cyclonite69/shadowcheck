@@ -14,7 +14,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           // Split large dependencies into separate chunks
-          'react-vendor': ['react', 'react-dom', 'react-router-dom', 'wouter'],
+          'react-vendor': ['react', 'react-dom', 'wouter'],
           'ui-vendor': ['lucide-react', '@radix-ui/react-dropdown-menu', '@radix-ui/react-popover', '@radix-ui/react-tooltip'],
           'table-vendor': ['@tanstack/react-table', '@tanstack/react-virtual', '@dnd-kit/core', '@dnd-kit/sortable'],
           'query-vendor': ['@tanstack/react-query'],
@@ -36,7 +36,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://shadowcheck_backend:5000',
         changeOrigin: true,
       },
     },
@@ -46,7 +46,7 @@ export default defineConfig({
     include: [
       'react',
       'react-dom',
-      'react-router-dom',
+      'wouter',
       'mapbox-gl',
       '@tanstack/react-query',
       '@tanstack/react-table',

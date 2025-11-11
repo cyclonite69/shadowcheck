@@ -105,7 +105,7 @@ server {
 
     # API proxy (optional - for development)
     location /api/ {
-        proxy_pass http://backend:5000/api/;
+        proxy_pass http://shadowcheck_backend:5000/api/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

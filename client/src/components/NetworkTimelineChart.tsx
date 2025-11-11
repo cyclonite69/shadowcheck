@@ -5,7 +5,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Clock, Wifi, TrendingUp } from 'lucide-react';
+import { Clock, Wifi, TrendingUp, MapPin, Filter } from 'lucide-react';
 import { useState } from 'react';
 
 interface HourlyObservation {
@@ -20,8 +20,17 @@ interface HourlyObservation {
 
 interface TimelineData {
   days_analyzed: number;
-  bssid_filter: string | null;
+  bssid_filter: string[] | null;
+  radius_filter: { lat: number; lon: number; radius: number } | null;
   hourly_observations: HourlyObservation[];
+}
+
+interface AvailableNetwork {
+  bssid: string;
+  ssid: string;
+  observation_count: number;
+  avg_signal: number;
+  last_seen: string;
 }
 
 interface NetworkTimelineChartProps {
@@ -30,15 +39,50 @@ interface NetworkTimelineChartProps {
 }
 
 export function NetworkTimelineChart({ bssid, days = 7 }: NetworkTimelineChartProps) {
-  const [selectedBssid, setSelectedBssid] = useState<string | undefined>(bssid);
+  const [selectedBssids, setSelectedBssids] = useState<string[]>(bssid ? [bssid] : []);
+  const [latitude, setLatitude] = useState<string>('');
+  const [longitude, setLongitude] = useState<string>('');
+  const [radius, setRadius] = useState<string>('1000');
+  const [limit, setLimit] = useState<number>(20);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
 
-  // Fetch hourly timeline data
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['/api/v1/network-timeline/hourly', selectedBssid, days],
+  // Build query params
+  const hasRadiusFilter = latitude !== '' && longitude !== '' && radius !== '';
+
+  // Fetch available networks for selection
+  const { data: availableNetworks } = useQuery({
+    queryKey: ['/api/v1/network-timeline/available-networks', days, latitude, longitude, radius, limit],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.set('days', days.toString());
-      if (selectedBssid) params.set('bssid', selectedBssid);
+      params.set('limit', limit.toString());
+      if (hasRadiusFilter) {
+        params.set('lat', latitude);
+        params.set('lon', longitude);
+        params.set('radius', radius);
+      }
+
+      const res = await fetch(`/api/v1/network-timeline/available-networks?${params}`);
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'Failed to fetch networks');
+      return json.data.networks as AvailableNetwork[];
+    },
+    refetchInterval: 60000,
+  });
+
+  // Fetch hourly timeline data
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['/api/v1/network-timeline/hourly', selectedBssids, days, latitude, longitude, radius, limit],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set('days', days.toString());
+      params.set('limit', limit.toString());
+      if (selectedBssids.length > 0) params.set('bssids', selectedBssids.join(','));
+      if (hasRadiusFilter) {
+        params.set('lat', latitude);
+        params.set('lon', longitude);
+        params.set('radius', radius);
+      }
 
       const res = await fetch(`/api/v1/network-timeline/hourly?${params}`);
       const json = await res.json();
@@ -51,9 +95,15 @@ export function NetworkTimelineChart({ bssid, days = 7 }: NetworkTimelineChartPr
 
   // Fetch summary stats
   const { data: summary } = useQuery({
-    queryKey: ['/api/v1/network-timeline/summary'],
+    queryKey: ['/api/v1/network-timeline/summary', latitude, longitude, radius],
     queryFn: async () => {
-      const res = await fetch('/api/v1/network-timeline/summary');
+      const params = new URLSearchParams();
+      if (hasRadiusFilter) {
+        params.set('lat', latitude);
+        params.set('lon', longitude);
+        params.set('radius', radius);
+      }
+      const res = await fetch(`/api/v1/network-timeline/summary?${params}`);
       const json = await res.json();
       return json.ok ? json.data : null;
     },
@@ -79,13 +129,25 @@ export function NetworkTimelineChart({ bssid, days = 7 }: NetworkTimelineChartPr
   // Sort by hour
   chartData?.sort((a, b) => a.hour - b.hour);
 
-  // Get unique networks from data
-  const uniqueNetworks = data?.hourly_observations
-    .reduce((acc, obs) => {
-      if (!acc.includes(obs.bssid)) acc.push(obs.bssid);
-      return acc;
-    }, [] as string[])
-    .slice(0, 20); // Limit to top 20
+  // Toggle network selection
+  const toggleNetwork = (bssid: string) => {
+    setSelectedBssids(prev =>
+      prev.includes(bssid)
+        ? prev.filter(b => b !== bssid)
+        : [...prev, bssid]
+    );
+  };
+
+  // Select/deselect all networks
+  const selectAllNetworks = () => {
+    if (availableNetworks) {
+      setSelectedBssids(availableNetworks.map(n => n.bssid));
+    }
+  };
+
+  const deselectAllNetworks = () => {
+    setSelectedBssids([]);
+  };
 
   if (isLoading) {
     return (
@@ -117,7 +179,7 @@ export function NetworkTimelineChart({ bssid, days = 7 }: NetworkTimelineChartPr
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Filter Toggle */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-xl font-semibold text-slate-200 flex items-center gap-2">
@@ -125,24 +187,154 @@ export function NetworkTimelineChart({ bssid, days = 7 }: NetworkTimelineChartPr
             Network Activity Timeline
           </h3>
           <p className="text-sm text-slate-400 mt-1">
-            Showing when networks appear over the last {days} days
+            {hasRadiusFilter
+              ? `Within ${(parseFloat(radius) / 1000).toFixed(1)}km radius - Last ${days} days`
+              : `Showing when networks appear over the last ${days} days`}
           </p>
         </div>
 
-        {/* Stats */}
-        {summary && (
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <Wifi className="h-4 w-4 text-blue-400" />
-              <span className="text-slate-300">{summary.total_networks.toLocaleString()} Networks</span>
+        <div className="flex items-center gap-4">
+          {/* Stats */}
+          {summary && (
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <Wifi className="h-4 w-4 text-blue-400" />
+                <span className="text-slate-300">{summary.total_networks.toLocaleString()} Networks</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-green-400" />
+                <span className="text-slate-300">{summary.total_observations.toLocaleString()} Observations</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-400" />
-              <span className="text-slate-300">{summary.total_observations.toLocaleString()} Observations</span>
+          )}
+
+          {/* Filter Toggle Button */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+              showFilters
+                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50'
+                : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-600'
+            }`}
+          >
+            <Filter className="h-4 w-4" />
+            <span className="text-sm font-medium">Filters</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Filters Panel */}
+      {showFilters && (
+        <div className="premium-card p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <MapPin className="h-5 w-5 text-purple-400" />
+            <h4 className="text-lg font-semibold text-slate-200">Spatial & Network Filters</h4>
+          </div>
+
+          {/* Radius Filter */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Latitude</label>
+              <input
+                type="number"
+                step="0.000001"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+                placeholder="e.g., 40.7128"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Longitude</label>
+              <input
+                type="number"
+                step="0.000001"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+                placeholder="e.g., -74.0060"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Radius (meters)</label>
+              <input
+                type="number"
+                step="100"
+                value={radius}
+                onChange={(e) => setRadius(e.target.value)}
+                placeholder="1000"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Max Networks</label>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={limit}
+                onChange={(e) => setLimit(parseInt(e.target.value) || 20)}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:border-blue-500 focus:outline-none"
+              />
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Network Selection */}
+          {availableNetworks && availableNetworks.length > 0 && (
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-3">
+                <h5 className="text-sm font-medium text-slate-300">
+                  Select Networks ({selectedBssids.length}/{availableNetworks.length} selected)
+                </h5>
+                <div className="flex gap-2">
+                  <button
+                    onClick={selectAllNetworks}
+                    className="text-xs text-blue-400 hover:text-blue-300"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={deselectAllNetworks}
+                    className="text-xs text-blue-400 hover:text-blue-300"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto p-2 bg-slate-900/50 rounded-lg">
+                {availableNetworks.map((network) => (
+                  <label
+                    key={network.bssid}
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                      selectedBssids.includes(network.bssid)
+                        ? 'bg-blue-500/20 border border-blue-500/50'
+                        : 'bg-slate-800 border border-slate-700 hover:border-slate-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedBssids.includes(network.bssid)}
+                      onChange={() => toggleNetwork(network.bssid)}
+                      className="w-4 h-4 text-blue-500 border-slate-600 rounded focus:ring-blue-500"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-slate-200 truncate">
+                        {network.ssid}
+                      </div>
+                      <div className="text-xs text-slate-400 font-mono truncate">
+                        {network.bssid}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {network.observation_count} obs • {network.avg_signal.toFixed(0)} dBm
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Chart */}
       <div className="premium-card p-6">
@@ -186,38 +378,6 @@ export function NetworkTimelineChart({ bssid, days = 7 }: NetworkTimelineChartPr
           </BarChart>
         </ResponsiveContainer>
       </div>
-
-      {/* Network Filter */}
-      {uniqueNetworks && uniqueNetworks.length > 0 && (
-        <div className="premium-card p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-medium text-slate-300">Filter by Network</h4>
-            {selectedBssid && (
-              <button
-                onClick={() => setSelectedBssid(undefined)}
-                className="text-xs text-blue-400 hover:text-blue-300"
-              >
-                Clear Filter
-              </button>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {uniqueNetworks.slice(0, 10).map((bssid) => (
-              <button
-                key={bssid}
-                onClick={() => setSelectedBssid(bssid === selectedBssid ? undefined : bssid)}
-                className={`px-3 py-1 rounded text-xs font-mono transition-colors ${
-                  bssid === selectedBssid
-                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50'
-                    : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-600'
-                }`}
-              >
-                {bssid.slice(0, 17)}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

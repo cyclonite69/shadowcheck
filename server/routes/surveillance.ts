@@ -10,7 +10,7 @@
  */
 
 import { Router, Request, Response } from "express";
-import { getPool, query } from '../db.js';
+import { getPool, query } from '../db/connection.js';
 
 const router = Router();
 
@@ -60,19 +60,91 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
       });
     }
 
-    // Call the WiFi-specific surveillance detection function
+    // Direct query for WiFi surveillance threats using legacy tables
     const threatsResult = await query(`
-      SELECT * FROM app.get_wifi_surveillance_threats(
-        $1::NUMERIC,  -- min_distance_km
-        $2::NUMERIC,  -- home_radius_m
-        $3::INTEGER,  -- min_home_sightings
-        $4::INTEGER   -- limit
+      WITH home_zone AS (
+        SELECT ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography as home_point
+      ),
+      network_analysis AS (
+        SELECT
+          l.bssid,
+          n.ssid,
+          n.frequency,
+          COUNT(*) as total_sightings,
+          COUNT(*) FILTER (WHERE ST_DWithin(
+            ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+            (SELECT home_point FROM home_zone),
+            $2
+          )) as home_sightings,
+          COUNT(*) FILTER (WHERE NOT ST_DWithin(
+            ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+            (SELECT home_point FROM home_zone),
+            $2
+          )) as away_sightings,
+          MAX(ST_Distance(
+            ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+            (SELECT home_point FROM home_zone)
+          )) / 1000.0 as max_distance_km,
+          CASE
+            WHEN n.frequency >= 2400 AND n.frequency < 2500 THEN '2.4GHz'
+            WHEN n.frequency >= 5000 AND n.frequency < 6000 THEN '5GHz'
+            WHEN n.frequency >= 6000 THEN '6GHz'
+            ELSE 'Unknown'
+          END as radio_band,
+          CASE
+            WHEN n.ssid IS NULL THEN false
+            WHEN n.ssid ~* '(iPhone|Android|Galaxy|Pixel)' THEN true
+            ELSE false
+          END as is_mobile_hotspot
+        FROM app.locations_legacy l
+        LEFT JOIN app.networks_legacy n ON l.bssid = n.bssid
+        WHERE l.lat IS NOT NULL
+          AND l.lon IS NOT NULL
+          AND l.lat BETWEEN -90 AND 90
+          AND l.lon BETWEEN -180 AND 180
+        GROUP BY l.bssid, n.ssid, n.frequency
+        HAVING COUNT(*) FILTER (WHERE ST_DWithin(
+          ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+          (SELECT home_point FROM home_zone),
+          $2
+        )) >= $3
+        AND MAX(ST_Distance(
+          ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+          (SELECT home_point FROM home_zone)
+        )) / 1000.0 >= $1
       )
+      SELECT
+        bssid,
+        ssid,
+        radio_band,
+        total_sightings,
+        home_sightings,
+        away_sightings,
+        max_distance_km,
+        is_mobile_hotspot,
+        CASE
+          WHEN max_distance_km > 20 THEN 'EXTREME'
+          WHEN max_distance_km > 10 THEN 'CRITICAL'
+          WHEN max_distance_km > 5 THEN 'HIGH'
+          WHEN max_distance_km > 2 THEN 'MEDIUM'
+          ELSE 'LOW'
+        END as threat_level,
+        CASE
+          WHEN max_distance_km > 20 THEN 'Network detected at extreme distance from home (>20km) with home presence'
+          WHEN max_distance_km > 10 THEN 'Network follows you far from home (>10km) - possible surveillance'
+          WHEN max_distance_km > 5 THEN 'Network appears at significant distance from home (>5km)'
+          WHEN max_distance_km > 2 THEN 'Network detected beyond typical home range (>2km)'
+          ELSE 'Network detected beyond home zone but within normal range'
+        END as threat_description,
+        LEAST(max_distance_km / 10.0, 1.0) as confidence_score
+      FROM network_analysis
+      ORDER BY max_distance_km DESC, home_sightings DESC
+      LIMIT $4
     `, [minDistanceKm, homeRadiusM, minHomeSightings, limit]);
 
     // For each threat, get ALL observation details
     const threatsWithObservations = await Promise.all(
-      threatsResult.rows.map(async (threat) => {
+      threatsResult.map(async (threat: any) => {
         // First try to get observations from locations_legacy (detailed GPS tracks)
         let observationsResult = await query(`
           SELECT
@@ -105,7 +177,7 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
 
         // If no observations in locations_legacy, fall back to networks_legacy
         // (which contains last-known position for each network record)
-        if (observationsResult.rows.length === 0) {
+        if (!observationsResult || observationsResult.length === 0) {
           observationsResult = await query(`
             SELECT
               ROW_NUMBER() OVER (ORDER BY lasttime DESC) as id,
@@ -153,7 +225,7 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
           is_mobile_hotspot: threat.is_mobile_hotspot,
 
           // ALL observation details
-          observations: observationsResult.rows.map(obs => ({
+          observations: observationsResult.map((obs: any) => ({
             id: obs.unified_id,
             latitude: Number(obs.lat),
             longitude: Number(obs.lon),
@@ -217,8 +289,65 @@ router.get("/wifi/summary", async (req: Request, res: Response) => {
     const minDistanceKm = parseFloat(String(req.query.min_distance_km || '0.5'));
 
     const result = await query(`
-      WITH wifi_threats AS (
-        SELECT * FROM app.get_wifi_surveillance_threats($1::NUMERIC, 500, 1, 10000)
+      WITH home_zone AS (
+        SELECT ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography as home_point
+      ),
+      network_analysis AS (
+        SELECT
+          l.bssid,
+          n.ssid,
+          MAX(ST_Distance(
+            ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+            (SELECT home_point FROM home_zone)
+          )) / 1000.0 as max_distance_km,
+          COUNT(*) FILTER (WHERE ST_DWithin(
+            ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+            (SELECT home_point FROM home_zone),
+            500
+          )) as home_sightings,
+          CASE
+            WHEN n.ssid ~* '(iPhone|Android|Galaxy|Pixel)' THEN true
+            ELSE false
+          END as is_mobile_hotspot,
+          CASE
+            WHEN MAX(ST_Distance(
+              ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+              (SELECT home_point FROM home_zone)
+            )) / 1000.0 > 20 THEN 'EXTREME'
+            WHEN MAX(ST_Distance(
+              ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+              (SELECT home_point FROM home_zone)
+            )) / 1000.0 > 10 THEN 'CRITICAL'
+            WHEN MAX(ST_Distance(
+              ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+              (SELECT home_point FROM home_zone)
+            )) / 1000.0 > 5 THEN 'HIGH'
+            WHEN MAX(ST_Distance(
+              ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+              (SELECT home_point FROM home_zone)
+            )) / 1000.0 > 2 THEN 'MEDIUM'
+            ELSE 'LOW'
+          END as threat_level,
+          LEAST(MAX(ST_Distance(
+            ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+            (SELECT home_point FROM home_zone)
+          )) / 1000.0 / 10.0, 1.0) as confidence_score
+        FROM app.locations_legacy l
+        LEFT JOIN app.networks_legacy n ON l.bssid = n.bssid
+        WHERE l.lat IS NOT NULL
+          AND l.lon IS NOT NULL
+          AND l.lat BETWEEN -90 AND 90
+          AND l.lon BETWEEN -180 AND 180
+        GROUP BY l.bssid, n.ssid
+        HAVING COUNT(*) FILTER (WHERE ST_DWithin(
+          ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+          (SELECT home_point FROM home_zone),
+          500
+        )) >= 1
+        AND MAX(ST_Distance(
+          ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+          (SELECT home_point FROM home_zone)
+        )) / 1000.0 >= $1
       )
       SELECT
         COUNT(*) as total_threats,
@@ -231,10 +360,10 @@ router.get("/wifi/summary", async (req: Request, res: Response) => {
         AVG(confidence_score) as avg_confidence,
         MAX(max_distance_km) as max_distance_detected,
         AVG(max_distance_km) as avg_threat_distance
-      FROM wifi_threats
+      FROM network_analysis
     `, [minDistanceKm]);
 
-    const stats = result.rows[0];
+    const stats = result[0];
 
     return res.json({
       ok: true,
@@ -264,6 +393,112 @@ router.get("/wifi/summary", async (req: Request, res: Response) => {
     return res.status(500).json({
       ok: false,
       error: "Failed to retrieve WiFi surveillance summary",
+      detail: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+/**
+ * GET /api/v1/surveillance/location-clusters
+ *
+ * Clusters observations into distinct locations based on:
+ * - Spatial proximity (within 100m radius)
+ * - Temporal continuity (10+ minutes at location)
+ *
+ * Returns count of distinct locations visited
+ */
+router.get("/location-clusters", async (req: Request, res: Response) => {
+  try {
+    const radiusMeters = parseFloat(req.query.radius as string) || 100;
+    const minDurationMinutes = parseFloat(req.query.min_duration as string) || 10;
+
+    const sql = `
+      WITH ordered_observations AS (
+        SELECT
+          observation_id,
+          latitude,
+          longitude,
+          observation_time,
+          ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography as location,
+          LAG(observation_time) OVER (ORDER BY observation_time) as prev_time,
+          LAG(ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography) OVER (ORDER BY observation_time) as prev_location
+        FROM app.wigle_alpha_v3_observations
+        WHERE latitude IS NOT NULL
+          AND longitude IS NOT NULL
+          AND observation_time IS NOT NULL
+        ORDER BY observation_time
+      ),
+      location_groups AS (
+        SELECT
+          observation_id,
+          latitude,
+          longitude,
+          observation_time,
+          location,
+          prev_time,
+          prev_location,
+          -- New cluster when distance > radius OR time gap > duration
+          CASE
+            WHEN prev_location IS NULL THEN 1
+            WHEN ST_Distance(location, prev_location) > $1 THEN 1
+            WHEN EXTRACT(EPOCH FROM (observation_time - prev_time)) / 60 > $2 THEN 1
+            ELSE 0
+          END as is_new_cluster
+        FROM ordered_observations
+      ),
+      clusters AS (
+        SELECT
+          observation_id,
+          latitude,
+          longitude,
+          observation_time,
+          SUM(is_new_cluster) OVER (ORDER BY observation_time) as cluster_id
+        FROM location_groups
+      ),
+      cluster_stats AS (
+        SELECT
+          cluster_id,
+          AVG(latitude) as center_lat,
+          AVG(longitude) as center_lon,
+          MIN(observation_time) as first_seen,
+          MAX(observation_time) as last_seen,
+          COUNT(*) as observation_count,
+          EXTRACT(EPOCH FROM (MAX(observation_time) - MIN(observation_time))) / 60 as duration_minutes
+        FROM clusters
+        GROUP BY cluster_id
+        HAVING EXTRACT(EPOCH FROM (MAX(observation_time) - MIN(observation_time))) / 60 >= $2
+      )
+      SELECT
+        COUNT(*) as total_clusters,
+        SUM(observation_count) as total_observations,
+        AVG(duration_minutes) as avg_duration_minutes,
+        MIN(first_seen) as earliest_visit,
+        MAX(last_seen) as latest_visit
+      FROM cluster_stats
+    `;
+
+    const result = await query(sql, [radiusMeters, minDurationMinutes]);
+    const stats = result[0];
+
+    return res.json({
+      ok: true,
+      data: {
+        total_clusters: parseInt(stats.total_clusters) || 0,
+        total_observations: parseInt(stats.total_observations) || 0,
+        avg_duration_minutes: parseFloat(stats.avg_duration_minutes) || 0,
+        earliest_visit: stats.earliest_visit,
+        latest_visit: stats.latest_visit,
+        clustering_params: {
+          radius_meters: radiusMeters,
+          min_duration_minutes: minDurationMinutes
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[/api/v1/surveillance/location-clusters] error:', error);
+    return res.status(500).json({
+      ok: false,
+      error: "Failed to compute location clusters",
       detail: error instanceof Error ? error.message : String(error)
     });
   }
@@ -308,7 +543,7 @@ router.get("/settings", async (_req: Request, res: Response) => {
 
     return res.json({
       ok: true,
-      data: result.rows.map(row => ({
+      data: result.map((row: any) => ({
         setting_id: row.setting_id,
         radio_type: row.radio_type,
         min_distance_km: Number(row.min_distance_km),
@@ -405,7 +640,7 @@ router.post("/settings", async (req: Request, res: Response) => {
       threat_level_enabled ? JSON.stringify(threat_level_enabled) : null
     ]);
 
-    const settingId = result.rows[0]?.setting_id;
+    const settingId = result[0]?.setting_id;
 
     return res.json({
       ok: true,
@@ -498,7 +733,7 @@ router.post("/feedback", async (req: Request, res: Response) => {
       whitelist_network || false
     ]);
 
-    const feedbackId = result.rows[0]?.feedback_id;
+    const feedbackId = result[0]?.feedback_id;
 
     return res.json({
       ok: true,
@@ -553,7 +788,7 @@ router.post("/learning/adjust", async (_req: Request, res: Response) => {
     return res.json({
       ok: true,
       message: "Thresholds adjusted based on user feedback",
-      adjustments: result.rows.map(row => ({
+      adjustments: result.map((row: any) => ({
         radio_type: row.radio_type,
         old_threshold: Number(row.old_threshold),
         new_threshold: Number(row.new_threshold),
@@ -604,7 +839,7 @@ router.get("/feedback/stats", async (_req: Request, res: Response) => {
       FROM recent_feedback
     `);
 
-    const stats = result.rows[0];
+    const stats = result[0];
 
     const total = Number(stats.total_feedback || 0);
     const falsePositives = Number(stats.false_positives || 0);

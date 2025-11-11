@@ -194,6 +194,7 @@ router.get("/observations", async (req, res) => {
     const sourcesParam = req.query.sources ? String(req.query.sources) : null;
     const radioTypes = req.query.radio_types ? String(req.query.radio_types).split(',').map(t => t.trim().toUpperCase()) : [];
     const minQuality = req.query.min_quality ? Number(req.query.min_quality) : 0;
+    const search = req.query.search ? String(req.query.search).trim() : null;
 
     // Build source filter
     const params: any[] = [];
@@ -230,6 +231,16 @@ router.get("/observations", async (req, res) => {
     if (minQuality > 0) {
       params.push(minQuality);
       where.push(`source_quality_score >= $${params.length}`);
+    }
+
+    // Search filter (SSID, BSSID, manufacturer)
+    if (search && search.length > 0) {
+      params.push(`%${search}%`);
+      where.push(`(
+        bssid ILIKE $${params.length} OR
+        ssid ILIKE $${params.length} OR
+        manufacturer ILIKE $${params.length}
+      )`);
     }
 
     // Bounding box filter
@@ -615,6 +626,72 @@ router.get("/enrichment-analysis", async (req, res) => {
     res.status(500).json({
       ok: false,
       error: "Failed to analyze enrichment",
+      detail: err?.message || String(err)
+    });
+  }
+});
+
+/**
+ * GET /api/v1/federated/filter-counts
+ * Get observation counts for each filter option (radio type, security type)
+ * Used to sort filter dropdowns by popularity
+ */
+router.get("/filter-counts", async (req, res) => {
+  try {
+    const mode = String(req.query.mode || 'locations_legacy');
+    const viewName = mode === 'locations_legacy' ? 'locations_legacy' :
+                     mode === 'wigle' ? 'wigle_alpha_v3_observations' :
+                     'observations_federated';
+
+    // Get radio type counts
+    const radioTypeSql = `
+      SELECT
+        type as radio_type,
+        COUNT(*) as observation_count
+      FROM app.${viewName}
+      WHERE type IS NOT NULL
+      GROUP BY type
+      ORDER BY observation_count DESC
+    `;
+
+    // Get security type counts (using categorizeSecurityType logic on the frontend)
+    // For now, we'll count by raw capabilities field
+    const securityTypeSql = `
+      SELECT
+        capabilities,
+        type,
+        COUNT(*) as observation_count
+      FROM app.${viewName}
+      WHERE capabilities IS NOT NULL OR type IS NOT NULL
+      GROUP BY capabilities, type
+      ORDER BY observation_count DESC
+      LIMIT 100
+    `;
+
+    const [radioTypeRows, securityTypeRows] = await Promise.all([
+      db.query(radioTypeSql),
+      db.query(securityTypeSql)
+    ]);
+
+    res.json({
+      ok: true,
+      data: {
+        radio_types: radioTypeRows.map((r: any) => ({
+          type: r.radio_type,
+          count: parseInt(r.observation_count)
+        })),
+        security_types: securityTypeRows.map((r: any) => ({
+          capabilities: r.capabilities,
+          type: r.type,
+          count: parseInt(r.observation_count)
+        }))
+      }
+    });
+  } catch (err: any) {
+    console.error("[/federated/filter-counts] error:", err);
+    res.status(500).json({
+      ok: false,
+      error: "Failed to fetch filter counts",
       detail: err?.message || String(err)
     });
   }

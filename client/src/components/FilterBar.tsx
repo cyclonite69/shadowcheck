@@ -30,6 +30,7 @@ import {
 import { getRadioTypeDisplay } from '@/components/NetworkObservationsTableView';
 import { getSecurityTypeStyle } from '@/lib/securityDecoder';
 import type { NetworkFilters } from '@/hooks/useInfiniteNetworkObservations';
+import { useFilterCounts } from '@/hooks/useFilterCounts';
 
 interface FilterBarProps {
   filters: NetworkFilters;
@@ -62,6 +63,9 @@ export function FilterBar({
   onGetGPS,
   gpsLoading = false,
 }: FilterBarProps) {
+  // Fetch filter counts for sorting
+  const { data: filterCounts } = useFilterCounts('locations_legacy');
+
   // Track which dropdown is open (only one at a time)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -132,7 +136,13 @@ export function FilterBar({
               Filter by Radio Type
             </div>
             <div className="space-y-2">
-              {['WiFi', 'BT', 'BLE', 'GSM', 'LTE'].map((type) => {
+              {(filterCounts?.radioTypes || [
+                { type: 'WiFi', count: 0 },
+                { type: 'BT', count: 0 },
+                { type: 'BLE', count: 0 },
+                { type: 'GSM', count: 0 },
+                { type: 'LTE', count: 0 },
+              ]).map(({ type, count }) => {
                 const display = getRadioTypeDisplay({ type });
                 const isChecked = filters.radioTypes?.includes(type) || false;
                 return (
@@ -154,6 +164,9 @@ export function FilterBar({
                     >
                       {display.icon}
                       <span className="text-xs uppercase">{display.label}</span>
+                      <span className="ml-auto text-xs text-slate-500">
+                        {count > 0 ? count.toLocaleString() : ''}
+                      </span>
                     </label>
                   </div>
                 );
@@ -202,18 +215,18 @@ export function FilterBar({
               Filter by Security Type
             </div>
             <div className="space-y-2 max-h-80 overflow-y-auto">
-              {[
-                'WPA3-SAE',
-                'WPA2-EAP',
-                'WPA2-PSK',
-                'WPA2-OWE',
-                'WPA-EAP',
-                'WPA-PSK',
-                'WPA-EAP,WPA2-EAP',
-                'WPA-PSK,WPA2-PSK',
-                'WEP',
-                'Open',
-              ].map((securityType) => {
+              {(filterCounts?.securityTypes || [
+                { type: 'WPA3-SAE', count: 0 },
+                { type: 'WPA2-EAP', count: 0 },
+                { type: 'WPA2-PSK', count: 0 },
+                { type: 'WPA2-OWE', count: 0 },
+                { type: 'WPA-EAP', count: 0 },
+                { type: 'WPA-PSK', count: 0 },
+                { type: 'WPA-EAP,WPA2-EAP', count: 0 },
+                { type: 'WPA-PSK,WPA2-PSK', count: 0 },
+                { type: 'WEP', count: 0 },
+                { type: 'Open', count: 0 },
+              ]).map(({ type: securityType, count }) => {
                 const style = getSecurityTypeStyle(securityType);
                 const isChecked = securityFilters.has(securityType);
                 return (
@@ -239,6 +252,9 @@ export function FilterBar({
                       <span className="text-base">{style.icon}</span>
                       <span className={`text-xs font-medium ${style.text}`}>
                         {style.abbr}
+                      </span>
+                      <span className="ml-auto text-xs text-slate-500">
+                        {count > 0 ? count.toLocaleString() : ''}
                       </span>
                     </label>
                   </div>

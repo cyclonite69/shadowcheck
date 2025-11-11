@@ -8,8 +8,7 @@ export function Sidebar() {
   const navItems = [
     { href: "/", icon: Home, label: "Home", highlight: true, color: iconColors.primary },
     { href: "/dashboard", icon: BarChart3, label: "Dashboard", highlight: true, color: iconColors.info },
-    { href: "/visualization", icon: TrendingUp, label: "Network Visualization", highlight: true, color: iconColors.success },
-    { href: "/access-points", icon: Satellite, label: "Access Points", highlight: true, color: iconColors.warning },
+    { href: "/geospatial-intelligence", icon: TrendingUp, label: "Geospatial Intelligence", highlight: true, color: iconColors.success },
     { href: "/surveillance", icon: Eye, label: "Surveillance Intelligence", highlight: true, color: iconColors.special },
     { href: "/admin", icon: Shield, label: "Admin Panel", highlight: true, color: iconColors.neutral },
   ];
