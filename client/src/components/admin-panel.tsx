@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { MetricsGrid } from "./metrics-grid";
@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { iconColors, getIconContainerClasses, getIconTextColor } from '@/lib/iconColors';
 
 export function AdminPanel() {
+  console.log('🚀 [AdminPanel] Component mounted/rendered');
+
   const [endpointsOpen, setEndpointsOpen] = useState(false);
   const [showGrafanaPassword, setShowGrafanaPassword] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -50,6 +52,27 @@ export function AdminPanel() {
     queryKey: ["/api/v1/health/detailed"],
     refetchInterval: 5000,
   }) as { data: any };
+
+  // Debug: Log healthDetails to console
+  console.log('[AdminPanel] healthDetails:', healthDetails);
+  console.log('[AdminPanel] healthDetails?.database:', healthDetails?.database);
+  console.log('[AdminPanel] postgisVersion:', healthDetails?.database?.postgisVersion);
+
+  // Log whenever healthDetails changes
+  useEffect(() => {
+    console.log('📊 [AdminPanel useEffect] healthDetails updated:', healthDetails);
+    if (healthDetails?.database) {
+      console.log('✅ [AdminPanel useEffect] Database data available:', {
+        postgisVersion: healthDetails.database.postgisVersion,
+        activeConnections: healthDetails.database.activeConnections,
+        totalConnections: healthDetails.database.totalConnections,
+        idleConnections: healthDetails.database.idleConnections,
+        waitingConnections: healthDetails.database.waitingConnections
+      });
+    } else {
+      console.log('❌ [AdminPanel useEffect] No database data in healthDetails');
+    }
+  }, [healthDetails]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -139,7 +162,18 @@ export function AdminPanel() {
 
         <TabsContent value="system" className="space-y-6">
           <MetricsGrid />
-          
+
+          {/* 🔍 DEBUG: Log data structure before rendering */}
+          {(() => {
+            console.log('═══ DATABASE CARD DEBUG ═══');
+            console.log('Full healthDetails:', JSON.stringify(healthDetails, null, 2));
+            console.log('Database section:', healthDetails?.database);
+            console.log('PostGIS version:', healthDetails?.database?.postgisVersion);
+            console.log('All database keys:', healthDetails?.database ? Object.keys(healthDetails.database) : 'no database object');
+            console.log('═══════════════════════════');
+            return null;
+          })()}
+
           {/* Enhanced Database & Memory Status Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Enhanced Database Connection Card */}
@@ -171,41 +205,30 @@ export function AdminPanel() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">PostGIS:</span>
                   <span className="text-sm font-mono text-cyan-400">
-                    {healthDetails?.checks?.database?.postgisVersion?.split(' ')[0] || 'N/A'}
+                    {healthDetails?.database?.postgisVersion?.split(' ')[0] || 'N/A'}
                   </span>
                 </div>
 
-                {/* Response Time */}
-                {healthDetails?.checks?.database?.responseTime && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-400">Response:</span>
-                    <span className="text-sm font-mono text-green-400">
-                      {healthDetails.checks.database.responseTime}
-                    </span>
-                  </div>
-                )}
-
                 {/* Connection Pool */}
-                {healthDetails?.checks?.database?.pool && (
+                {healthDetails?.database && (
                   <>
                     <div className="mt-3 pt-3 border-t border-slate-700/50">
-                      <p className="text-xs text-slate-400 mb-2">Connection Pool:</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
-                            style={{width: `${(healthDetails.checks.database.pool.idle / healthDetails.checks.database.pool.total) * 100}%`}}
-                          />
-                        </div>
-                        <span className="text-xs font-mono text-slate-400">
-                          {healthDetails.checks.database.pool.idle}/{healthDetails.checks.database.pool.total} idle
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-slate-300 font-medium">Active Connections</span>
+                        <span className="text-sm font-mono text-slate-100 font-semibold">
+                          {healthDetails.database.activeConnections || 0}/{healthDetails.database.totalConnections || 0}
                         </span>
                       </div>
-                      {healthDetails.checks.database.pool.waiting > 0 && (
-                        <p className="text-xs text-amber-400 mt-1">
-                          ⚠️ {healthDetails.checks.database.pool.waiting} waiting
-                        </p>
-                      )}
+                      <div className="relative w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                          className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-500"
+                          style={{width: `${((healthDetails.database.activeConnections || 0) / (healthDetails.database.totalConnections || 1)) * 100}%`}}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-1 text-xs text-slate-500">
+                        <span>Idle: {healthDetails.database.idleConnections || 0}</span>
+                        <span>Waiting: {healthDetails.database.waitingConnections || 0}</span>
+                      </div>
                     </div>
                   </>
                 )}

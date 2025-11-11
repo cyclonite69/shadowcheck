@@ -372,6 +372,7 @@ services:
       - grafana_password
     networks:
       - shadowcheck_internal_prod
+      - shadowcheck_network  # Add this network to reach PostgreSQL
     ports:
       - "127.0.0.1:3000:3000"
     restart: unless-stopped
@@ -402,6 +403,9 @@ networks:
     ipam:
       config:
         - subnet: 172.29.0.0/16
+  shadowcheck_network:
+    name: shadowcheck_shadowcheck_network
+    external: true  # Use the existing network from main docker-compose.yml
 
 # ==============================================================================
 # VOLUMES
