@@ -11,13 +11,7 @@ import surveillanceRouter from "./routes/surveillance.js";
 import pipelinesRouter from "./routes/pipelines.js";
 import accessPointsRouter from "./routes/accessPoints.js";
 import wigleEnrichmentRouter from "./routes/wigleEnrichment.js";
-import wigleStagingRouter from "./routes/wigleStagingRoutes.js";
-import wigleAlphaV3Router from "./routes/wigle_alpha_v3.js";
-import networkObservationsRouter from "./routes/networkObservations.js";
-import locationMarkersRouter from "./routes/locationMarkers.js";
-import networkTimelineRouter from "./routes/networkTimeline.js";
 import { db as dbConnection } from "./db/connection.js";
-import { wigleTypeToRadioType } from "./utils/wigleTypeMapping.js";
 
 const { Pool } = pg;
 
@@ -30,17 +24,18 @@ app.use(express.json());
 // Metrics endpoint
 app.get("/api/v1/metrics", async (_req, res) => {
   try {
-    const count = await dbConnection.query("SELECT COUNT(*) as count FROM app.networks");
+    const count = await pool.query("SELECT COUNT(*) as count FROM app.networks");
     res.json({
       ok: true,
       timestamp: new Date().toISOString(),
-      counts: { networks: parseInt((count[0] as any)?.count || "0") }
+      counts: { networks: parseInt(count.rows[0]?.count || "0") }
     });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err) });
   }
 });
 
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const toInt = (v: unknown, d: number) => {
   const n = parseInt(String(v ?? ""), 10);
@@ -84,11 +79,6 @@ app.use("/api/v1/surveillance", surveillanceRouter);
 app.use("/api/v1/pipelines", pipelinesRouter);
 app.use("/api/v1/access-points", accessPointsRouter);
 app.use("/api/v1/wigle", wigleEnrichmentRouter);
-app.use("/api/v1/wigle", wigleStagingRouter);
-app.use("/api/v3", wigleAlphaV3Router);
-app.use("/api/v1/network", networkObservationsRouter);
-app.use("/api/v1/locations", locationMarkersRouter);
-app.use("/api/v1/network-timeline", networkTimelineRouter);
 
 // Legacy health endpoint for backward compatibility
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
@@ -145,86 +135,7 @@ app.get("/api/v1/networks", async (req, res) => {
         where.push(`n.type = ANY($${params.length})`);
       }
 
-      // Signal strength filter
-      if (minSignal !== null) {
-        params.push(minSignal);
-        where.push(`lo.level >= $${params.length}`);
-      }
-      if (maxSignal !== null) {
-        params.push(maxSignal);
-        where.push(`lo.level <= $${params.length}`);
-      }
-
-      // Frequency filter
-      if (minFreq !== null) {
-        params.push(minFreq);
-        where.push(`n.frequency >= $${params.length}`);
-      }
-      if (maxFreq !== null) {
-        params.push(maxFreq);
-        where.push(`n.frequency <= $${params.length}`);
-      }
-
-      // Date range filter (time is in milliseconds since epoch)
-      // Only show networks that were observed within the specified date range
-      if (dateStart) {
-        const startMs = new Date(dateStart).getTime();
-        params.push(startMs);
-        where.push(`lo.time >= $${params.length}`);
-      }
-      if (dateEnd) {
-        const endMs = new Date(dateEnd).getTime() + (24 * 60 * 60 * 1000); // End of day
-        params.push(endMs);
-        where.push(`lo.time <= $${params.length}`);
-      }
-
-      // Security type filter (WiFi only - matches capabilities field)
-      if (securityTypes.length > 0) {
-        const securityConditions: string[] = [];
-        securityTypes.forEach(type => {
-          if (type === 'Open') {
-            securityConditions.push(`(n.capabilities = '[ESS]' OR n.capabilities IS NULL OR n.capabilities = '')`);
-          } else if (type === 'WEP') {
-            securityConditions.push(`n.capabilities ILIKE '%WEP%'`);
-          } else if (type === 'WPA') {
-            securityConditions.push(`(n.capabilities ILIKE '%WPA%' AND n.capabilities NOT ILIKE '%WPA2%' AND n.capabilities NOT ILIKE '%WPA3%')`);
-          } else if (type === 'WPA2') {
-            securityConditions.push(`n.capabilities ILIKE '%WPA2%'`);
-          } else if (type === 'WPA3') {
-            securityConditions.push(`n.capabilities ILIKE '%WPA3%'`);
-          }
-        });
-        if (securityConditions.length > 0) {
-          where.push(`(${securityConditions.join(' OR ')})`);
-        }
-      }
-
-      // Radius search filter (Haversine formula for geodesic distance)
-      // Filter observations to only those within the specified radius from center point
-      if (radiusLat !== null && radiusLng !== null && radiusMeters !== null) {
-        params.push(radiusLat, radiusLng, radiusMeters);
-        where.push(`
-          (6371000 * acos(
-            cos(radians($${params.length - 2})) *
-            cos(radians(lo.lat)) *
-            cos(radians(lo.lon) - radians($${params.length - 1})) +
-            sin(radians($${params.length - 2})) *
-            sin(radians(lo.lat))
-          )) <= $${params.length}
-        `);
-      }
-
       params.push(limit, offset);
-
-      // Parse sorting parameters
-      let sortBy = req.query.sort_by as string || 'observed_at';
-      const sortDir = (req.query.sort_dir as string || 'desc').toUpperCase();
-
-      // Define allowed sortable columns
-      const allowedSorts = ['observed_at', 'ssid', 'bssid', 'frequency', 'signal_strength', 'observation_count', 'manufacturer'];
-      if (!allowedSorts.includes(sortBy)) {
-        sortBy = 'observed_at'; // Default to observed_at if sortBy is invalid
-      }
 
       const sql = `
         WITH latest_networks AS (
@@ -267,11 +178,10 @@ app.get("/api/v1/networks", async (req, res) => {
         LEFT JOIN latest_observations lo ON g.bssid = lo.bssid
         LEFT JOIN app.radio_manufacturers m ON UPPER(REPLACE(SUBSTRING(g.bssid, 1, 8), ':', '')) = m.oui_prefix_24bit
         ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
-        ORDER BY ${sortBy === 'manufacturer' ? 'COALESCE(m.organization_name, \'Unknown\')' : sortBy} ${sortDir === 'ASC' ? 'ASC' : 'DESC'} NULLS ${sortDir === 'ASC' ? 'LAST' : 'FIRST'}
+        ORDER BY lo.time DESC NULLS LAST
         LIMIT $${params.length - 1} OFFSET $${params.length};
       `;
-      const result = await dbConnection.query(sql, params);
-    const rows = result;
+      const { rows } = await pool.query(sql, params);
       const total_count = rows.length ? Number(rows[0].total_count) : 0;
 
       return res.json({
@@ -279,7 +189,7 @@ app.get("/api/v1/networks", async (req, res) => {
         mode: "grouped",
         count: rows.length,
         total_count,
-        data: rows.map((row: any) => {
+        data: rows.map(row => {
           const { total_count, ...networkData } = row;
           const frequency = networkData.frequency;
           const calculatedChannel = calculateChannel(frequency);
@@ -290,7 +200,7 @@ app.get("/api/v1/networks", async (req, res) => {
             ssid: networkData.ssid,
             frequency: frequency,
             channel: calculatedChannel,
-            capabilities: networkData.capabilities,
+            encryption: networkData.capabilities,
             latitude: networkData.latitude ? String(networkData.latitude) : undefined,
             longitude: networkData.longitude ? String(networkData.longitude) : undefined,
             altitude: networkData.altitude,
@@ -298,7 +208,7 @@ app.get("/api/v1/networks", async (req, res) => {
             observed_at: networkData.observed_at?.toISOString() || networkData.time,
             signal_strength: networkData.signal_strength,
             observation_count: Number(networkData.observation_count) || 0,
-            type: wigleTypeToRadioType(networkData.type),
+            type: networkData.type,
             manufacturer: networkData.manufacturer || null
           };
         })
@@ -340,8 +250,7 @@ app.get("/api/v1/networks", async (req, res) => {
         ORDER BY d."time" DESC
         LIMIT $${params.length - 1} OFFSET $${params.length};
       `;
-      const result = await dbConnection.query(sql, params);
-    const rows = result;
+      const { rows } = await pool.query(sql, params);
       return res.json({ mode: "distinct_latest", count: rows.length, rows });
     }
 
@@ -352,7 +261,7 @@ app.get("/api/v1/networks", async (req, res) => {
     // Search filter (BSSID, SSID, or capabilities)
     if (search) {
       params.push(`%${search}%`);
-      where.push(`(LOWER(l.bssid) LIKE $${params.length} OR LOWER(n.ssid) LIKE $${params.length})`);
+      where.push(`(LOWER(n.bssid) LIKE $${params.length} OR LOWER(n.ssid) LIKE $${params.length} OR LOWER(n.capabilities) LIKE $${params.length})`);
     }
 
     // Radio type filter (using single-letter codes: W, E, B, L, G)
@@ -474,8 +383,7 @@ app.get("/api/v1/networks", async (req, res) => {
       ORDER BY l.time DESC NULLS LAST
       LIMIT $${params.length - 1} OFFSET $${params.length};
     `;
-    const result = await dbConnection.query(sql, params);
-    const rows = result;
+    const { rows } = await pool.query(sql, params);
     const total_count = rows.length ? Number(rows[0].total_count) : 0;
 
     return res.json({
@@ -483,7 +391,7 @@ app.get("/api/v1/networks", async (req, res) => {
       mode: "raw",
       count: rows.length,
       total_count,
-      data: rows.map((row: any) => {
+      data: rows.map(row => {
         const { total_count, ...networkData } = row;
         const frequency = networkData.frequency;
         const calculatedChannel = calculateChannel(frequency);
@@ -528,9 +436,8 @@ app.get("/api/v1/analytics", async (_req, res) => {
         (SELECT COUNT(*) FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL) as geolocated_observations
     `;
 
-    const result = await dbConnection.query(query);
-    const rows = result;
-    const overview = result[0];
+    const result = await pool.query(query);
+    const overview = result.rows[0];
 
     res.json({
       ok: true,
@@ -558,40 +465,23 @@ app.get("/api/v1/security-analysis", async (_req, res) => {
   try {
     const { parseCapabilities, categorizeNetworksBySecurity, SecurityStrength } = await import('./utils/securityAnalysis.js');
 
-    // Get all WiFi networks with capabilities AND observation counts
+    // Get all WiFi networks with capabilities
     const query = `
-      SELECT DISTINCT ON (n.bssid)
-        n.bssid,
-        n.ssid,
-        n.capabilities,
-        n.frequency,
-        (SELECT COUNT(*) FROM app.locations_legacy l WHERE l.bssid = n.bssid) as observation_count
-      FROM app.networks_legacy n
-      WHERE n.type = 'W'
-      ORDER BY n.bssid, n.lasttime DESC
+      SELECT DISTINCT ON (bssid)
+        bssid,
+        ssid,
+        capabilities,
+        frequency
+      FROM app.networks_legacy
+      WHERE type = 'W'
+      ORDER BY bssid, lasttime DESC
     `;
 
-    const result = await dbConnection.query(query);
-    const rows = result;
-    const networks = result;
+    const result = await pool.query(query);
+    const networks = result.rows;
 
-    // Categorize by security strength (distinct networks)
+    // Categorize by security strength
     const categories = categorizeNetworksBySecurity(networks);
-
-    // Also categorize by observation counts
-    const observationCounts: Record<string, number> = {
-      [SecurityStrength.EXCELLENT]: 0,
-      [SecurityStrength.GOOD]: 0,
-      [SecurityStrength.MODERATE]: 0,
-      [SecurityStrength.WEAK]: 0,
-      [SecurityStrength.VULNERABLE]: 0,
-      [SecurityStrength.OPEN]: 0
-    };
-
-    networks.forEach((network: any) => {
-      const analysis = parseCapabilities(network.capabilities);
-      observationCounts[analysis.strength] += Number(network.observation_count) || 0;
-    });
 
     // Get some example networks for each category
     const examples: Record<string, any[]> = {
@@ -603,7 +493,7 @@ app.get("/api/v1/security-analysis", async (_req, res) => {
       [SecurityStrength.OPEN]: []
     };
 
-    networks.forEach((network: any) => {
+    networks.forEach(network => {
       const analysis = parseCapabilities(network.capabilities);
       if (examples[analysis.strength].length < 5) {
         examples[analysis.strength].push({
@@ -614,62 +504,11 @@ app.get("/api/v1/security-analysis", async (_req, res) => {
       }
     });
 
-    const totalObservations = Object.values(observationCounts).reduce((sum, count) => sum + count, 0);
-
-    // Categorize by security TYPE (Enterprise/Personal/WPA3/Legacy/Open)
-    const securityTypes = {
-      enterprise: 0,
-      personal_wpa3: 0,
-      personal_wpa2: 0,
-      legacy: 0,
-      open: 0
-    };
-
-    const securityTypeObservations = {
-      enterprise: 0,
-      personal_wpa3: 0,
-      personal_wpa2: 0,
-      legacy: 0,
-      open: 0
-    };
-
-    networks.forEach((network: any) => {
-      const analysis = parseCapabilities(network.capabilities);
-      const caps = (network.capabilities || '').toUpperCase();
-      const obsCount = Number(network.observation_count) || 0;
-
-      // Categorize by type
-      if (caps.includes('EAP')) {
-        securityTypes.enterprise++;
-        securityTypeObservations.enterprise += obsCount;
-      } else if (caps.includes('SAE') || caps.includes('WPA3')) {
-        securityTypes.personal_wpa3++;
-        securityTypeObservations.personal_wpa3 += obsCount;
-      } else if ((caps.includes('WPA2') || caps.includes('RSN')) && caps.includes('PSK')) {
-        securityTypes.personal_wpa2++;
-        securityTypeObservations.personal_wpa2 += obsCount;
-      } else if (caps.includes('WPA') || caps.includes('WEP')) {
-        securityTypes.legacy++;
-        securityTypeObservations.legacy += obsCount;
-      } else if (!caps || caps.trim() === '' || analysis.strength === SecurityStrength.OPEN) {
-        securityTypes.open++;
-        securityTypeObservations.open += obsCount;
-      } else {
-        // Default to WPA2 if we can't determine but it has some security
-        securityTypes.personal_wpa2++;
-        securityTypeObservations.personal_wpa2 += obsCount;
-      }
-    });
-
     res.json({
       ok: true,
       data: {
         total_networks: networks.length,
-        total_observations: totalObservations,
         categories,
-        observation_counts: observationCounts,
-        security_types: securityTypes,
-        security_type_observations: securityTypeObservations,
         examples,
         summary: {
           secure_networks: categories[SecurityStrength.EXCELLENT] + categories[SecurityStrength.GOOD],
@@ -723,11 +562,10 @@ app.get("/api/v1/signal-strength", async (_req, res) => {
       ORDER BY sort_order
     `;
 
-    const result = await dbConnection.query(query);
-    const rows = result;
+    const result = await pool.query(query);
     res.json({
       ok: true,
-      data: result.map((row: any) => ({
+      data: result.rows.map(row => ({
         signal_range: row.signal_range,
         count: Number(row.count) || 0
       }))
@@ -780,11 +618,10 @@ app.get("/api/v1/security-analysis", async (_req, res) => {
       ORDER BY sc.network_count DESC
     `;
 
-    const result = await dbConnection.query(query);
-    const rows = result;
+    const result = await pool.query(query);
     res.json({
       ok: true,
-      data: result.map((row: any) => ({
+      data: result.rows.map(row => ({
         security_level: row.security_level,
         security: row.security,
         network_count: Number(row.network_count) || 0,
@@ -880,8 +717,7 @@ app.get("/api/v1/timeline", async (req, res) => {
       ORDER BY time_bucket ASC
     `;
 
-    const result = await dbConnection.query(query);
-    const rows = result;
+    const result = await pool.query(query);
     res.json({
       ok: true,
       parameters: {
@@ -889,7 +725,7 @@ app.get("/api/v1/timeline", async (req, res) => {
         granularity,
         rangeMs
       },
-      data: result.map((row: any) => ({
+      data: result.rows.map(row => ({
         time_bucket: row.time_bucket,
         radio_type: row.radio_type,
         unique_networks: Number(row.unique_networks) || 0,
@@ -906,14 +742,13 @@ app.get("/api/v1/timeline", async (req, res) => {
 
 app.get("/api/v1/status", async (_req, res) => {
   try {
-    const result = await dbConnection.query("SELECT 1 as test");
-    const rows = result;
-    const postgisResult = await dbConnection.query("SELECT PostGIS_Version() as version");
+    const result = await pool.query("SELECT 1 as test");
+    const postgisResult = await pool.query("SELECT PostGIS_Version() as version");
     res.json({
       ok: true,
       database: {
         connected: true,
-        postgisEnabled: !!postgisResult[0]?.version
+        postgisEnabled: !!postgisResult.rows[0]?.version
       },
       memory: {
         used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
@@ -950,9 +785,8 @@ app.get("/api/v1/config", async (_req, res) => {
 // Spatial query endpoint - networks within radius
 app.get("/api/v1/within", async (req, res) => {
   try {
-    const result = await dbConnection.query("SELECT 1 as test");
-    const rows = result;
-    const isConnected = result.length > 0;
+    const result = await pool.query("SELECT 1 as test");
+    const isConnected = result.rows.length > 0;
 
     if (!isConnected) {
       return res.status(501).json({
@@ -1005,7 +839,7 @@ app.get("/api/v1/within", async (req, res) => {
   }
 
   try {
-    const result = await dbConnection.query(`
+    const result = await pool.query(`
       SELECT
         bssid,
         ssid,
@@ -1032,8 +866,8 @@ app.get("/api/v1/within", async (req, res) => {
 
     res.json({
       ok: true,
-      data: result,
-      count: result.length,
+      data: result.rows,
+      count: result.rows.length,
       query: {
         latitude,
         longitude,
@@ -1059,7 +893,7 @@ app.get("/api/v1/radio-stats", async (_req, res) => {
     // - Bluetooth: Classic BT devices, often with device names, frequency 2402-2480 MHz
     // - BLE: Low energy devices, often "Misc" encryption, lower power, specific naming patterns
 
-    const radioStats = await dbConnection.query(`
+    const radioStats = await pool.query(`
       WITH radio_classification AS (
         SELECT
           n.bssid,
@@ -1137,7 +971,7 @@ app.get("/api/v1/radio-stats", async (_req, res) => {
 
     res.json({
       ok: true,
-      data: radioStats.map((row: any) => ({
+      data: radioStats.rows.map(row => ({
         radio_type: row.radio_type,
         total_observations: Number(row.total_observations) || 0,
         distinct_networks: Number(row.distinct_networks) || 0

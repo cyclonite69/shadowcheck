@@ -15,7 +15,7 @@ services:
       POSTGRES_WORK_MEM: "128MB"
       POSTGRES_MAINTENANCE_WORK_MEM: "1GB"
     volumes:
-      - shadowcheck-prod_postgres_data:/var/lib/postgresql/data
+      - shadowcheck_postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
       - ./config/postgres-config:/etc/postgresql/conf.d:ro
       - /dev/shm:/dev/shm  # Use host shared memory for better performance
@@ -64,12 +64,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-      # Use individual PG variables instead of DATABASE_URL
-      PGHOST: postgres
-      PGPORT: 5432
-      PGDATABASE: shadowcheck
-      PGUSER: shadowcheck_user
-      PGPASSWORD: DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8=
+      DATABASE_URL: postgresql://shadowcheck:${POSTGRES_PASSWORD}@postgres:5432/shadowcheck
       # Optional overrides
       DB_POOL_MIN: ${DB_POOL_MIN:-5}
       DB_POOL_MAX: ${DB_POOL_MAX:-20}
@@ -78,17 +73,16 @@ services:
     volumes:
       - ./logs:/app/logs
       - npm-cache:/root/.npm
-      - ./pipelines:/app/pipelines:ro
     networks:
       - shadowcheck_network
     ports:
-      - "0.0.0.0:5000:5000"  # Temporarily bind to all interfaces for testing
+      - "127.0.0.1:5000:5000"  # Bind only to localhost
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/api/v1/health"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -122,7 +116,7 @@ services:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -198,8 +192,15 @@ services:
   grafana:
     image: grafana/grafana:10.4.1
     container_name: shadowcheck_grafana
-    env_file:
-      - ./docker/grafana/secrets/grafana.env
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-KZQvo7+1Vj5lEw9P4dVwJi40OcHYA6kJR1iCULWza4k=}
+      GF_SERVER_ROOT_URL: http://localhost:3000
+      GF_AUTH_ANONYMOUS_ENABLED: true
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ALLOW_EMBEDDING: true
+      GF_SECURITY_COOKIE_SAMESITE: lax
+      GF_INSTALL_PLUGINS: ''
     volumes:
       - grafana_data:/var/lib/grafana
       - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -213,7 +214,6 @@ services:
     depends_on:
       - prometheus
       - loki
-      - postgres
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
@@ -246,7 +246,7 @@ networks:
     driver: bridge
 
 volumes:
-  shadowcheck-prod_postgres_data:
+  shadowcheck_postgres_data:
     external: true
   shadowcheck_pgadmin:
     driver: local

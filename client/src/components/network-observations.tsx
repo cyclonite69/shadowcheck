@@ -41,7 +41,7 @@ export function NetworkObservations() {
 
   const { data: networks, isLoading, error } = useQuery({
     queryKey: ["/api/v1/networks"],
-    queryFn: () => api.getNetworks({ limit: 20 }),
+    queryFn: () => api.getNetworks(20),
     enabled: systemStatus?.database.connected,
     refetchInterval: 10000,
   });

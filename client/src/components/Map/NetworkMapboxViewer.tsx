@@ -4,9 +4,8 @@
  * Professional implementation without emojis
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-import type * as GeoJSON from 'geojson';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import {
   macToColor,
@@ -67,13 +66,91 @@ export function NetworkMapboxViewer({
   const [mapLoaded, setMapLoaded] = useState(false);
   const hasPerformedInitialFit = useRef(false); // Track if we've done initial fit bounds
 
-  const addLayersAndData = useCallback((currentMap: mapboxgl.Map) => {
+  // Initialize map
+  useEffect(() => {
+    console.log('🗺️ NetworkMapboxViewer: Initializing...', {
+      hasContainer: !!mapContainer.current,
+      hasToken: !!mapboxToken,
+      alreadyInitialized: !!map.current
+    });
+
+    if (!mapContainer.current || !mapboxToken) return;
+    if (map.current) return; // Already initialized
+
+    console.log('🗺️ Creating Mapbox map instance...');
+    mapboxgl.accessToken = mapboxToken;
+
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/standard',
+      center: [-83.6875, 43.0125],
+      zoom: 3,
+      maxZoom: 20
+    });
+
+    map.current.on('error', (e) => {
+      console.error('❌ Mapbox Error:', e.error.message);
+    });
+
+    map.current.on('style.load', () => {
+      console.log('✅ Mapbox: Style loaded');
+      if (!map.current) return;
+
+      // Set 3D globe projection
+      map.current.setProjection('globe');
+      map.current.setFog({});
+
+      // Set light preset for day mode
+      map.current.setConfigProperty('basemap', 'lightPreset', 'day');
+
+      console.log('✅ Mapbox: Map fully configured');
+      setMapLoaded(true);
+    });
+
+    map.current.on('load', () => {
+      if (!map.current) return;
+
+      // Add navigation controls
+      map.current.addControl(new mapboxgl.NavigationControl(), 'top-left');
+
+      // Resize map
+      setTimeout(() => {
+        if (map.current) map.current.resize();
+      }, 250);
+    });
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
+  }, [mapboxToken]);
+
+  // Add layers and data
+  useEffect(() => {
+    console.log('🗺️ Adding layers:', {
+      hasMap: !!map.current,
+      mapLoaded,
+      networkCount: networks.length
+    });
+
+    if (!map.current || !mapLoaded || !networks.length) {
+      console.log('⚠️ Skipping layer addition:', {
+        hasMap: !!map.current,
+        mapLoaded,
+        networkCount: networks.length
+      });
+      return;
+    }
+
     console.log('✅ Adding network data to map:', networks.length, 'features');
+    const currentMap = map.current;
 
     // Process features with calculated radius and color
     const processedFeatures = networks.map((feature) => {
       const zoom = currentMap.getZoom();
-      const signal = (feature.properties as any).signal || feature.properties.signal_strength || null;
+      const signal = feature.properties.signal || feature.properties.signal_strength || null;
       const freq = feature.properties.frequency || 0;
       const bssid = feature.properties.bssid;
 
@@ -286,116 +363,18 @@ export function NetworkMapboxViewer({
     return () => {
       // Clean up cluster event listeners
       currentMap.off('click', 'clusters', clusterClickHandler);
-      (currentMap as any).off('mouseenter', 'clusters');
-      (currentMap as any).off('mouseleave', 'clusters');
+      currentMap.off('mouseenter', 'clusters');
+      currentMap.off('mouseleave', 'clusters');
 
       // Clean up point event listeners
       currentMap.off('click', 'pts', pointClickHandler);
-      (currentMap as any).off('mouseenter', 'pts');
-      (currentMap as any).off('mouseleave', 'pts');
+      currentMap.off('mouseenter', 'pts');
+      currentMap.off('mouseleave', 'pts');
 
       // Clean up tooltip system
       if (cleanupTooltip) cleanupTooltip();
-
-      // Remove layers and sources
-      const layerIds = ['clusters', 'cluster-count', 'hover', 'pts', 'selected-point'];
-      layerIds.forEach(id => {
-        if (currentMap.getLayer(id)) {
-          currentMap.removeLayer(id);
-        }
-      });
-      if (currentMap.getSource('wifi')) {
-        currentMap.removeSource('wifi');
-      }
     };
-  }, [networks, onNetworkClick, hasPerformedInitialFit, macToColor, calculateSignalRange, normalizeMac, toGHz, wireTooltipNetwork]);
-
-  // Add layers and data when map is loaded and networks are available
-  useEffect(() => {
-    console.log('🗺️ Attempting to add layers:', {
-      hasMap: !!map.current,
-      mapLoaded,
-      networkCount: networks.length
-    });
-
-    if (map.current && mapLoaded && networks.length > 0) {
-      const cleanup = addLayersAndData(map.current);
-      return cleanup;
-    } else if (map.current && mapLoaded && networks.length === 0) {
-      // If map is loaded but no networks, ensure layers are removed if they exist
-      const currentMap = map.current;
-      const layerIds = ['clusters', 'cluster-count', 'hover', 'pts', 'selected-point'];
-      layerIds.forEach(id => {
-        if (currentMap.getLayer(id)) {
-          currentMap.removeLayer(id);
-        }
-      });
-      if (currentMap.getSource('wifi')) {
-        currentMap.removeSource('wifi');
-      }
-    }
-  }, [map.current, mapLoaded, networks, addLayersAndData]);
-
-  // Initialize map
-  useEffect(() => {
-    console.log('🗺️ NetworkMapboxViewer: Initializing...', {
-      hasContainer: !!mapContainer.current,
-      hasToken: !!mapboxToken,
-      alreadyInitialized: !!map.current
-    });
-
-    if (!mapContainer.current || !mapboxToken) return;
-    if (map.current) return; // Already initialized
-
-    console.log('🗺️ Creating Mapbox map instance...');
-    mapboxgl.accessToken = mapboxToken;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/standard',
-      center: [-83.6875, 43.0125],
-      zoom: 3,
-      maxZoom: 20
-    });
-
-    map.current.on('error', (e) => {
-      console.error('❌ Mapbox Error:', e.error.message);
-    });
-
-    map.current.on('style.load', () => {
-      console.log('✅ Mapbox: Style loaded');
-      if (!map.current) return;
-
-      // Set 3D globe projection
-      map.current.setProjection('globe');
-      map.current.setFog({});
-
-      // Set light preset for day mode
-      map.current.setConfigProperty('basemap', 'lightPreset', 'day');
-
-      console.log('✅ Mapbox: Map fully configured');
-      setMapLoaded(true);
-    });
-
-    map.current.on('load', () => {
-      if (!map.current) return;
-
-      // Add navigation controls
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-left');
-
-      // Resize map
-      setTimeout(() => {
-        if (map.current) map.current.resize();
-      }, 250);
-    });
-
-    return () => {
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
-    };
-  }, [mapboxToken]);
+  }, [networks, mapLoaded, onNetworkClick]);
 
   // Update radius on zoom
   useEffect(() => {

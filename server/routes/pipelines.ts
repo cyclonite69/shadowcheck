@@ -3,10 +3,11 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
-import { db } from '../db/connection.js';
+import pg from 'pg';
 
 const execAsync = promisify(exec);
 const router = Router();
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
 /**
  * GET /api/v1/pipelines/kml/files
@@ -14,14 +15,6 @@ const router = Router();
  */
 router.get('/kml/files', async (_req, res) => {
   try {
-    if (!db) {
-      return res.status(500).json({
-        ok: false,
-        status: "error",
-        error: "Database connection not initialized",
-        timestamp: new Date().toISOString(),
-      });
-    }
     const kmlDir = path.join(process.cwd(), 'pipelines', 'kml');
     const files = await fs.readdir(kmlDir);
     const kmlFiles = files
@@ -32,14 +25,14 @@ router.get('/kml/files', async (_req, res) => {
       }));
 
     // Get import status for each file
-    const rows = await db.query(`
+    const result = await pool.query(`
       SELECT DISTINCT kml_filename, COUNT(*) as observation_count
       FROM app.kml_locations_staging
       GROUP BY kml_filename
     `);
 
     const importedFiles = new Map(
-      rows.map((row: any) => [row.kml_filename, parseInt(row.observation_count)])
+      result.rows.map(row => [row.kml_filename, parseInt(row.observation_count)])
     );
 
     const filesWithStatus = kmlFiles.map(f => ({
@@ -81,24 +74,16 @@ router.post('/kml/import', async (req, res) => {
     }
 
     // Run the Python parser
-    const parserPath = path.join(process.cwd(), 'server', 'pipelines', 'parsers', 'kml_parser.py');
-
-    // Read password from secret file if it exists
-    let dbPassword = 'DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8=';
-    try {
-      if (process.env.DB_PASSWORD_FILE) {
-        dbPassword = await fs.readFile(process.env.DB_PASSWORD_FILE, 'utf8').then(p => p.trim());
-      }
-    } catch (err) {
-      console.warn('[KML Import] Could not read DB_PASSWORD_FILE, using default');
-    }
+    const parserPath = path.join(process.cwd(), 'pipelines', 'kml', 'kml_parser.py');
+    const dbPassword = process.env.DATABASE_URL?.match(/password=([^&\s]+)/)?.[1] ||
+                       'DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8=';
 
     const env = {
       ...process.env,
-      DB_HOST: process.env.DB_HOST || 'postgres',
-      DB_PORT: process.env.DB_PORT || '5432',
-      DB_NAME: process.env.DB_NAME || 'shadowcheck',
-      DB_USER: process.env.DB_USER || 'shadowcheck_user',
+      DB_HOST: '127.0.0.1',
+      DB_PORT: '5432',
+      DB_NAME: 'shadowcheck',
+      DB_USER: 'shadowcheck_user',
       DB_PASSWORD: dbPassword
     };
 
@@ -155,13 +140,13 @@ router.post('/kml/import-all', async (_req, res) => {
     let totalLocations = 0;
     let errors = 0;
 
-    const parserPath = path.join(process.cwd(), 'server', 'pipelines', 'parsers', 'kml_parser.py');
+    const parserPath = path.join(process.cwd(), 'pipelines', 'kml', 'kml_parser.py');
     const dbPassword = process.env.DATABASE_URL?.match(/password=([^&\s]+)/)?.[1] ||
                        'DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8=';
 
     const env = {
       ...process.env,
-      DB_HOST: process.env.DB_HOST || 'postgres',
+      DB_HOST: '127.0.0.1',
       DB_PORT: '5432',
       DB_NAME: 'shadowcheck',
       DB_USER: 'shadowcheck_user',
@@ -171,10 +156,9 @@ router.post('/kml/import-all', async (_req, res) => {
     for (const filename of kmlFiles) {
       try {
         const kmlPath = path.join(kmlDir, filename);
-        console.log(`[KML Import-All] Processing ${filename}...`);
         const { stdout } = await execAsync(
           `python3 "${parserPath}" "${kmlPath}"`,
-          { env, timeout: 300000 } // 5 minute timeout per file
+          { env, timeout: 60000 }
         );
 
         const lines = stdout.trim().split('\n');
@@ -219,15 +203,7 @@ router.post('/kml/import-all', async (_req, res) => {
  */
 router.get('/kml/stats', async (_req, res) => {
   try {
-    if (!db) {
-      return res.status(500).json({
-        ok: false,
-        status: "error",
-        error: "Database connection not initialized",
-        timestamp: new Date().toISOString(),
-      });
-    }
-    const stats = await db.query(`
+    const stats = await pool.query(`
       SELECT
         (SELECT COUNT(*) FROM app.kml_networks_staging) as networks_count,
         (SELECT COUNT(*) FROM app.kml_locations_staging) as locations_count,
@@ -238,7 +214,7 @@ router.get('/kml/stats', async (_req, res) => {
 
     res.json({
       ok: true,
-      stats: stats[0]
+      stats: stats.rows[0]
     });
   } catch (err) {
     console.error('[GET /api/v1/pipelines/kml/stats] error:', err);
@@ -252,16 +228,8 @@ router.get('/kml/stats', async (_req, res) => {
  */
 router.delete('/kml/clear', async (_req, res) => {
   try {
-    if (!db) {
-      return res.status(500).json({
-        ok: false,
-        status: "error",
-        error: "Database connection not initialized",
-        timestamp: new Date().toISOString(),
-      });
-    }
-    await db.query('DELETE FROM app.kml_locations_staging');
-    await db.query('DELETE FROM app.kml_networks_staging');
+    await pool.query('DELETE FROM app.kml_locations_staging');
+    await pool.query('DELETE FROM app.kml_networks_staging');
 
     res.json({
       ok: true,
@@ -279,16 +247,8 @@ router.delete('/kml/clear', async (_req, res) => {
  */
 router.post('/kml/merge', async (_req, res) => {
   try {
-    if (!db) {
-      return res.status(500).json({
-        ok: false,
-        status: "error",
-        error: "Database connection not initialized",
-        timestamp: new Date().toISOString(),
-      });
-    }
     // Merge networks
-    const networksResult = await db.query(`
+    const networksResult = await pool.query(`
       INSERT INTO app.networks_legacy (bssid, ssid, frequency, capabilities, type, lasttime)
       SELECT
         kn.bssid,
@@ -310,7 +270,7 @@ router.post('/kml/merge', async (_req, res) => {
     `);
 
     // Merge locations
-    const locationsResult = await db.query(`
+    const locationsResult = await pool.query(`
       INSERT INTO app.locations_legacy (bssid, level, lat, lon, altitude, accuracy, time)
       SELECT
         kl.bssid,
@@ -406,7 +366,7 @@ router.post('/wigle/import', async (req, res) => {
 
     const env = {
       ...process.env,
-      DB_HOST: process.env.DB_HOST || 'postgres',
+      DB_HOST: '127.0.0.1',
       DB_PORT: '5432',
       DB_NAME: 'shadowcheck',
       DB_USER: 'shadowcheck_user',
@@ -416,11 +376,7 @@ router.post('/wigle/import', async (req, res) => {
     console.log(`[WiGLE Import] Starting import of ${filename}...`);
     const { stdout, stderr } = await execAsync(
       `python3 "${parserPath}" "${wiglePath}"`,
-      {
-        env,
-        timeout: 600000, // 10 minute timeout for large databases
-        maxBuffer: 100 * 1024 * 1024 // 100MB buffer for large database output
-      }
+      { env, timeout: 600000 } // 10 minute timeout for large databases
     );
 
     if (stderr) {
@@ -461,14 +417,6 @@ router.post('/wigle/import', async (req, res) => {
  */
 router.get('/kismet/files', async (_req, res) => {
   try {
-    if (!db) {
-      return res.status(500).json({
-        ok: false,
-        status: "error",
-        error: "Database connection not initialized",
-        timestamp: new Date().toISOString(),
-      });
-    }
     const kismetDir = path.join(process.cwd(), 'pipelines', 'kismet');
 
     // Create directory if it doesn't exist
@@ -495,14 +443,14 @@ router.get('/kismet/files', async (_req, res) => {
     const resolvedFiles = await Promise.all(kismetFiles);
 
     // Get import status
-    const result = await db.query(`
+    const result = await pool.query(`
       SELECT DISTINCT kismet_filename, COUNT(*) as device_count
       FROM app.kismet_devices_staging
       GROUP BY kismet_filename
     `);
 
     const importedFiles = new Map(
-      result.map((row: any) => [row.kismet_filename, parseInt(row.device_count)])
+      result.rows.map(row => [row.kismet_filename, parseInt(row.device_count)])
     );
 
     const filesWithStatus = resolvedFiles.map(f => ({
@@ -544,13 +492,13 @@ router.post('/kismet/import', async (req, res) => {
     }
 
     // Run the Python parser
-    const parserPath = path.join(process.cwd(), 'server', 'pipelines', 'parsers', 'kismet_parser.py');
+    const parserPath = path.join(process.cwd(), 'pipelines', 'kismet', 'kismet_parser.py');
     const dbPassword = process.env.DATABASE_URL?.match(/password=([^&\s]+)/)?.[1] ||
                        'DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8=';
 
     const env = {
       ...process.env,
-      DB_HOST: process.env.DB_HOST || 'postgres',
+      DB_HOST: '127.0.0.1',
       DB_PORT: '5432',
       DB_NAME: 'shadowcheck',
       DB_USER: 'shadowcheck_user',
@@ -562,11 +510,7 @@ router.post('/kismet/import', async (req, res) => {
     console.log(`[Kismet Import] Starting import of ${filename}... (include packets: ${includePackets})`);
     const { stdout, stderr } = await execAsync(
       `python3 "${parserPath}" "${kismetPath}" ${args}`,
-      {
-        env,
-        timeout: 600000, // 10 minute timeout
-        maxBuffer: 100 * 1024 * 1024 // 100MB buffer for large database output
-      }
+      { env, timeout: 600000 } // 10 minute timeout
     );
 
     if (stderr) {
@@ -607,15 +551,7 @@ router.post('/kismet/import', async (req, res) => {
  */
 router.get('/kismet/stats', async (_req, res) => {
   try {
-    if (!db) {
-      return res.status(500).json({
-        ok: false,
-        status: "error",
-        error: "Database connection not initialized",
-        timestamp: new Date().toISOString(),
-      });
-    }
-    const stats = await db.query(`
+    const stats = await pool.query(`
       SELECT
         (SELECT COUNT(*) FROM app.kismet_devices_staging) as devices_count,
         (SELECT COUNT(*) FROM app.kismet_datasources_staging) as datasources_count,
@@ -629,7 +565,7 @@ router.get('/kismet/stats', async (_req, res) => {
 
     res.json({
       ok: true,
-      stats: stats[0]
+      stats: stats.rows[0]
     });
   } catch (err) {
     console.error('[GET /api/v1/pipelines/kismet/stats] error:', err);
@@ -643,19 +579,11 @@ router.get('/kismet/stats', async (_req, res) => {
  */
 router.delete('/kismet/clear', async (_req, res) => {
   try {
-    if (!db) {
-      return res.status(500).json({
-        ok: false,
-        status: "error",
-        error: "Database connection not initialized",
-        timestamp: new Date().toISOString(),
-      });
-    }
-    await db.query('DELETE FROM app.kismet_packets_staging');
-    await db.query('DELETE FROM app.kismet_alerts_staging');
-    await db.query('DELETE FROM app.kismet_snapshots_staging');
-    await db.query('DELETE FROM app.kismet_datasources_staging');
-    await db.query('DELETE FROM app.kismet_devices_staging');
+    await pool.query('DELETE FROM app.kismet_packets_staging');
+    await pool.query('DELETE FROM app.kismet_alerts_staging');
+    await pool.query('DELETE FROM app.kismet_snapshots_staging');
+    await pool.query('DELETE FROM app.kismet_datasources_staging');
+    await pool.query('DELETE FROM app.kismet_devices_staging');
 
     res.json({
       ok: true,
@@ -681,14 +609,6 @@ router.delete('/kismet/clear', async (_req, res) => {
  */
 router.post('/wigle-api/query', async (req, res) => {
   try {
-    if (!db) {
-      return res.status(500).json({
-        ok: false,
-        status: "error",
-        error: "Database connection not initialized",
-        timestamp: new Date().toISOString(),
-      });
-    }
     const { ssid, bssid, latrange1, latrange2, longrange1, longrange2 } = req.body;
 
     // Get WiGLE API credentials from environment
@@ -702,66 +622,107 @@ router.post('/wigle-api/query', async (req, res) => {
       });
     }
 
-    console.log(`[WiGLE API Query] Request: BSSID=${bssid}`);
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (ssid) params.append('ssid', ssid);
+    if (bssid) params.append('netid', bssid);
+    if (latrange1 !== undefined) params.append('latrange1', String(latrange1));
+    if (latrange2 !== undefined) params.append('latrange2', String(latrange2));
+    if (longrange1 !== undefined) params.append('longrange1', String(longrange1));
+    if (longrange2 !== undefined) params.append('longrange2', String(longrange2));
 
-    // WiGLE Query now ONLY uses Alpha v3 API (requires BSSID)
-    if (!bssid) {
-      return res.status(400).json({
-        ok: false,
-        error: 'BSSID is required. Alpha v3 API only supports BSSID lookups.',
-        hint: 'Use the BSSID field to search for a specific network.'
-      });
-    }
+    console.log(`[WiGLE API] Querying: ${params.toString()}`);
 
-    console.log(`[WiGLE API Query] Using Alpha v3 detail endpoint for BSSID: ${bssid}`);
-
-    const alphaV3Url = `https://api.wigle.net/api/v3/detail/wifi/${encodeURIComponent(bssid)}`;
-    console.log('[WiGLE API Query] Request URL:', alphaV3Url);
-
-    const response = await fetch(alphaV3Url, {
+    // Query WiGLE API
+    const wigleUrl = `https://api.wigle.net/api/v2/network/search?${params.toString()}`;
+    const response = await fetch(wigleUrl, {
       headers: {
         'Authorization': `Basic ${Buffer.from(`${wigleApiName}:${wigleApiToken}`).toString('base64')}`,
         'Accept': 'application/json'
       }
     });
 
-    console.log('[WiGLE API Query] Response status:', response.status, response.statusText);
-
     if (!response.ok) {
-      throw new Error(`WiGLE Alpha v3 API error: ${response.statusText}`);
+      throw new Error(`WiGLE API error: ${response.statusText}`);
     }
 
     const data = await response.json() as any;
-    console.log('[WiGLE API Query] Response received, has locationClusters:', !!data.locationClusters);
 
-    // Alpha v3 API returns data directly without a success field
-    // If there's an error message field, that means it failed
-    if (data.error || data.message) {
-      throw new Error(`WiGLE Alpha v3 API error: ${data.error || data.message}`);
+    if (!data.success) {
+      throw new Error(`WiGLE API returned error: ${data.message || 'Unknown error'}`);
     }
 
-    // Check if we got valid network data
-    if (!data.networkId && !data.locationClusters) {
-      throw new Error('WiGLE Alpha v3 API returned no network data');
+    // Import results to STAGING tables only
+    let networksImported = 0;
+    let locationsImported = 0;
+    const results = data.results || [];
+    const queryParams = JSON.stringify({ ssid, bssid, latrange1, latrange2, longrange1, longrange2 });
+
+    for (const network of results) {
+      try {
+        // Insert network into staging
+        await pool.query(`
+          INSERT INTO app.wigle_api_networks_staging
+          (bssid, ssid, frequency, capabilities, type, lasttime, lastlat, lastlon,
+           trilat, trilong, channel, qos, transid, firsttime, country, region, city, query_params)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18::jsonb)
+          ON CONFLICT (bssid, query_timestamp) DO UPDATE SET
+            ssid = COALESCE(EXCLUDED.ssid, app.wigle_api_networks_staging.ssid),
+            lasttime = GREATEST(EXCLUDED.lasttime, app.wigle_api_networks_staging.lasttime)
+        `, [
+          network.netid,
+          network.ssid || null,
+          network.channel ? (network.channel * 5 + (network.channel <= 14 ? 2407 : 5000)) : null,
+          network.encryption || null,
+          network.type || 'W',
+          network.lasttime ? new Date(network.lasttime) : null,
+          network.lastlat || null,
+          network.lastlon || null,
+          network.trilat || null,
+          network.trilong || null,
+          network.channel || null,
+          network.qos || null,
+          network.transid || null,
+          network.firsttime ? new Date(network.firsttime) : null,
+          network.country || null,
+          network.region || null,
+          network.city || null,
+          queryParams
+        ]);
+        networksImported++;
+
+        // Insert location observation if coordinates exist
+        if (network.trilat && network.trilong) {
+          await pool.query(`
+            INSERT INTO app.wigle_api_locations_staging
+            (bssid, lat, lon, altitude, accuracy, time, signal_level, query_params)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+          `, [
+            network.netid,
+            network.trilat,
+            network.trilong,
+            null,
+            null,
+            network.lasttime ? new Date(network.lasttime) : null,
+            network.rcois || null,
+            queryParams
+          ]);
+          locationsImported++;
+        }
+      } catch (err) {
+        console.error(`Error importing network ${network.netid}:`, err);
+      }
     }
-
-    // Use the PostgreSQL import function to handle Alpha v3 response
-    const importResult = await db.query(`
-      SELECT * FROM app.import_wigle_alpha_v3_response($1::TEXT, $2::JSONB)
-    `, [bssid.toUpperCase(), data]);
-
-    const [networksImported, observationsImported] = importResult[0]
-      ? [importResult[0].networks_imported || 0, importResult[0].observations_imported || 0]
-      : [0, 0];
 
     res.json({
       ok: true,
       stats: {
         networks: networksImported,
-        observations: observationsImported,
-        api_version: 'v3'
+        locations: locationsImported,
+        total_results: data.resultCount || 0,
+        search_after: data.searchAfter || null
       },
-      message: `Imported ${networksImported} network(s) with ${observationsImported} observations via Alpha v3 API`
+      message: `Imported ${networksImported} networks and ${locationsImported} locations to staging`
     });
 
   } catch (err: any) {
@@ -781,14 +742,6 @@ router.post('/wigle-api/query', async (req, res) => {
  */
 router.post('/wigle-api/detail', async (req, res) => {
   try {
-    if (!db) {
-      return res.status(500).json({
-        ok: false,
-        status: "error",
-        error: "Database connection not initialized",
-        timestamp: new Date().toISOString(),
-      });
-    }
     const { bssid } = req.body;
 
     if (!bssid) {
@@ -808,78 +761,113 @@ router.post('/wigle-api/detail', async (req, res) => {
 
     console.log(`[WiGLE API Detail] Fetching full observation history for: ${bssid}`);
 
-    // Call the Python Alpha v3 importer which handles the correct v3 endpoint and format
-    const alphaV3ParserPath = path.join(process.cwd(), 'server', 'pipelines', 'enrichment', 'wigle_api_alpha_v3.py');
-
-    // Set up environment with API credentials and DB config
-    const dbPassword = process.env.DATABASE_URL?.match(/password=([^&\s]+)/)?.[1] ||
-                       'DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8=';
-
-    const env = {
-      ...process.env,
-      WIGLE_API_KEY: Buffer.from(`${wigleApiName}:${wigleApiToken}`).toString('base64'),
-      PGHOST: process.env.PGHOST || 'postgres',
-      PGPORT: '5432',
-      PGDATABASE: 'shadowcheck',
-      PGUSER: 'shadowcheck_user',
-      PGPASSWORD: dbPassword
-    };
-
-    console.log(`[WiGLE API Detail] Calling Alpha v3 importer for ${bssid}...`);
-
-    try {
-      // FIRST: Tag this BSSID for enrichment (add to queue)
-      await db.query(`
-        INSERT INTO app.bssid_enrichment_queue (bssid, priority, status)
-        VALUES ($1, 100, 'pending')
-        ON CONFLICT (bssid) DO UPDATE SET
-          priority = 100,
-          status = 'pending',
-          tagged_at = NOW()
-      `, [bssid.toUpperCase()]);
-
-      console.log(`[WiGLE API Detail] Added ${bssid} to enrichment queue`);
-
-      // SECOND: Process the queue (fetch from WiGLE API v3 and import)
-      // The Python script uses the correct v3 endpoint: /api/v3/detail/wifi/{bssid}
-      const { stdout: processStdout, stderr: processStderr } = await execAsync(
-        `python3 "${alphaV3ParserPath}" --process-queue --limit 1`,
-        {
-          env,
-          timeout: 120000, // 2 minute timeout for API call + import
-          maxBuffer: 10 * 1024 * 1024 // 10MB buffer
-        }
-      );
-
-      if (processStderr) {
-        console.log(`[WiGLE API Detail] Python output:`, processStderr);
+    // Query WiGLE API detail endpoint
+    const wigleUrl = `https://api.wigle.net/api/v2/network/detail?netid=${encodeURIComponent(bssid)}`;
+    const response = await fetch(wigleUrl, {
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${wigleApiName}:${wigleApiToken}`).toString('base64')}`,
+        'Accept': 'application/json'
       }
+    });
 
-      // Check if import was successful
-      const result = await db.query(`
-        SELECT COUNT(*) as obs_count
-        FROM app.wigle_alpha_v3_observations
-        WHERE bssid = $1
-      `, [bssid.toUpperCase()]);
-
-      const obsCount = parseInt(result[0]?.obs_count || '0');
-
-      console.log(`[WiGLE API Detail] Imported ${obsCount} observations for ${bssid}`);
-
-      res.json({
-        ok: true,
-        bssid: bssid.toUpperCase(),
-        stats: {
-          network_imported: true,
-          observations_imported: obsCount
-        },
-        message: `Imported ${obsCount} observations for ${bssid} via Alpha v3 API`
-      });
-
-    } catch (pythonError: any) {
-      console.error('[WiGLE API Detail] Python import failed:', pythonError);
-      throw new Error(`Failed to import via Alpha v3: ${pythonError.message}`);
+    if (!response.ok) {
+      throw new Error(`WiGLE API error: ${response.statusText}`);
     }
+
+    const data = await response.json() as any;
+
+    if (!data.success) {
+      throw new Error(`WiGLE API returned error: ${data.message || 'Unknown error'}`);
+    }
+
+    // Extract network details
+    const results = data.results || [];
+    if (results.length === 0) {
+      return res.json({
+        ok: false,
+        error: 'No network found with that BSSID'
+      });
+    }
+
+    const network = results[0];
+    const queryParams = JSON.stringify({ bssid, endpoint: 'detail' });
+
+    // Import network metadata
+    await pool.query(`
+      INSERT INTO app.wigle_api_networks_staging
+      (bssid, ssid, frequency, capabilities, type, lasttime, lastlat, lastlon,
+       trilat, trilong, channel, qos, transid, firsttime, country, region, city, query_params)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18::jsonb)
+      ON CONFLICT (bssid, query_timestamp) DO UPDATE SET
+        ssid = COALESCE(EXCLUDED.ssid, app.wigle_api_networks_staging.ssid),
+        lasttime = GREATEST(EXCLUDED.lasttime, app.wigle_api_networks_staging.lasttime)
+    `, [
+      network.netid,
+      network.ssid || null,
+      network.channel ? (network.channel * 5 + (network.channel <= 14 ? 2407 : 5000)) : null,
+      network.encryption || null,
+      network.type || 'W',
+      network.lasttime ? new Date(network.lasttime) : null,
+      network.lastlat || null,
+      network.lastlon || null,
+      network.trilat || null,
+      network.trilong || null,
+      network.channel || null,
+      network.qos || null,
+      network.transid || null,
+      network.firsttime ? new Date(network.firsttime) : null,
+      network.country || null,
+      network.region || null,
+      network.city || null,
+      queryParams
+    ]);
+
+    // Import ALL location observations from locationData array
+    let locationsImported = 0;
+    const locationData = network.locationData || [];
+
+    for (const location of locationData) {
+      try {
+        // Skip invalid coordinates
+        if (!location.latitude || !location.longitude) continue;
+        if (location.latitude === 0 && location.longitude === 0) continue;
+        if (location.latitude < -90 || location.latitude > 90) continue;
+        if (location.longitude < -180 || location.longitude > 180) continue;
+
+        await pool.query(`
+          INSERT INTO app.wigle_api_locations_staging
+          (bssid, lat, lon, altitude, accuracy, time, signal_level, query_params)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+        `, [
+          network.netid,
+          location.latitude,
+          location.longitude,
+          location.alt || null,
+          location.accuracy || null,
+          location.time ? new Date(location.time) : null,
+          location.signal || null,
+          queryParams
+        ]);
+        locationsImported++;
+      } catch (err) {
+        console.error(`Error importing location for ${network.netid}:`, err);
+      }
+    }
+
+    console.log(`[WiGLE API Detail] Imported ${locationsImported} observations for ${bssid}`);
+
+    res.json({
+      ok: true,
+      bssid: network.netid,
+      ssid: network.ssid,
+      stats: {
+        network_imported: true,
+        total_observations: locationData.length,
+        observations_imported: locationsImported,
+        skipped: locationData.length - locationsImported
+      },
+      message: `Imported detailed data: ${locationsImported} observations for ${network.ssid || network.netid}`
+    });
 
   } catch (err: any) {
     console.error('[POST /api/v1/pipelines/wigle-api/detail] error:', err);
@@ -897,94 +885,20 @@ router.post('/wigle-api/detail', async (req, res) => {
  */
 router.get('/wigle-api/stats', async (req, res) => {
   try {
-    if (!db) {
-      return res.status(500).json({
-        ok: false,
-        status: "error",
-        error: "Database connection not initialized",
-        timestamp: new Date().toISOString(),
-      });
-    }
-    const result = await db.query(`
+    const result = await pool.query(`
       SELECT
-        -- Alpha v3 tables (new simplified schema)
-        (SELECT COUNT(*) FROM app.wigle_alpha_v3_networks) as networks_alpha_v3,
-        (SELECT COUNT(*) FROM app.wigle_alpha_v3_observations) as observations_alpha_v3,
-        (SELECT COUNT(DISTINCT bssid) FROM app.wigle_alpha_v3_observations) as unique_bssids_alpha_v3,
-        (SELECT COUNT(DISTINCT ssid) FROM app.wigle_alpha_v3_observations WHERE ssid IS NOT NULL) as unique_ssids_alpha_v3,
-        (SELECT MAX(query_timestamp) FROM app.wigle_alpha_v3_networks) as last_import_alpha_v3,
-
-        -- Dynamic SSID cluster stats (query-time aggregation)
-        (SELECT COUNT(*) FROM app.wigle_alpha_v3_ssid_clusters) as ssid_clusters_detected,
-        (SELECT COUNT(*) FROM app.wigle_alpha_v3_ssid_clusters WHERE threat_level IN ('EXTREME', 'CRITICAL')) as high_threat_clusters
+        (SELECT COUNT(*) FROM app.wigle_api_networks_staging) as networks,
+        (SELECT COUNT(*) FROM app.wigle_api_locations_staging) as locations,
+        (SELECT COUNT(DISTINCT query_timestamp) FROM app.wigle_api_networks_staging) as unique_queries,
+        (SELECT MAX(query_timestamp) FROM app.wigle_api_networks_staging) as last_import
     `);
 
     res.json({
       ok: true,
-      stats: result[0]
+      stats: result.rows[0]
     });
   } catch (err: any) {
     console.error('[GET /api/v1/pipelines/wigle-api/stats] error:', err);
-    res.status(500).json({ ok: false, error: String(err) });
-  }
-});
-
-/**
- * GET /api/v1/pipelines/wigle-api/staging-data
- * Get all WiGLE API staging data with locations for map display
- * Now includes both legacy and Alpha v3 data
- */
-router.get('/wigle-api/staging-data', async (req, res) => {
-  try {
-    if (!db) {
-      return res.status(500).json({
-        ok: false,
-        status: "error",
-        error: "Database connection not initialized",
-        timestamp: new Date().toISOString(),
-      });
-    }
-    // Get Alpha v3 observations with SSID cluster info
-    const alphaV3Result = await db.query(`
-      SELECT
-        o.bssid,
-        o.ssid,
-        o.lat,
-        o.lon,
-        o.altitude,
-        o.accuracy,
-        o.observation_time as time,
-        o.signal_dbm as signal_level,
-        o.frequency,
-        o.channel,
-        o.encryption_value,
-        n.trilaterated_lat,
-        n.trilaterated_lon,
-        n.street_address,
-        n.type,
-        c.observation_count,
-        c.mobility_pattern,
-        c.threat_level,
-        c.max_distance_from_home_km::NUMERIC(10,2) as distance_from_home_km
-      FROM app.wigle_alpha_v3_observations o
-      JOIN app.wigle_alpha_v3_networks n ON o.bssid = n.bssid
-      LEFT JOIN app.wigle_alpha_v3_ssid_clusters c ON o.bssid = c.bssid AND o.ssid = c.ssid
-      WHERE o.lat IS NOT NULL
-        AND o.lon IS NOT NULL
-        AND o.lat BETWEEN -90 AND 90
-        AND o.lon BETWEEN -180 AND 180
-        AND NOT (o.lat = 0 AND o.lon = 0)
-      ORDER BY o.observation_time DESC
-    `);
-
-    res.json({
-      ok: true,
-      count: alphaV3Result.length,
-      source: 'alpha_v3',
-      observations: alphaV3Result
-    });
-  } catch (err: any) {
-    console.error('[GET /api/v1/pipelines/wigle-api/staging-data] error:', err);
     res.status(500).json({ ok: false, error: String(err) });
   }
 });
@@ -995,16 +909,8 @@ router.get('/wigle-api/staging-data', async (req, res) => {
  */
 router.delete('/wigle-api/clear', async (req, res) => {
   try {
-    if (!db) {
-      return res.status(500).json({
-        ok: false,
-        status: "error",
-        error: "Database connection not initialized",
-        timestamp: new Date().toISOString(),
-      });
-    }
-    await db.query('DELETE FROM app.wigle_alpha_v3_observations');
-    await db.query('DELETE FROM app.wigle_alpha_v3_networks');
+    await pool.query('DELETE FROM app.wigle_api_locations_staging');
+    await pool.query('DELETE FROM app.wigle_api_networks_staging');
 
     res.json({
       ok: true,

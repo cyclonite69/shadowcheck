@@ -1,5 +1,5 @@
 import { createRoot, Root } from "react-dom/client";
-import MinimalTooltip from "@/components/ref-tooltip/MinimalTooltip";
+import OriginalTooltip from "@/components/ref-tooltip/OriginalTooltip";
 import "@/components/ref-tooltip/ref-tooltip.css";
 
 /**
@@ -9,8 +9,8 @@ import "@/components/ref-tooltip/ref-tooltip.css";
  *   - min: minimum radius in meters          (default 8)
  *   - max: maximum radius in meters          (default 250)
  *
- * Hover: shows minimal tooltip + range circle. Disappears on mouse leave.
- * No click-lock behavior - keeps UI clean and responsive.
+ * Hover: draws likely range (polygon ring) sized by signal + freq + env.
+ * Click: shows your OriginalTooltip and "locks" it until background click or ESC.
  */
 
 type Env = "urban" | "suburban" | "rural";
@@ -101,6 +101,7 @@ export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Op
   const min = typeof opts.min === "number" ? opts.min : 8;
   const max = typeof opts.max === "number" ? opts.max : 250;
 
+  let tooltipLocked = false;
   let reactRoot: Root | null = null;
 
   // Add range source
@@ -156,17 +157,15 @@ export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Op
     }
   };
 
-  // HOVER → show tooltip + range circle
+  // HOVER → update rings only; keep tooltip if locked
   map.on("mousemove", pointLayerId, (e: any) => {
     const f = e.features?.[0];
-    if (!f) { clearRange(); hideTooltip(); return; }
+    if (!f) { clearRange(); return; }
 
-    const raw: any = f.properties || {};
-    const coords: any = (f.geometry && (f.geometry as any).coordinates) || [];
-    const lon = Number(raw.lon ?? coords[0]);
-    const lat = Number(raw.lat ?? coords[1]);
-    const signal = raw.signal !== undefined ? Number(raw.signal) : (raw.rssi ?? raw.dbm);
-    const frequency = Number(raw.frequency ?? raw.freq ?? raw.freq_mhz);
+    const p = f.properties || {};
+    const [lon, lat] = (f.geometry?.coordinates || []) as [number, number];
+    const signal = p.signal !== undefined ? Number(p.signal) : (p.rssi ?? p.dbm);
+    const frequency = Number(p.frequency ?? p.freq ?? p.freq_mhz);
 
     const r = radiusFromSignalFreqEnv(
       typeof signal === "number" ? Number(signal) : undefined,
@@ -179,43 +178,71 @@ export function wireTooltipNetwork(map: any, pointLayerId = "networks", opts: Op
     const poly = circlePolygon(Number(lon), Number(lat), r, 96);
     (map.getSource("range") as any).setData({ type: "FeatureCollection", features: [poly] });
 
-    map.setFilter?.("hover", ["==", "uid", raw.uid ?? -1]);
-
-    // Show tooltip at cursor
-    const evt = e.originalEvent as MouseEvent;
-    const x = Math.min(window.innerWidth - 220, (evt?.clientX ?? 0) + 12);
-    const y = Math.min(window.innerHeight - 200, (evt?.clientY ?? 0) + 12);
-    tipRoot.style.left = `${x}px`;
-    tipRoot.style.top = `${y}px`;
-
-    const props = {
-      ...raw,
-      lon,
-      lat,
-      bssid: raw.bssid ?? raw.mac ?? raw.address,
-      ssid:  raw.ssid  ?? raw.essid,
-      vendor: raw.vendor ?? raw.oui_vendor ?? raw.oui,
-      signal: (raw.signal ?? raw.rssi ?? raw.dbm),
-      frequency: (raw.frequency ?? raw.freq ?? raw.freq_mhz),
-      channel:   (raw.channel   ?? raw.ch),
-      security:  (raw.security  ?? raw.encryption ?? raw.encryptionValue),
-      alt: (raw.alt ?? raw.altitude ?? raw.altitude_m ?? raw.ele ?? raw.elevation),
-      seen: (raw.observed_at ?? raw.last_seen ?? raw.lastupd ?? raw.time ?? raw.seen),
-      colour: (raw.colour ?? raw.color)
-    };
-
-    if (!reactRoot) {
-      reactRoot = createRoot(tipRoot);
-    }
-    reactRoot.render(<MinimalTooltip {...props} />);
+    map.setFilter?.("hover", ["==", "uid", p.uid ?? -1]);
+    if (!tooltipLocked) hideTooltip();
   });
 
   map.on("mouseleave", pointLayerId, () => {
     clearRange();
     map.setFilter?.("hover", ["==", "uid", -1]);
-    hideTooltip();
+    if (!tooltipLocked) hideTooltip();
   });
 
-  // Cleanup on unmount
-  return () => { hideTooltip(); clearRange(); };
+  // CLICK → lock tooltip (merge geometry + aliases so lat/lon/alt/seen show)
+  map.on("click", pointLayerId, (e: any) => {
+    const f = e.features?.[0];
+    if (!f) return;
+
+    const raw: any = f.properties || {};
+    const coords: any = (f.geometry && (f.geometry as any).coordinates) || [];
+    const lon = Number(raw.lon ?? coords[0]);
+    const lat = Number(raw.lat ?? coords[1]);
+
+    const props = {
+      ...raw,
+      lon,
+      lat,
+      // identifiers
+      bssid: raw.bssid ?? raw.mac ?? raw.address,
+      ssid:  raw.ssid  ?? raw.essid,
+      vendor: raw.vendor ?? raw.oui_vendor ?? raw.oui,
+      // radio
+      signal: (raw.signal ?? raw.rssi ?? raw.dbm),
+      frequency: (raw.frequency ?? raw.freq ?? raw.freq_mhz),
+      channel:   (raw.channel   ?? raw.ch),
+      security:  (raw.security  ?? raw.encryption ?? raw.encryptionValue),
+      // altitude
+      alt: (raw.alt ?? raw.altitude ?? raw.altitude_m ?? raw.ele ?? raw.elevation),
+      // timestamps (prefer last/observed for "Seen")
+      // timestamps (normalize all into seen)
+      seen: (raw.observed_at ?? raw.last_seen ?? raw.lastupd ?? raw.time ?? raw.seen),
+      // styling
+      colour: (raw.colour ?? raw.color)
+    };
+
+    const evt = e.originalEvent as MouseEvent;
+    const x = Math.min(window.innerWidth - 420, (evt?.clientX ?? 0) + 12);
+    const y = Math.min(window.innerHeight - 260, (evt?.clientY ?? 0) + 12);
+    tipRoot.style.left = `${x}px`;
+    tipRoot.style.top = `${y}px`;
+
+    if (!reactRoot) {
+      reactRoot = createRoot(tipRoot);
+    }
+    reactRoot.render(<OriginalTooltip {...props} />);
+    tooltipLocked = true;
+  });
+
+  // Click background → unlock + hide
+  map.on("click", (e: any) => {
+    const feats = map.queryRenderedFeatures?.(e.point, { layers: [pointLayerId] }) || [];
+    if (!feats.length) { tooltipLocked = false; hideTooltip(); }
+  });
+
+  // ESC to close
+  window.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") { tooltipLocked = false; hideTooltip(); }
+  });
+
+  return () => { tooltipLocked = false; hideTooltip(); clearRange(); };
 }

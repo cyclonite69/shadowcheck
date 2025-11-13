@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,113 +53,6 @@ interface WigleApiStats {
   locations: string;
   unique_queries: string;
   last_import: string | null;
-}
-
-// Simple component to show WiGLE staging data
-function WigleStagingPreview() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['/api/v1/pipelines/wigle-api/staging-data'],
-    queryFn: async () => {
-      const res = await fetch('/api/v1/pipelines/wigle-api/staging-data');
-      return res.json();
-    },
-    refetchInterval: 5000,
-  });
-
-  if (isLoading) {
-    return (
-      <Card className="premium-card">
-        <CardContent className="pt-6">
-          <Skeleton className="h-[200px]" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const observations = data?.observations || [];
-
-  if (observations.length === 0) {
-    return (
-      <Card className="premium-card">
-        <CardHeader>
-          <CardTitle className="text-slate-100 flex items-center gap-2">
-            <Map className="h-5 w-5 text-slate-400" />
-            Staging Data Preview
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-slate-400">
-            <Map className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>No staging data to display</p>
-            <p className="text-xs mt-2">Query WiGLE API to import observations</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="premium-card">
-      <CardHeader>
-        <CardTitle className="text-slate-100 flex items-center gap-2">
-          <Map className="h-5 w-5 text-green-400" />
-          Staging Data Preview ({observations.length} total observations)
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3 max-h-[600px] overflow-y-auto">
-          {observations.map((obs: any, idx: number) => (
-            <div key={`${obs.bssid}-${idx}`} className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="text-sm font-semibold text-slate-100 truncate">{obs.ssid || '<hidden>'}</p>
-                    {obs.threat_level && (
-                      <Badge variant={obs.threat_level === 'EXTREME' || obs.threat_level === 'CRITICAL' ? 'destructive' : 'secondary'} className="text-xs shrink-0">
-                        {obs.threat_level}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs font-mono text-slate-400">{obs.bssid}</p>
-                  {obs.observation_time && (
-                    <p className="text-xs text-slate-500 mt-1">
-                      {new Date(obs.observation_time).toLocaleString()}
-                    </p>
-                  )}
-                </div>
-                <div className="text-right shrink-0">
-                  {obs.frequency && (
-                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 mb-1 text-xs">
-                      {obs.frequency} MHz
-                    </Badge>
-                  )}
-                  {obs.signal_level && (
-                    <p className="text-xs text-slate-400">Signal: {obs.signal_level} dBm</p>
-                  )}
-                  <p className="text-xs text-slate-400 mt-1">
-                    {obs.lat.toFixed(6)}, {obs.lon.toFixed(6)}
-                  </p>
-                  {obs.distance_from_home_km && (
-                    <p className="text-xs text-amber-400 mt-1">
-                      {obs.distance_from_home_km} km away
-                    </p>
-                  )}
-                  <a
-                    href={`https://www.google.com/maps?q=${obs.lat},${obs.lon}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-green-400 hover:text-green-300 mt-1 inline-block"
-                  >
-                    View on Map →
-                  </a>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
 }
 
 export function PipelinesPanel() {
@@ -319,33 +212,25 @@ export function PipelinesPanel() {
 
   const wigleApiMutation = useMutation({
     mutationFn: async (query: any) => {
-      // If ONLY BSSID is provided, use detail endpoint to get full observation history
-      const isBssidOnly = query.bssid && !query.ssid && !query.latrange1;
-      const endpoint = isBssidOnly ? '/api/v1/pipelines/wigle-api/detail' : '/api/v1/pipelines/wigle-api/query';
-
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/v1/pipelines/wigle-api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isBssidOnly ? { bssid: query.bssid } : query),
+        body: JSON.stringify(query),
       });
       return res.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/v1/pipelines/wigle-api/stats'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/v1/pipelines/wigle-api/staging-data'] });
       if (data.ok) {
-        const message = data.stats?.observations_imported
-          ? `Imported ${data.stats.observations_imported} observations for ${data.bssid}`
-          : `Imported ${data.stats.networks} networks and ${data.stats.locations} locations to staging`;
         toast({
-          title: 'WiGLE API import successful',
-          description: message,
+          title: 'WiGLE API query successful',
+          description: `Imported ${data.stats.networks} networks and ${data.stats.locations} locations to staging`,
         });
         // Reset form
         setWigleApiQuery({ ssid: '', bssid: '', latrange1: '', latrange2: '', longrange1: '', longrange2: '' });
       } else {
         toast({
-          title: 'WiGLE API import failed',
+          title: 'WiGLE API query failed',
           description: data.error,
           variant: 'destructive',
         });
@@ -578,39 +463,41 @@ export function PipelinesPanel() {
               ) : (
                 <>
                   <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50">
-                    <p className="text-sm text-slate-400 mb-1">Networks (Alpha v3)</p>
-                    <p className="text-2xl font-semibold text-slate-100">{parseInt(wigleApiStatsData?.stats?.networks_alpha_v3 || '0').toLocaleString()}</p>
-                    <p className="text-xs text-slate-500 mt-1">{parseInt(wigleApiStatsData?.stats?.unique_bssids_alpha_v3 || '0')} unique BSSIDs</p>
+                    <p className="text-sm text-slate-400 mb-1">Networks</p>
+                    <p className="text-2xl font-semibold text-slate-100">{parseInt(wigleApiStatsData?.stats?.networks || '0').toLocaleString()}</p>
                   </div>
                   <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50">
-                    <p className="text-sm text-slate-400 mb-1">Observations</p>
-                    <p className="text-2xl font-semibold text-slate-100">{parseInt(wigleApiStatsData?.stats?.observations_alpha_v3 || '0').toLocaleString()}</p>
-                    <p className="text-xs text-slate-500 mt-1">{parseInt(wigleApiStatsData?.stats?.unique_ssids_alpha_v3 || '0')} unique SSIDs</p>
+                    <p className="text-sm text-slate-400 mb-1">Locations</p>
+                    <p className="text-2xl font-semibold text-slate-100">{parseInt(wigleApiStatsData?.stats?.locations || '0').toLocaleString()}</p>
                   </div>
                   <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50">
-                    <p className="text-sm text-slate-400 mb-1">SSID Clusters</p>
-                    <p className="text-2xl font-semibold text-slate-100">{parseInt(wigleApiStatsData?.stats?.ssid_clusters_detected || '0').toLocaleString()}</p>
-                    <p className="text-xs text-red-400 mt-1">{parseInt(wigleApiStatsData?.stats?.high_threat_clusters || '0')} EXTREME/CRITICAL</p>
+                    <p className="text-sm text-slate-400 mb-1">Queries</p>
+                    <p className="text-2xl font-semibold text-slate-100">{parseInt(wigleApiStatsData?.stats?.unique_queries || '0').toLocaleString()}</p>
                   </div>
                   <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50">
                     <p className="text-sm text-slate-400 mb-1">Last Import</p>
                     <p className="text-sm font-semibold text-slate-100">
-                      {wigleApiStatsData?.stats?.last_import_alpha_v3 ? new Date(wigleApiStatsData.stats.last_import_alpha_v3).toLocaleString() : 'Never'}
+                      {wigleApiStatsData?.stats?.last_import ? new Date(wigleApiStatsData.stats.last_import).toLocaleString() : 'Never'}
                     </p>
                   </div>
                 </>
               )}
             </div>
             <div className="flex gap-2 mt-4">
-              <Button onClick={() => clearWigleApiMutation.mutate()} disabled={clearWigleApiMutation.isPending || parseInt(wigleApiStatsData?.stats?.networks_alpha_v3 || '0') === 0} variant="destructive">
+              <Button
+                onClick={() => navigate('/wigle')}
+                disabled={parseInt(wigleApiStatsData?.stats?.networks || '0') === 0}
+                className="bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-500/30 hover:bg-green-600/30 text-green-400 hover:text-green-300 border"
+              >
+                <Map className="mr-2 h-4 w-4" />
+                View WiGLE Map ({parseInt(wigleApiStatsData?.stats?.networks || '0')} networks)
+              </Button>
+              <Button onClick={() => clearWigleApiMutation.mutate()} disabled={clearWigleApiMutation.isPending || parseInt(wigleApiStatsData?.stats?.networks || '0') === 0} variant="destructive">
                 {clearWigleApiMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Clearing...</> : <><Trash2 className="mr-2 h-4 w-4" />Clear Staging</>}
               </Button>
             </div>
           </CardContent>
         </Card>
-
-        {/* WiGLE Staging Data Preview */}
-        {parseInt(wigleApiStatsData?.stats?.networks_alpha_v3 || '0') > 0 && <WigleStagingPreview />}
 
         {/* WiGLE API Query Form */}
         <Card className="premium-card">

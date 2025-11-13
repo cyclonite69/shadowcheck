@@ -26,7 +26,7 @@ WORKDIR /build
 COPY client/package.json client/package-lock.json ./client/
 
 # Install ALL client dependencies
-RUN npm install --prefix client --timeout=120000
+RUN npm ci --prefix client --timeout=120000
 
 # ==============================================================================
 # STAGE 2: BUILD
@@ -55,7 +55,9 @@ RUN ls -la /build/client/dist
 # ==============================================================================
 FROM nginx:stable AS production
 
-# curl is already available in nginx:stable base image - no additional packages needed
+# Install runtime dependencies
+RUN apt update && apt install -y wget && \
+    rm -rf /var/lib/apt/lists/*
 
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
@@ -105,7 +107,7 @@ server {
 
     # API proxy (optional - for development)
     location /api/ {
-        proxy_pass http://shadowcheck_backend:5000/api/;
+        proxy_pass http://backend:5000/api/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -123,7 +125,7 @@ EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -f http://localhost:80/ || exit 1
+    CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

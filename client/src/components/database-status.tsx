@@ -10,12 +10,6 @@ export function DatabaseStatus() {
     refetchInterval: 5000,
   });
 
-  // Fetch detailed health for database connection stats and PostGIS version
-  const { data: healthDetails } = useQuery({
-    queryKey: ["/api/v1/health/detailed"],
-    refetchInterval: 5000,
-  }) as { data: any };
-
   const handleRestoreDatabase = () => {
     // This would open a file upload dialog or redirect to database restoration workflow
     console.log("Database restoration requested");
@@ -79,29 +73,11 @@ export function DatabaseStatus() {
             </span>
           </div>
 
-          <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-slate-300 font-medium">Active Connections</span>
-              <span className="text-sm font-mono text-slate-100 font-semibold" data-testid="db-connections">
-                {healthDetails?.database?.activeConnections || systemStatus?.database?.activeConnections || 0}/{healthDetails?.database?.totalConnections || systemStatus?.database?.maxConnections || 20}
-              </span>
-            </div>
-            <div className="relative w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-500"
-                style={{
-                  width: `${Math.min(
-                    ((healthDetails?.database?.activeConnections || systemStatus?.database?.activeConnections || 0) /
-                    (healthDetails?.database?.totalConnections || systemStatus?.database?.maxConnections || 20)) * 100,
-                    100
-                  )}%`
-                }}
-              />
-            </div>
-            <div className="flex justify-between mt-1 text-xs text-slate-500">
-              <span>Idle: {healthDetails?.database?.idleConnections || 0}</span>
-              <span>Waiting: {healthDetails?.database?.waitingConnections || 0}</span>
-            </div>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
+            <span className="text-sm text-slate-300 font-medium">Active Connections</span>
+            <span className="text-sm font-mono text-slate-100 font-semibold" data-testid="db-connections">
+              {systemStatus?.database.activeConnections || 0}/{systemStatus?.database.maxConnections || 5}
+            </span>
           </div>
 
           <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
@@ -109,16 +85,9 @@ export function DatabaseStatus() {
               <MapPin className="h-4 w-4 text-slate-400" />
               <span className="text-sm font-medium">PostGIS Extension</span>
             </div>
-            <div className="flex flex-col items-end">
-              <span className="text-sm text-slate-100 font-semibold" data-testid="postgis-status">
-                {healthDetails?.database?.postgisEnabled ? "Available" : systemStatus?.database?.postgisEnabled ? "Available" : "Not Available"}
-              </span>
-              {(healthDetails?.database?.postgisVersion && healthDetails?.database?.postgisVersion !== "N/A") && (
-                <span className="text-xs text-slate-400 font-mono">
-                  v{healthDetails.database.postgisVersion.split(' ')[0]}
-                </span>
-              )}
-            </div>
+            <span className="text-sm text-slate-100 font-semibold" data-testid="postgis-status">
+              {systemStatus?.database.postgisEnabled ? "Available" : "Not Available"}
+            </span>
           </div>
 
           {!systemStatus?.database.connected && (

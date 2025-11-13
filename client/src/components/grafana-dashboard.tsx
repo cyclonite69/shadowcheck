@@ -153,7 +153,7 @@ export function GrafanaDashboard() {
                 variant="outline"
                 onClick={() => {
                   const iframe = document.getElementById('grafana-iframe') as HTMLIFrameElement;
-                  if (iframe) { /* iframe.src = iframe.src; */ }
+                  if (iframe) iframe.src = iframe.src;
                 }}
                 className="border-slate-700 hover:bg-slate-800 hover:border-slate-600 transition-all"
                 title="Refresh Dashboard"

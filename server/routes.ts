@@ -83,9 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
-      const sortBy = req.query.sort_by as string || 'observed_at';
-      const sortDir = req.query.sort_dir as string || 'desc';
-      const networks = await storage.getNetworks(limit, sortBy, sortDir);
+      const networks = await storage.getNetworks(limit);
       
       res.json({
         ok: true,
@@ -196,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             type: "Feature",
             geometry: {
               type: "Point",
-              coordinates: [parseFloat(String(network.longitude || "0")), parseFloat(String(network.latitude || "0"))]
+              coordinates: [parseFloat(network.longitude || "0"), parseFloat(network.latitude || "0")]
             },
             properties: {
               id: network.id,

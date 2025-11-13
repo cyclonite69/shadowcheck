@@ -1,99 +1,223 @@
+# ==============================================================================
+# SHADOWCHECK MONITORING STACK
+# ==============================================================================
+# This docker-compose file adds monitoring services to the main shadowcheck stack
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+# ==============================================================================
+
 version: '3.8'
 
 services:
+  # ============================================================================
+  # PROMETHEUS - Metrics Collection & Storage
+  # ============================================================================
   prometheus:
-    image: prom/prometheus:v2.51.0
+    image: prom/prometheus:latest
     container_name: shadowcheck_prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
+      - ./docker/prometheus/rules:/etc/prometheus/rules:ro
+      - shadowcheck_prometheus_data:/prometheus
     networks:
-      - shadowcheck_network
+      - shadowcheck_internal_prod
     ports:
-      - "127.0.0.1:9091:9090"
+      - "127.0.0.1:9091:9090"  # Bind to localhost only
     restart: unless-stopped
+    depends_on:
+      - backend
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
+  # ============================================================================
+  # GRAFANA - Metrics Visualization
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: shadowcheck_grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-KZQvo7+1Vj5lEw9P4dVwJi40OcHYA6kJR1iCULWza4k=}
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/shadowcheck-overview.json
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    volumes:
+      - shadowcheck_grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/etc/grafana/dashboards:ro
+    networks:
+      - shadowcheck_internal_prod
+    ports:
+      - "127.0.0.1:3000:3000"  # Bind to localhost only
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================================================
+  # LOKI - Log Aggregation
+  # ============================================================================
   loki:
-    image: grafana/loki:2.9.6
+    image: grafana/loki:latest
     container_name: shadowcheck_loki
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
-      - ./docker/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
-      - loki_data:/loki
+      - ./docker/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - shadowcheck_loki_data:/loki
     networks:
-      - shadowcheck_network
+      - shadowcheck_internal_prod
     ports:
-      - "127.0.0.1:3100:3100"
+      - "127.0.0.1:3100:3100"  # Bind to localhost only
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
+  # ============================================================================
+  # PROMTAIL - Log Collector for Loki
+  # ============================================================================
   promtail:
-    image: grafana/promtail:2.9.6
+    image: grafana/promtail:latest
     container_name: shadowcheck_promtail
-    volumes:
-      - ./docker/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
-      - ./logs:/var/log/shadowcheck:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
     command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./docker/promtail/promtail-config.yaml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
     networks:
-      - shadowcheck_network
+      - shadowcheck_internal_prod
     restart: unless-stopped
     depends_on:
       - loki
 
-  grafana:
-    image: grafana/grafana:10.4.1
-    container_name: shadowcheck_grafana
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-KZQvo7+1Vj5lEw9P4dVwJi40OcHYA6kJR1iCULWza4k=}
-      GF_SERVER_ROOT_URL: http://localhost:3000
-      GF_AUTH_ANONYMOUS_ENABLED: true
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
-      GF_SECURITY_ALLOW_EMBEDDING: true
-      GF_SECURITY_COOKIE_SAMESITE: lax
-      GF_INSTALL_PLUGINS: ''
+  # ============================================================================
+  # NODE EXPORTER - Host Metrics (Optional)
+  # ============================================================================
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: shadowcheck_node_exporter
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     volumes:
-      - grafana_data:/var/lib/grafana
-      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
-      - ./docker/grafana/config/grafana.ini:/etc/grafana/grafana.ini:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
     networks:
-      - shadowcheck_network
+      - shadowcheck_internal_prod
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:9100:9100"
     restart: unless-stopped
-    depends_on:
-      - prometheus
-      - loki
+    profiles:
+      - monitoring-full
+
+  # ============================================================================
+  # CADVISOR - Container Metrics (Optional)
+  # ============================================================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: shadowcheck_cadvisor
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    networks:
+      - shadowcheck_internal_prod
+    ports:
+      - "127.0.0.1:8082:8080"
+    restart: unless-stopped
+    profiles:
+      - monitoring-full
+
+  # ============================================================================
+  # ALERTMANAGER - Alert Routing & Management (Optional)
+  # ============================================================================
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: shadowcheck_alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    volumes:
+      - ./docker/alertmanager/alertmanager.yml:/etc/alertmanager/config.yml:ro
+      - shadowcheck_alertmanager_data:/alertmanager
+    networks:
+      - shadowcheck_internal_prod
+    ports:
+      - "127.0.0.1:9093:9093"
+    restart: unless-stopped
+    profiles:
+      - monitoring-full
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
       interval: 30s
       timeout: 10s
       retries: 3
 
+  # ============================================================================
+  # POSTGRES EXPORTER - Database Metrics (Optional)
+  # ============================================================================
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    container_name: shadowcheck_postgres_exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://shadowcheck_user@postgres:5432/shadowcheck?sslmode=disable"
+      DATA_SOURCE_PASS_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    networks:
+      - shadowcheck_internal_prod
+    ports:
+      - "127.0.0.1:9187:9187"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - monitoring-full
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 networks:
-  shadowcheck_network:
-    driver: bridge
+  shadowcheck_internal_prod:
+    external: true
 
 volumes:
-  prometheus_data:
+  shadowcheck_prometheus_data:
     driver: local
-  loki_data:
+  shadowcheck_grafana_data:
     driver: local
-  grafana_data:
+  shadowcheck_loki_data:
+    driver: local
+  shadowcheck_alertmanager_data:
     driver: local

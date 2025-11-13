@@ -39,14 +39,14 @@ services:
       POSTGRES_MAINTENANCE_WORK_MEM: 128MB
       POSTGRES_EXTENSIONS: postgis,postgis_topology,postgis_raster
     restart: unless-stopped
-    # deploy:  # COMMENTED OUT - Not supported in Docker Compose v1.29
-    #   resources:
-    #     limits:
-    #       cpus: '2.0'
-    #       memory: 2G
-    #     reservations:
-    #       cpus: '1.0'
-    #       memory: 1G
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
     secrets:
       - db_password
     networks:
@@ -78,15 +78,15 @@ services:
     container_name: shadowcheck_backend
     restart: unless-stopped
 
-    # Resource limits - COMMENTED OUT - Not supported in Docker Compose v1.29
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '1.5'
-    #       memory: 1G
-    #     reservations:
-    #       cpus: '0.5'
-    #       memory: 512M
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
     # CRITICAL: Wait for database to be healthy before starting
     depends_on:
@@ -127,13 +127,8 @@ services:
       JWT_SECRET_FILE: /run/secrets/jwt_secret
 
       # Monitoring
-      PROMETHEUS_ENABLED: "true"
-      PROMETHEUS_PORT: "9090"
-
-      # WiGLE API credentials (optional - for pipeline enrichment)
-      # Set these to enable WiGLE API queries in pipelines
-      WIGLE_API_NAME: ${WIGLE_API_NAME:-}
-      WIGLE_API_TOKEN: ${WIGLE_API_TOKEN:-}
+      PROMETHEUS_ENABLED: true
+      PROMETHEUS_PORT: 9090
 
     # Secrets mounting
     secrets:
@@ -154,11 +149,10 @@ services:
     volumes:
       - backend_logs:/app/logs
       - signal_cache:/app/cache
-      - ./pipelines:/app/pipelines:ro  # Pipeline data files (read-only)
 
     # CRITICAL: Health check endpoint
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/api/v1/health"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -186,12 +180,12 @@ services:
     container_name: shadowcheck_frontend
     restart: unless-stopped
 
-    # Resource limits - COMMENTED OUT - Not supported in Docker Compose v1.29
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: '0.5'
-    #       memory: 512M
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
 
     # Wait for backend to be healthy
     depends_on:
@@ -219,7 +213,7 @@ services:
 
     # Health check for nginx serving static files
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -233,165 +227,6 @@ services:
         max-file: "3"
         labels: "service=frontend,app=shadowcheck,layer=web"
 
-  # ============================================================================
-  # PGADMIN: Database Administration UI
-  # ============================================================================
-  pgadmin:
-    image: dpage/pgadmin4:8.14
-    container_name: shadowcheck_pgadmin
-    ports:
-      - "127.0.0.1:8080:80"
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
-      PGADMIN_SERVER_JSON_FILE: '/pgadmin4/servers.json'
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-      - ./pgadmin-config/servers.json:/pgadmin4/servers.json:ro
-      - ./pgadmin-config/pgpassfile:/pgadmin4/pgpassfile:ro
-    networks:
-      - shadowcheck_internal_prod
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "3"
-        labels: "service=pgadmin,app=shadowcheck,layer=admin"
-
-  # ============================================================================
-  # MONITORING STACK - Prometheus, Grafana, Loki
-  # ============================================================================
-
-  # Prometheus - Time-series metrics collection
-  prometheus:
-    image: prom/prometheus:v2.51.0
-    container_name: shadowcheck_prometheus
-    volumes:
-      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./docker/prometheus/rules:/etc/prometheus/rules:ro
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--storage.tsdb.retention.time=30d'
-      - '--web.enable-lifecycle'
-    networks:
-      - shadowcheck_internal_prod
-    ports:
-      - "127.0.0.1:9091:9090"
-    restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "3"
-        labels: "service=prometheus,app=shadowcheck,layer=monitoring"
-
-  # Loki - Log aggregation
-  loki:
-    image: grafana/loki:2.9.6
-    container_name: shadowcheck_loki
-    volumes:
-      - ./docker/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
-      - loki_data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - shadowcheck_internal_prod
-    ports:
-      - "127.0.0.1:3100:3100"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "3"
-        labels: "service=loki,app=shadowcheck,layer=monitoring"
-
-  # Promtail - Log shipper for Loki
-  promtail:
-    image: grafana/promtail:2.9.6
-    container_name: shadowcheck_promtail
-    volumes:
-      - ./docker/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
-      - ./logs:/var/log/shadowcheck:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    command: -config.file=/etc/promtail/config.yml
-    networks:
-      - shadowcheck_internal_prod
-    restart: unless-stopped
-    depends_on:
-      loki:
-        condition: service_healthy
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "3"
-        labels: "service=promtail,app=shadowcheck,layer=monitoring"
-
-  # Grafana - Visualization and dashboards
-  grafana:
-    image: grafana/grafana:10.4.1
-    container_name: shadowcheck_grafana
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD_FILE: /run/secrets/grafana_password
-      GF_SERVER_ROOT_URL: http://localhost:3000
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
-      GF_SECURITY_ALLOW_EMBEDDING: "true"
-      GF_SECURITY_COOKIE_SAMESITE: lax
-      GF_INSTALL_PLUGINS: ''
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
-      - ./docker/grafana/config/grafana.ini:/etc/grafana/grafana.ini:ro
-    secrets:
-      - grafana_password
-    networks:
-      - shadowcheck_internal_prod
-      - shadowcheck_network  # Add this network to reach PostgreSQL
-    ports:
-      - "127.0.0.1:3000:3000"
-    restart: unless-stopped
-    depends_on:
-      prometheus:
-        condition: service_healthy
-      loki:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "3"
-        labels: "service=grafana,app=shadowcheck,layer=monitoring"
 
 
 # ==============================================================================
@@ -403,9 +238,6 @@ networks:
     ipam:
       config:
         - subnet: 172.29.0.0/16
-  shadowcheck_network:
-    name: shadowcheck_shadowcheck_network
-    external: true  # Use the existing network from main docker-compose.yml
 
 # ==============================================================================
 # VOLUMES
@@ -419,17 +251,7 @@ volumes:
   signal_cache:
     driver: local
 
-  # pgAdmin
-  pgadmin_data:
-    driver: local
-
   # Monitoring
-  prometheus_data:
-    driver: local
-  loki_data:
-    driver: local
-  grafana_data:
-    driver: local
 
 # ==============================================================================
 # SECRETS

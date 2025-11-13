@@ -18,15 +18,7 @@ node_modules/
 dist/
 */dist/
 */node_modules/
-compiled_server/
 *.log
-*.js.map
-
-# Deprecated/experimental files
-*.deprecated
-*.old
-*.backup
-*.bak
 
 # Database
 *.dump
@@ -42,10 +34,6 @@ docker/pgadmin/pgpassfile
 pipelines/kml/*.kml
 pipelines/wigle_api/response_*.json
 pipelines/wigle_api/noresponse_*.json
-pipelines/wigle_api/orphan_responses/
-pipelines/wigle/*.sqlite
-pipelines/wigle/*.db
-pipelines/csv/*.csv
 
 # Monitoring
 monitoring/
@@ -60,7 +48,10 @@ scripts/*password*.sh
 scripts/*secrets*.sh
 client/client/
 docker/pgadmin/
-pgadmin-config/pgpassfile
-.env
-secrets.txt
-.env.development
+
+# Media files (potentially large or sensitive)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm

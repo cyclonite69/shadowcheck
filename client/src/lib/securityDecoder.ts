@@ -1,286 +1,16 @@
 /**
- * WiFi Security Capability Parser
- * Factual parsing of security capabilities - no opinions or ratings
- * Based on WiGLE.net capability string format
+ * WiFi Security Capability Decoder
+ * Client-side utilities for parsing and explaining security strings
  */
 
-export interface SecurityTypeInfo {
-  icon: string;
-  hex: string;
-  description: string;
-  abbr: string;
+export enum SecurityStrength {
+  EXCELLENT = 'EXCELLENT',
+  GOOD = 'GOOD',
+  MODERATE = 'MODERATE',
+  WEAK = 'WEAK',
+  VULNERABLE = 'VULNERABLE',
+  OPEN = 'OPEN'
 }
-
-/**
- * Complete mapping of security types to their display properties
- * Directly from capability string patterns observed in WiGLE data
- */
-export const SECURITY_TYPE_MAP: Record<string, SecurityTypeInfo> = {
-  // Open networks
-  'Open': {
-    icon: '🔓',
-    hex: '#FF0000',
-    description: 'No Encryption',
-    abbr: 'Open'
-  },
-
-  // WEP
-  'WEP': {
-    icon: '⚠️',
-    hex: '#FF4500',
-    description: 'RC4 Stream Cipher',
-    abbr: 'WEP'
-  },
-
-  // WPA variants
-  'WPA-EAP': {
-    icon: '🔑',
-    hex: '#FFD700',
-    description: '802.1X TKIP/CCMP',
-    abbr: 'WPA-EAP'
-  },
-  'WPA-PSK': {
-    icon: '🔒',
-    hex: '#FFD700',
-    description: 'PSK TKIP/CCMP',
-    abbr: 'WPA-PSK'
-  },
-
-  // WPA2 variants
-  'WPA2-EAP': {
-    icon: '🔑',
-    hex: '#32CD32',
-    description: '802.1X RSN CCMP',
-    abbr: 'WPA2-EAP'
-  },
-  'WPA2-PSK': {
-    icon: '🔒',
-    hex: '#32CD32',
-    description: 'PSK RSN CCMP',
-    abbr: 'WPA2-PSK'
-  },
-
-  // WPA2-OWE
-  'WPA2-OWE': {
-    icon: '🔒',
-    hex: '#008080',
-    description: 'Opportunistic Wireless Enc.',
-    abbr: 'OWE'
-  },
-
-  // WPA3
-  'WPA2-SAE': {
-    icon: '🛡️',
-    hex: '#0000FF',
-    description: 'Simultaneous Auth. Equals',
-    abbr: 'WPA3-SAE'
-  },
-  'WPA3-SAE': {
-    icon: '🛡️',
-    hex: '#0000FF',
-    description: 'Simultaneous Auth. Equals',
-    abbr: 'WPA3-SAE'
-  },
-
-  // Transition/Hybrid modes
-  'WPA-EAP,WPA2-EAP': {
-    icon: '🔑',
-    hex: '#32CD32',
-    description: '802.1X Trans TKIP/CCMP',
-    abbr: 'WPA Hybrid'
-  },
-  'WPA2-EAP,WPA-EAP': {
-    icon: '🔑',
-    hex: '#32CD32',
-    description: '802.1X RSN Trans',
-    abbr: 'WPA2 Trans'
-  },
-  'WPA-PSK,WPA2-PSK': {
-    icon: '🔒',
-    hex: '#32CD32',
-    description: 'PSK Trans TKIP/CCMP',
-    abbr: 'WPA2 Hybrid'
-  },
-  'WPA2-PSK,WPA-PSK': {
-    icon: '🔒',
-    hex: '#32CD32',
-    description: 'PSK RSN Trans',
-    abbr: 'WPA2 Trans'
-  },
-
-  // Non-WiFi radio types
-  'BT': {
-    icon: '📡',
-    hex: '#9370DB',
-    description: 'Bluetooth Classic (v1.0-5.0)',
-    abbr: 'BT Classic'
-  },
-  'BLE': {
-    icon: '🔵',
-    hex: '#4B0082',
-    description: 'Bluetooth Low Energy (v4.0+)',
-    abbr: 'BLE'
-  },
-  'GSM': {
-    icon: '📶',
-    hex: '#808080',
-    description: 'Global System for Mobile (2G)',
-    abbr: 'GSM'
-  },
-  'LTE': {
-    icon: '📡',
-    hex: '#00FFFF',
-    description: 'Long Term Evolution (4G)',
-    abbr: 'LTE'
-  }
-};
-
-/**
- * Parse WiGLE capability string to determine security type
- * Returns the matched type key from SECURITY_TYPE_MAP
- *
- * Format examples from WiGLE:
- * - [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS]
- * - [WPA2-EAP/SHA1-CCMP][RSN-EAP/SHA1-CCMP][ESS]
- * - [RSN-SAE-CCMP][ESS]
- * - [RSN-OWE-CCMP][ESS]
- * - [WEP][ESS]
- * - GSM;310260
- * - LTE;310260
- * - Headphones;10 (Bluetooth)
- */
-export function categorizeSecurityType(capabilities: string | null | undefined, radioType?: string): string {
-  if (!capabilities || capabilities.trim() === '') {
-    return 'Open';
-  }
-
-  const caps = capabilities.toUpperCase();
-
-  // Handle cellular network types (GSM, LTE, NR)
-  if (caps.startsWith('GSM;') || caps.startsWith('GSM')) return 'GSM';
-  if (caps.startsWith('LTE;') || caps.startsWith('LTE')) return 'LTE';
-  if (caps.startsWith('NR;')) return 'LTE'; // 5G NR - map to LTE for now
-  if (caps.startsWith('IWLAN;') || caps.startsWith('UNKNOWN;')) return 'GSM';
-
-  // Handle Bluetooth device types
-  const btTypes = ['HEADPHONES', 'SPEAKER', 'WATCH', 'HEALTH', 'PHONE', 'KEYBOARD',
-                   'POINTER', 'COMPUTER', 'LAPTOP', 'SETTOP', 'DISPLAY', 'AUDIO',
-                   'CAR AUDIO', 'PORTABLE', 'HANDSFREE', 'PULSE', 'MISC', 'UNCATEGORIZED'];
-  if (btTypes.some(type => caps.startsWith(type))) {
-    return 'BLE'; // Treat all BT device types as BLE
-  }
-
-  // Handle radio type override
-  if (radioType) {
-    if (radioType === 'E') return 'BLE';
-    if (radioType === 'B') return 'BT';
-    if (radioType === 'G') return 'GSM';
-    if (radioType === 'L') return 'LTE';
-  }
-
-  // WiFi security parsing - looking for patterns in square brackets
-  // WPA3/SAE detection (RSN-SAE or WPA3)
-  if (caps.includes('RSN-SAE') || caps.includes('WPA3')) {
-    return 'WPA3-SAE';
-  }
-
-  // OWE detection (RSN-OWE)
-  if (caps.includes('RSN-OWE') || caps.includes('-OWE-')) {
-    return 'WPA2-OWE';
-  }
-
-  // WEP detection
-  if (caps.includes('[WEP]')) {
-    return 'WEP';
-  }
-
-  // Check for WPA and WPA2 combinations
-  const hasWPA = caps.includes('[WPA-');
-  const hasWPA2 = caps.includes('[WPA2-') || caps.includes('[RSN-');
-  const hasEAP = caps.includes('-EAP');
-  const hasPSK = caps.includes('-PSK');
-
-  // Transition mode - both WPA and WPA2
-  if (hasWPA && hasWPA2) {
-    if (hasEAP) {
-      return 'WPA-EAP,WPA2-EAP';
-    }
-    if (hasPSK) {
-      return 'WPA-PSK,WPA2-PSK';
-    }
-  }
-
-  // WPA2 only
-  if (hasWPA2) {
-    if (hasEAP) {
-      return 'WPA2-EAP';
-    }
-    if (hasPSK) {
-      return 'WPA2-PSK';
-    }
-    // Default WPA2 to PSK if unclear
-    return 'WPA2-PSK';
-  }
-
-  // WPA only (legacy)
-  if (hasWPA) {
-    if (hasEAP) {
-      return 'WPA-EAP';
-    }
-    if (hasPSK) {
-      return 'WPA-PSK';
-    }
-    return 'WPA-PSK';
-  }
-
-  // Open network - just [ESS] or [IBSS] or empty
-  if (caps === '[ESS]' || caps === '[IBSS]' || caps.includes('[ESS]') && !hasWPA && !hasWPA2) {
-    return 'Open';
-  }
-
-  // Unknown/fallback
-  return 'Open';
-}
-
-/**
- * Get display information for a security type
- */
-export function getSecurityTypeStyle(typeKey: string) {
-  const info = SECURITY_TYPE_MAP[typeKey] || SECURITY_TYPE_MAP['Open'];
-
-  // Convert hex to Tailwind-compatible classes
-  const hexToTailwind = (hex: string) => {
-    const colorMap: Record<string, { bg: string; border: string; text: string }> = {
-      '#FF0000': { bg: 'bg-red-500/10', border: 'border-red-500/20', text: 'text-red-300' },
-      '#FF4500': { bg: 'bg-orange-600/10', border: 'border-orange-600/20', text: 'text-orange-400' },
-      '#FFD700': { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', text: 'text-yellow-300' },
-      '#32CD32': { bg: 'bg-green-500/10', border: 'border-green-500/20', text: 'text-green-300' },
-      '#008080': { bg: 'bg-teal-500/10', border: 'border-teal-500/20', text: 'text-teal-300' },
-      '#0000FF': { bg: 'bg-blue-600/10', border: 'border-blue-600/20', text: 'text-blue-300' },
-      '#9370DB': { bg: 'bg-purple-400/10', border: 'border-purple-400/20', text: 'text-purple-300' },
-      '#4B0082': { bg: 'bg-indigo-700/10', border: 'border-indigo-700/20', text: 'text-indigo-300' },
-      '#808080': { bg: 'bg-gray-500/10', border: 'border-gray-500/20', text: 'text-gray-400' },
-      '#00FFFF': { bg: 'bg-cyan-400/10', border: 'border-cyan-400/20', text: 'text-cyan-300' }
-    };
-
-    return colorMap[hex] || colorMap['#808080'];
-  };
-
-  const tailwind = hexToTailwind(info.hex);
-
-  return {
-    color: info.hex,
-    icon: info.icon,
-    abbr: info.abbr,
-    description: info.description,
-    ...tailwind
-  };
-}
-
-/**
- * Legacy compatibility exports for dashboard and SecurityTooltip
- * @deprecated - these components still use old enum-based API
- */
 
 export interface SecurityAnalysis {
   strength: SecurityStrength;
@@ -295,30 +25,19 @@ export interface SecurityAnalysis {
   capabilities: string;
 }
 
-export const SECURITY_TERMS: Record<string, { name: string; description: string; category: string }> = {
-  'WPA3': { name: 'WPA3', description: 'Latest WiFi security standard', category: 'Protocol' },
-  'WPA2': { name: 'WPA2', description: 'WiFi security standard', category: 'Protocol' },
-  'WPA': { name: 'WPA', description: 'WiFi Protected Access', category: 'Protocol' },
-  'WEP': { name: 'WEP', description: 'Wired Equivalent Privacy', category: 'Protocol' },
-  'PSK': { name: 'PSK', description: 'Pre-Shared Key', category: 'Authentication' },
-  'SAE': { name: 'SAE', description: 'Simultaneous Authentication of Equals', category: 'Authentication' },
-  'EAP': { name: 'EAP', description: 'Extensible Authentication Protocol', category: 'Authentication' },
-  'OWE': { name: 'OWE', description: 'Opportunistic Wireless Encryption', category: 'Authentication' },
-  'RSN': { name: 'RSN', description: 'Robust Security Network', category: 'Protocol' },
-  'CCMP': { name: 'CCMP (AES)', description: 'AES-128 encryption', category: 'Encryption' },
-  'TKIP': { name: 'TKIP', description: 'Temporal Key Integrity Protocol', category: 'Encryption' },
-};
-
+/**
+ * Parse WiFi capability string
+ */
 export function parseCapabilities(capabilities: string | null | undefined): SecurityAnalysis {
-  if (!capabilities) {
+  if (!capabilities || capabilities.trim() === '') {
     return {
       strength: SecurityStrength.OPEN,
       protocol: 'Open',
       encryption: [],
       keyManagement: [],
-      issues: [],
+      issues: ['No encryption - all traffic is visible'],
       score: 0,
-      description: 'Open network',
+      description: 'Open network with no security',
       color: '#ef4444',
       icon: '🔓',
       capabilities: ''
@@ -326,57 +45,229 @@ export function parseCapabilities(capabilities: string | null | undefined): Secu
   }
 
   const caps = capabilities.toUpperCase();
-  return {
-    strength: caps.includes('WPA3') ? SecurityStrength.EXCELLENT : caps.includes('WPA2') ? SecurityStrength.GOOD : SecurityStrength.MODERATE,
-    protocol: caps.includes('WPA3') ? 'WPA3' : caps.includes('WPA2') ? 'WPA2' : caps.includes('WPA') ? 'WPA' : 'Unknown',
-    encryption: caps.includes('CCMP') ? ['CCMP'] : caps.includes('TKIP') ? ['TKIP'] : [],
-    keyManagement: caps.includes('PSK') ? ['PSK'] : caps.includes('EAP') ? ['EAP'] : [],
+  const analysis: SecurityAnalysis = {
+    strength: SecurityStrength.MODERATE,
+    protocol: 'Unknown',
+    encryption: [],
+    keyManagement: [],
     issues: [],
     score: 50,
-    description: 'WiFi network',
-    color: '#3b82f6',
-    icon: '🔒',
+    description: '',
+    color: '#f59e0b',
+    icon: '🔐',
     capabilities
   };
+
+  // Detect protocol version
+  if (caps.includes('WPA3')) {
+    analysis.protocol = 'WPA3';
+    analysis.score = 95;
+    analysis.icon = '🛡️';
+  } else if (caps.includes('WPA2') || caps.includes('RSN')) {
+    analysis.protocol = 'WPA2';
+    analysis.score = 75;
+    analysis.icon = '🔒';
+  } else if (caps.includes('WPA')) {
+    analysis.protocol = 'WPA';
+    analysis.score = 50;
+    analysis.issues.push('WPA1 is deprecated and vulnerable');
+    analysis.icon = '⚠️';
+  } else if (caps.includes('WEP')) {
+    analysis.protocol = 'WEP';
+    analysis.score = 10;
+    analysis.issues.push('WEP is broken and easily cracked');
+    analysis.icon = '❌';
+  }
+
+  // Detect encryption methods
+  if (caps.includes('GCMP-256')) {
+    analysis.encryption.push('GCMP-256');
+    analysis.score += 5;
+  } else if (caps.includes('GCMP')) {
+    analysis.encryption.push('GCMP');
+    analysis.score += 3;
+  }
+
+  if (caps.includes('CCMP-256')) {
+    analysis.encryption.push('CCMP-256');
+    analysis.score += 3;
+  } else if (caps.includes('CCMP')) {
+    analysis.encryption.push('CCMP (AES)');
+    analysis.score += 2;
+  }
+
+  if (caps.includes('TKIP')) {
+    analysis.encryption.push('TKIP');
+    analysis.score -= 15;
+    analysis.issues.push('TKIP is deprecated and vulnerable to attacks');
+  }
+
+  // Detect key management
+  if (caps.includes('SAE')) {
+    analysis.keyManagement.push('SAE (WPA3)');
+    analysis.score += 10;
+  }
+
+  if (caps.includes('PSK')) {
+    analysis.keyManagement.push('PSK (Pre-Shared Key)');
+  }
+
+  if (caps.includes('EAP')) {
+    analysis.keyManagement.push('EAP (Enterprise)');
+    analysis.score += 5;
+  }
+
+  if (caps.includes('OWE')) {
+    analysis.keyManagement.push('OWE (Enhanced Open)');
+    analysis.score += 5;
+  }
+
+  // Check for vulnerabilities
+  if (caps.includes('WPS')) {
+    analysis.issues.push('WPS enabled - vulnerable to brute force');
+    analysis.score -= 10;
+  }
+
+  // Determine overall strength
+  analysis.score = Math.max(0, Math.min(100, analysis.score));
+
+  if (analysis.score >= 90) {
+    analysis.strength = SecurityStrength.EXCELLENT;
+    analysis.color = '#10b981';
+    analysis.description = 'Excellent security with modern encryption';
+  } else if (analysis.score >= 70) {
+    analysis.strength = SecurityStrength.GOOD;
+    analysis.color = '#3b82f6';
+    analysis.description = 'Good security with strong encryption';
+  } else if (analysis.score >= 50) {
+    analysis.strength = SecurityStrength.MODERATE;
+    analysis.color = '#f59e0b';
+    analysis.description = 'Moderate security - consider upgrading';
+  } else if (analysis.score >= 20) {
+    analysis.strength = SecurityStrength.WEAK;
+    analysis.color = '#f97316';
+    analysis.description = 'Weak security - vulnerable to attacks';
+  } else {
+    analysis.strength = SecurityStrength.VULNERABLE;
+    analysis.color = '#ef4444';
+    analysis.description = 'Highly vulnerable - immediate upgrade needed';
+  }
+
+  return analysis;
 }
 
+/**
+ * Get human-readable explanation of security terms
+ */
+export const SECURITY_TERMS: Record<string, { name: string; description: string; category: string }> = {
+  'WPA3': {
+    name: 'WPA3',
+    description: 'Latest WiFi security standard with improved encryption and protection against offline dictionary attacks',
+    category: 'Protocol'
+  },
+  'WPA2': {
+    name: 'WPA2',
+    description: 'Strong WiFi security standard, industry standard since 2004. Still secure when properly configured',
+    category: 'Protocol'
+  },
+  'WPA': {
+    name: 'WPA',
+    description: 'Original WiFi Protected Access - deprecated and vulnerable to various attacks',
+    category: 'Protocol'
+  },
+  'WEP': {
+    name: 'WEP',
+    description: 'Wired Equivalent Privacy - completely broken encryption that can be cracked in minutes',
+    category: 'Protocol'
+  },
+  'CCMP': {
+    name: 'CCMP (AES)',
+    description: 'Counter Mode with CBC-MAC Protocol - secure AES-128 encryption, recommended for WPA2',
+    category: 'Encryption'
+  },
+  'CCMP-256': {
+    name: 'CCMP-256',
+    description: 'AES-256 encryption with CCMP - highest security level for WPA2/WPA3',
+    category: 'Encryption'
+  },
+  'GCMP': {
+    name: 'GCMP',
+    description: 'Galois/Counter Mode Protocol - WPA3 encryption method with AES-128',
+    category: 'Encryption'
+  },
+  'GCMP-256': {
+    name: 'GCMP-256',
+    description: 'AES-256 with GCMP - highest WPA3 security level, extremely secure',
+    category: 'Encryption'
+  },
+  'TKIP': {
+    name: 'TKIP',
+    description: 'Temporal Key Integrity Protocol - deprecated and vulnerable to key recovery attacks',
+    category: 'Encryption'
+  },
+  'PSK': {
+    name: 'PSK',
+    description: 'Pre-Shared Key - password-based authentication for personal/home networks',
+    category: 'Authentication'
+  },
+  'SAE': {
+    name: 'SAE',
+    description: 'Simultaneous Authentication of Equals - WPA3 password method resistant to offline attacks',
+    category: 'Authentication'
+  },
+  'EAP': {
+    name: 'EAP',
+    description: 'Extensible Authentication Protocol - enterprise authentication requiring RADIUS server',
+    category: 'Authentication'
+  },
+  'OWE': {
+    name: 'OWE',
+    description: 'Opportunistic Wireless Encryption - enhanced open network security without passwords',
+    category: 'Authentication'
+  },
+  'WPS': {
+    name: 'WPS',
+    description: 'WiFi Protected Setup - convenience feature with known security vulnerabilities',
+    category: 'Feature'
+  },
+  'RSN': {
+    name: 'RSN',
+    description: 'Robust Security Network - technical term for WPA2 security framework',
+    category: 'Protocol'
+  },
+  'ESS': {
+    name: 'ESS',
+    description: 'Extended Service Set - standard infrastructure mode with access point',
+    category: 'Mode'
+  },
+  'IBSS': {
+    name: 'IBSS',
+    description: 'Independent Basic Service Set - ad-hoc/peer-to-peer mode without access point',
+    category: 'Mode'
+  }
+};
+
+/**
+ * Extract terms from capability string
+ */
 export function extractTerms(capabilities: string | null | undefined): string[] {
   if (!capabilities) return [];
+
   const caps = capabilities.toUpperCase();
   const terms: string[] = [];
+
   Object.keys(SECURITY_TERMS).forEach(term => {
     if (caps.includes(term.toUpperCase())) {
       terms.push(term);
     }
   });
+
   return terms;
 }
 
 /**
- * Legacy compatibility exports for dashboard
- * @deprecated - dashboard still uses old enum-based API
+ * Get badge color class based on security strength
  */
-export enum SecurityType {
-  WPA3_ENTERPRISE = 'WPA3-Enterprise',
-  WPA3_PERSONAL = 'WPA3-Personal',
-  WPA2_ENTERPRISE = 'WPA2-Enterprise',
-  WPA2_PERSONAL = 'WPA2-Personal',
-  WPA_ENTERPRISE = 'WPA-Enterprise',
-  WPA_PERSONAL = 'WPA-Personal',
-  WEP = 'WEP',
-  OWE = 'OWE',
-  OPEN = 'Open'
-}
-
-export enum SecurityStrength {
-  EXCELLENT = 'EXCELLENT',
-  GOOD = 'GOOD',
-  MODERATE = 'MODERATE',
-  WEAK = 'WEAK',
-  VULNERABLE = 'VULNERABLE',
-  OPEN = 'OPEN'
-}
-
 export function getSecurityBadgeClass(strength: SecurityStrength): string {
   const classes = {
     [SecurityStrength.EXCELLENT]: 'bg-green-500/10 text-green-300 border-green-500/20',
@@ -387,51 +278,4 @@ export function getSecurityBadgeClass(strength: SecurityStrength): string {
     [SecurityStrength.OPEN]: 'bg-red-500/10 text-red-300 border-red-500/20'
   };
   return classes[strength];
-}
-
-export function categorizeNetworksByType(securityData: any, useObservations: boolean = false): Record<SecurityType, number> {
-  const categories: Record<SecurityType, number> = {
-    [SecurityType.WPA3_ENTERPRISE]: 0,
-    [SecurityType.WPA3_PERSONAL]: 0,
-    [SecurityType.WPA2_ENTERPRISE]: 0,
-    [SecurityType.WPA2_PERSONAL]: 0,
-    [SecurityType.WPA_ENTERPRISE]: 0,
-    [SecurityType.WPA_PERSONAL]: 0,
-    [SecurityType.WEP]: 0,
-    [SecurityType.OWE]: 0,
-    [SecurityType.OPEN]: 0
-  };
-
-  // Use the actual security_types data from backend if available
-  if (useObservations && securityData?.security_type_observations) {
-    return {
-      [SecurityType.WPA3_ENTERPRISE]: securityData.security_type_observations.wpa3_enterprise || 0,
-      [SecurityType.WPA3_PERSONAL]: securityData.security_type_observations.wpa3_personal || 0,
-      [SecurityType.WPA2_ENTERPRISE]: securityData.security_type_observations.wpa2_enterprise || 0,
-      [SecurityType.WPA2_PERSONAL]: securityData.security_type_observations.wpa2_personal || 0,
-      [SecurityType.WPA_ENTERPRISE]: securityData.security_type_observations.wpa_enterprise || 0,
-      [SecurityType.WPA_PERSONAL]: securityData.security_type_observations.wpa_personal || 0,
-      [SecurityType.WEP]: securityData.security_type_observations.wep || 0,
-      [SecurityType.OWE]: securityData.security_type_observations.owe || 0,
-      [SecurityType.OPEN]: securityData.security_type_observations.open || 0
-    };
-  }
-
-  if (!useObservations && securityData?.security_types) {
-    return {
-      [SecurityType.WPA3_ENTERPRISE]: securityData.security_types.wpa3_enterprise || 0,
-      [SecurityType.WPA3_PERSONAL]: securityData.security_types.wpa3_personal || 0,
-      [SecurityType.WPA2_ENTERPRISE]: securityData.security_types.wpa2_enterprise || 0,
-      [SecurityType.WPA2_PERSONAL]: securityData.security_types.wpa2_personal || 0,
-      [SecurityType.WPA_ENTERPRISE]: securityData.security_types.wpa_enterprise || 0,
-      [SecurityType.WPA_PERSONAL]: securityData.security_types.wpa_personal || 0,
-      [SecurityType.WEP]: securityData.security_types.wep || 0,
-      [SecurityType.OWE]: securityData.security_types.owe || 0,
-      [SecurityType.OPEN]: securityData.security_types.open || 0
-    };
-  }
-
-  // Fallback: if backend doesn't provide security_types, return empty
-  console.warn('Security type data not available from backend');
-  return categories;
 }

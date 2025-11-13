@@ -176,7 +176,7 @@ export function PrometheusQuery() {
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(result.metric).map(([key, value]) => (
                         <Badge key={key} variant="secondary" className="text-xs font-mono">
-                          {key}=&quot;{value}&quot;
+                          {key}="{value}"
                         </Badge>
                       ))}
                     </div>

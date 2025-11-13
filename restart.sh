@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# ShadowCheck - Unified Production Restart Script
-# Performs clean shutdown and startup with network reset
+# ShadowCheck - Restart Script
+# Performs clean shutdown and startup
 #
 
 set -euo pipefail
@@ -15,61 +15,51 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-# ============================================================================
-# LOGGING FUNCTIONS
-# ============================================================================
-log_info() { echo -e "${BLUE}ℹ${NC} $*"; }
-log_success() { echo -e "${GREEN}✓${NC} $*"; }
-log_error() { echo -e "${RED}✗${NC} $*"; }
-log_warning() { echo -e "${YELLOW}⚠${NC} $*"; }
+log_info() {
+  echo -e "${BLUE}ℹ${NC} $*"
+}
 
-# ============================================================================
-# HEADER
-# ============================================================================
+log_success() {
+  echo -e "${GREEN}✓${NC} $*"
+}
+
+log_error() {
+  echo -e "${RED}✗${NC} $*"
+}
+
 echo ""
 echo -e "${CYAN}${BOLD}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${CYAN}${BOLD}║                                                                ║${NC}"
-echo -e "${CYAN}${BOLD}║             ShadowCheck Production Restart                    ║${NC}"
+echo -e "${CYAN}${BOLD}║                    ShadowCheck Restart                        ║${NC}"
 echo -e "${CYAN}${BOLD}║                                                                ║${NC}"
 echo -e "${CYAN}${BOLD}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TOTAL_START=$(date +%s)
 
-# ============================================================================
-# PHASE 1: SHUTDOWN
-# ============================================================================
+# Step 1: Shutdown
 log_info "Phase 1: Shutting down all services..."
 echo ""
 
 if ! "${SCRIPT_DIR}/stop.sh"; then
-    log_error "Shutdown failed"
-    exit 1
+  log_error "Shutdown failed"
+  exit 1
 fi
 
 echo ""
-log_info "Waiting 3 seconds for clean shutdown..."
+log_info "Waiting 3 seconds before restart..."
 sleep 3
 echo ""
 
-# ============================================================================
-# PHASE 2: STARTUP
-# ============================================================================
+# Step 2: Startup
 log_info "Phase 2: Starting all services..."
 echo ""
 
 if ! "${SCRIPT_DIR}/start.sh"; then
-    log_error "Startup failed"
-    exit 1
+  log_error "Startup failed"
+  exit 1
 fi
 
-# ============================================================================
-# SUMMARY
-# ============================================================================
-TOTAL_END=$(date +%s)
-TOTAL_TIME=$((TOTAL_END - TOTAL_START))
-
 echo ""
-log_success "Restart complete in ${TOTAL_TIME}s"
+log_success "Restart complete!"
 echo ""

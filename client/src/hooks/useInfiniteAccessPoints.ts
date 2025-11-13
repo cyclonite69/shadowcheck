@@ -20,9 +20,7 @@ export interface AccessPointFilters {
   minSignal?: number;
   maxSignal?: number;
   dataQuality?: string[];
-  encryption?: string[];
-  sortBy?: string;
-  sortDir?: 'asc' | 'desc'; // Encryption type filter (None, WEP, WPA, WPA2, WPA3, Unknown)
+  encryption?: string[]; // Encryption type filter (None, WEP, WPA, WPA2, WPA3, Unknown)
   bbox?: [number, number, number, number]; // [minLng, minLat, maxLng, maxLat]
   radiusSearch?: {
     lat: number;

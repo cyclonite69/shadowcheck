@@ -35,8 +35,7 @@ import {
   Wifi,
   Signal,
   Check,
-  Eye,
-  Bluetooth
+  Eye
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AccessPoint } from '@/hooks/useInfiniteAccessPoints';
@@ -132,8 +131,6 @@ export function AccessPointsExplorerView() {
   const [selectedNetworkIds, setSelectedNetworkIds] = useState<Set<number>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set()); // MAC addresses
   const [spatialFilterMenuOpen, setSpatialFilterMenuOpen] = useState(false);
-  const [radioTypeFilter, setRadioTypeFilter] = useState<string | null>(null);
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // Refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -174,10 +171,7 @@ export function AccessPointsExplorerView() {
 
   // Fetch access points
   const queryResult = useInfiniteAccessPoints({
-    filters: {
-      ...filters,
-      radioTypes: radioTypeFilter ? [radioTypeFilter] : [],
-    },
+    filters,
     columns: [
       'location_geojson',
       'primary_frequency_hz',
@@ -479,75 +473,6 @@ export function AccessPointsExplorerView() {
 
   return (
     <div className="flex flex-col h-full bg-slate-900">
-      {/* Stats Cards Section */}
-      <div className="grid grid-cols-4 gap-4 p-4 flex-shrink-0">
-        {/* WiFi Card */}
-        <div
-          className={cn(
-            "bg-slate-800/50 border rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer transition-colors",
-            radioTypeFilter === "wifi" ? "border-blue-500 bg-blue-900/20" : "border-slate-700 hover:bg-slate-700/50"
-          )}
-          onClick={() => setRadioTypeFilter(radioTypeFilter === "wifi" ? null : "wifi")}
-        >
-          <Wifi className="h-8 w-8 text-blue-400" />
-          <p className="text-lg font-semibold text-slate-200 mt-2">WiFi</p>
-          <p className="text-sm text-slate-400">123,456 Networks</p> {/* Placeholder */}
-        </div>
-
-        {/* Cellular Card */}
-        <div
-          className={cn(
-            "bg-slate-800/50 border rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer transition-colors",
-            radioTypeFilter === "cellular" ? "border-green-500 bg-green-900/20" : "border-slate-700 hover:bg-slate-700/50"
-          )}
-          onClick={() => setRadioTypeFilter(radioTypeFilter === "cellular" ? null : "cellular")}
-        >
-          <Signal className="h-8 w-8 text-green-400" />
-          <p className="text-lg font-semibold text-slate-200 mt-2">Cellular</p>
-          <p className="text-sm text-slate-400">78,901 Networks</p> {/* Placeholder */}
-        </div>
-
-        {/* Bluetooth Card */}
-        <div
-          className={cn(
-            "bg-slate-800/50 border rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer transition-colors",
-            radioTypeFilter === "bluetooth" ? "border-purple-500 bg-purple-900/20" : "border-slate-700 hover:bg-slate-700/50"
-          )}
-          onClick={() => setRadioTypeFilter(radioTypeFilter === "bluetooth" ? null : "bluetooth")}
-        >
-          <Bluetooth className="h-8 w-8 text-purple-400" />
-          <p className="text-lg font-semibold text-slate-200 mt-2">Bluetooth</p>
-          <p className="text-sm text-slate-400">23,456 Devices</p> {/* Placeholder */}
-        </div>
-
-        {/* BLE Card */}
-        <div
-          className={cn(
-            "bg-slate-800/50 border rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer transition-colors",
-            radioTypeFilter === "ble" ? "border-red-500 bg-red-900/20" : "border-slate-700 hover:bg-slate-700/50"
-          )}
-          onClick={() => setRadioTypeFilter(radioTypeFilter === "ble" ? null : "ble")}
-        >
-          <Bluetooth className="h-8 w-8 text-red-400" /> {/* Using Bluetooth icon for BLE */}
-          <p className="text-lg font-semibold text-slate-200 mt-2">BLE</p>
-          <p className="text-sm text-slate-400">9,876 Devices</p> {/* Placeholder */}
-        </div>
-      </div>
-      {/* Collapsible Filter Header */}
-      <div className="flex-shrink-0 px-4 py-3 border-b border-slate-700 bg-slate-800/50">
-        <button
-          onClick={() => setFiltersExpanded(!filtersExpanded)}
-          className={cn(
-            "flex items-center gap-2 text-sm font-medium transition-all px-3 py-2 rounded-lg",
-            filtersExpanded ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-          )}
-        >
-          <Filter className="h-4 w-4" />
-          Filters
-          <ChevronDown className={cn("h-4 w-4 transition-transform", filtersExpanded ? "rotate-180" : "")} />
-        </button>
-      </div>
-
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-slate-800/50">
         <div className="flex items-center gap-3">
@@ -699,10 +624,10 @@ export function AccessPointsExplorerView() {
                 position: 'relative',
               }}
             >
-              <table className="w-full text-sm border-collapse" style={{tableLayout: "fixed"}}>
+              <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-slate-900">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "50px"}}>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                       <input
                         type="checkbox"
                         checked={selectedNetworkIds.size === allAccessPoints.length}
@@ -710,85 +635,85 @@ export function AccessPointsExplorerView() {
                         className="cursor-pointer"
                       />
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "150px"}}>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                       MAC Address
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "200px"}}>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                       Network Name
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "100px"}}>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                       Radio
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "100px"}}>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                       Signal
                     </th>
                     {isColumnVisible('primary_frequency_hz') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "110px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         Frequency
                       </th>
                     )}
                     {isColumnVisible('manufacturer') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "150px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         Manufacturer
                       </th>
                     )}
                     {isColumnVisible('oui_prefix_hex') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "100px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         OUI
                       </th>
                     )}
                     {isColumnVisible('is_hidden_network') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "80px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         Hidden
                       </th>
                     )}
                     {isColumnVisible('is_mobile_device') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "80px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         Mobile
                       </th>
                     )}
                     {isColumnVisible('data_quality') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "100px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         Quality
                       </th>
                     )}
                     {isColumnVisible('total_observations') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "120px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         Observations
                       </th>
                     )}
                     {isColumnVisible('unique_data_sources') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "90px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         Sources
                       </th>
                     )}
                     {isColumnVisible('mobility_confidence_score') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "90px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         Mobility
                       </th>
                     )}
                     {isColumnVisible('first_seen') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "160px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         First Seen
                       </th>
                     )}
                     {isColumnVisible('last_seen') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "160px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         Last Seen
                       </th>
                     )}
                     {isColumnVisible('record_created_at') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "160px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         Created
                       </th>
                     )}
                     {isColumnVisible('record_updated_at') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "160px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         Updated
                       </th>
                     )}
                     {isColumnVisible('location') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700" style={{width: "180px"}}>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
                         Location
                       </th>
                     )}
@@ -821,7 +746,7 @@ export function AccessPointsExplorerView() {
                           }}
                           onClick={() => toggleSelect(ap.access_point_id)}
                         >
-                          <td className="px-4 py-3 text-xs text-slate-300" style={{width: "50px"}}>
+                          <td className="px-4 py-3 text-sm text-slate-300">
                             <input
                               type="checkbox"
                               checked={isSelected}
@@ -830,12 +755,12 @@ export function AccessPointsExplorerView() {
                               className="cursor-pointer"
                             />
                           </td>
-                          <td className="px-4 py-3 text-xs text-slate-400" style={{width: "150px"}}>
-                            <code className="font-mono">
+                          <td className="px-4 py-3 text-sm text-slate-300">
+                            <code className="text-xs text-slate-400">
                               {formatMacAddress(ap.mac_address)}
                             </code>
                           </td>
-                          <td className="px-4 py-3 text-xs text-slate-300" style={{width: "200px"}}>
+                          <td className="px-4 py-3 text-sm text-slate-300">
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={(e) => {
@@ -857,41 +782,41 @@ export function AccessPointsExplorerView() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-xs text-slate-300" style={{width: "100px"}}>
-                            <span className="uppercase">{ap.radio_technology}</span>
+                          <td className="px-4 py-3 text-sm text-slate-300">
+                            <span className="text-xs uppercase">{ap.radio_technology}</span>
                           </td>
-                          <td className="px-4 py-3 text-xs text-slate-300" style={{width: "100px"}}>
-                            <span className={cn('font-mono', getSignalColor(ap.max_signal_observed_dbm))}>
+                          <td className="px-4 py-3 text-sm text-slate-300">
+                            <span className={cn('font-mono text-xs', getSignalColor(ap.max_signal_observed_dbm))}>
                               {formatSignal(ap.max_signal_observed_dbm)}
                             </span>
                           </td>
                           {isColumnVisible('primary_frequency_hz') && (
-                            <td className="px-4 py-3 text-xs text-slate-300" style={{width: "110px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-300">
                               {formatFrequency(ap.primary_frequency_hz)}
                             </td>
                           )}
                           {isColumnVisible('manufacturer') && (
-                            <td className="px-4 py-3 text-xs text-slate-400" style={{width: "150px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-400 text-xs">
                               {ap.manufacturer || '-'}
                             </td>
                           )}
                           {isColumnVisible('oui_prefix_hex') && (
-                            <td className="px-4 py-3 text-xs text-slate-500" style={{width: "100px"}}>
-                              <code className="font-mono">{ap.oui_prefix_hex || '-'}</code>
+                            <td className="px-4 py-3 text-sm text-slate-500">
+                              <code className="text-xs">{ap.oui_prefix_hex || '-'}</code>
                             </td>
                           )}
                           {isColumnVisible('is_hidden_network') && (
-                            <td className="px-4 py-3 text-xs text-slate-300 text-center" style={{width: "80px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-300 text-center">
                               {ap.is_hidden_network ? '✓' : '-'}
                             </td>
                           )}
                           {isColumnVisible('is_mobile_device') && (
-                            <td className="px-4 py-3 text-xs text-slate-300 text-center" style={{width: "80px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-300 text-center">
                               {ap.is_mobile_device ? '✓' : '-'}
                             </td>
                           )}
                           {isColumnVisible('data_quality') && (
-                            <td className="px-4 py-3 text-xs text-slate-300" style={{width: "100px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-300">
                               <span
                                 className={cn(
                                   'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border',
@@ -903,46 +828,46 @@ export function AccessPointsExplorerView() {
                             </td>
                           )}
                           {isColumnVisible('total_observations') && (
-                            <td className="px-4 py-3 text-xs text-slate-300" style={{width: "120px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-300">
                               <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
                                 {ap.total_observations}
                               </span>
                             </td>
                           )}
                           {isColumnVisible('unique_data_sources') && (
-                            <td className="px-4 py-3 text-xs text-slate-400" style={{width: "90px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-400 text-xs">
                               {ap.unique_data_sources}
                             </td>
                           )}
                           {isColumnVisible('mobility_confidence_score') && (
-                            <td className="px-4 py-3 text-xs text-slate-400" style={{width: "90px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-400 text-xs">
                               {ap.mobility_confidence_score !== null
                                 ? (ap.mobility_confidence_score * 100).toFixed(0) + '%'
                                 : '-'}
                             </td>
                           )}
                           {isColumnVisible('first_seen') && (
-                            <td className="px-4 py-3 text-xs text-slate-400" style={{width: "160px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-400 text-xs">
                               {formatTimestamp(ap.first_seen)}
                             </td>
                           )}
                           {isColumnVisible('last_seen') && (
-                            <td className="px-4 py-3 text-xs text-slate-400" style={{width: "160px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-400 text-xs">
                               {formatTimestamp(ap.last_seen)}
                             </td>
                           )}
                           {isColumnVisible('record_created_at') && (
-                            <td className="px-4 py-3 text-xs text-slate-500" style={{width: "160px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-500 text-xs">
                               {formatTimestamp(ap.record_created_at)}
                             </td>
                           )}
                           {isColumnVisible('record_updated_at') && (
-                            <td className="px-4 py-3 text-xs text-slate-500" style={{width: "160px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-500 text-xs">
                               {formatTimestamp(ap.record_updated_at)}
                             </td>
                           )}
                           {isColumnVisible('location') && (
-                            <td className="px-4 py-3 text-xs text-slate-400 font-mono" style={{width: "180px"}}>
+                            <td className="px-4 py-3 text-sm text-slate-400 text-xs font-mono">
                               {formatLocation(ap.location_geojson)}
                             </td>
                           )}

@@ -22,7 +22,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  getNetworks(limit?: number, sortBy?: string, sortDir?: string): Promise<Network[]>;
+  getNetworks(limit?: number): Promise<Network[]>;
   getNetworksWithin(lat: number, lon: number, radius: number, limit?: number): Promise<Network[]>;
   createNetwork(network: InsertNetwork): Promise<Network>;
 
@@ -125,23 +125,15 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getNetworks(limit: number = 50, sortBy: string = 'observed_at', sortDir: string = 'desc'): Promise<Network[]> {
+  async getNetworks(limit: number = 50): Promise<Network[]> {
     const dbInstance = await getDb();
     if (!dbInstance) return [];
 
     try {
-      const orderColumn = (networks as any)[sortBy]; // Dynamically select the column
-      if (!orderColumn) {
-        console.warn(`Invalid sortBy column: ${sortBy}. Defaulting to observed_at.`);
-        sortBy = 'observed_at';
-      }
-
-      const order = sortDir.toLowerCase() === 'asc' ? sql`${(networks as any)[sortBy]} ASC` : sql`${(networks as any)[sortBy]} DESC`;
-
       const result = await dbInstance
         .select()
         .from(networks)
-        .orderBy(order)
+        .orderBy(sql`${networks.observed_at} DESC`)
         .limit(limit);
       return result;
     } catch (error) {
@@ -155,12 +147,12 @@ export class DatabaseStorage implements IStorage {
     if (!dbInstance) return [];
 
     try {
-      // Use PostGIS ST_DWithin for spatial query using lat/lon columns
+      // Use PostGIS ST_DWithin for spatial query
       const result = await dbInstance.execute(sql`
         SELECT * FROM ${networks}
         WHERE ST_DWithin(
-          ST_SetSRID(ST_MakePoint(${networks.longitude}, ${networks.latitude}), 4326)::geography,
-          ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)::geography,
+          ${networks.geom}::geometry,
+          ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)::geometry,
           ${radius}
         )
         ORDER BY ${networks.observed_at} DESC

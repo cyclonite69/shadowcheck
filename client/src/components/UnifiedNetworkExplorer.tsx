@@ -10,23 +10,19 @@
  * - Export capabilities
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import type { SortingState } from '@tanstack/react-table';
+import { useState, useEffect } from 'react';
 import { Layers, Network, Download, RefreshCw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UnifiedFilterPanel } from './UnifiedFilterPanel';
 import { UnifiedDataTable } from './UnifiedDataTable';
 import { useInfiniteAccessPoints, flattenAccessPoints, getTotalCount as getAPTotalCount } from '@/hooks/useInfiniteAccessPoints';
-import { useInfiniteNetworkObservations } from '@/hooks/useInfiniteNetworkObservations';
-import { flattenNetworkObservations, getTotalNetworkCount } from '@/types';
+import { useInfiniteNetworkObservations, flattenNetworkObservations, getTotalNetworkCount } from '@/hooks/useInfiniteNetworkObservations';
 import type { UnifiedFilters } from '@/lib/unifiedFilters';
 import { filtersToQueryParams } from '@/lib/unifiedFilters';
 import { getDefaultVisibleColumns } from '@/lib/unifiedColumns';
-import { type Updater } from '@tanstack/react-table';
 
 type ViewMode = 'observations' | 'access-points';
 
-// Define a custom SortConfig interface for clarity and API consistency
 interface SortConfig {
   columnId: string;
   direction: 'asc' | 'desc';
@@ -44,7 +40,7 @@ export function UnifiedNetworkExplorer() {
     getDefaultVisibleColumns().map(c => c.id)
   );
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
-  const [sortConfig, setSortConfig] = useState<SortingState>([]);
+  const [sortConfig, setSortConfig] = useState<SortConfig[]>([]);
 
   // Convert unified filters to API params
   const apiFilters = filtersToQueryParams(filters);
@@ -56,8 +52,6 @@ export function UnifiedNetworkExplorer() {
       radioTypes: filters.radioTypes,
       minSignal: filters.minSignal,
       maxSignal: filters.maxSignal,
-      sortBy: sortConfig.length > 0 ? sortConfig[0].id : undefined, // Pass primary sort
-      sortDir: sortConfig.length > 0 ? (sortConfig[0].desc ? 'desc' : 'asc') : undefined, // Pass primary sort direction
     },
     pageSize: 500,
     enabled: viewMode === 'observations',
@@ -72,8 +66,6 @@ export function UnifiedNetworkExplorer() {
       maxSignal: filters.maxSignal,
       dataQuality: filters.dataQuality,
       encryption: filters.encryption,
-      sortBy: sortConfig.length > 0 ? sortConfig[0].id : undefined, // Pass primary sort
-      sortDir: sortConfig.length > 0 ? (sortConfig[0].desc ? 'desc' : 'asc') : undefined, // Pass primary sort direction
     },
     pageSize: 500,
     enabled: viewMode === 'access-points',
@@ -248,8 +240,8 @@ export function UnifiedNetworkExplorer() {
             onVisibleColumnsChange={setVisibleColumns}
             columnOrder={columnOrder}
             onColumnOrderChange={setColumnOrder}
-            sortConfig={sortConfig.map(s => ({ columnId: s.id, direction: s.desc ? 'desc' : 'asc' }))}
-            onSortChange={(custom) => setSortConfig(custom.map(c => ({ id: c.columnId, desc: c.direction === 'desc' })))}
+            sortConfig={sortConfig}
+            onSortChange={setSortConfig}
             onRowClick={(row) => {
               console.log('Row clicked:', row);
               // Could expand row details, show on map, etc.
@@ -274,7 +266,7 @@ export function UnifiedNetworkExplorer() {
           <div className="flex items-center gap-4">
             {sortConfig.length > 0 && (
               <span>
-                Sorted by: {sortConfig.map((s: { id: string; desc: boolean }) => s.id).join(', ')}
+                Sorted by: {sortConfig.map(s => s.columnId).join(', ')}
               </span>
             )}
             <span>

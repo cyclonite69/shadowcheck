@@ -16,6 +16,7 @@
  *
  * ===========================================================================
  */
+
 import { Pool, PoolClient, PoolConfig } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -23,6 +24,7 @@ import * as path from 'path';
 // ===========================================================================
 // INTERFACES
 // ===========================================================================
+
 interface DatabaseConfig {
   host: string;
   port: number;
@@ -37,9 +39,10 @@ interface DatabaseConfig {
 
 interface RetryConfig {
   maxAttempts: number;
-  initialDelayMs: number;
-  maxDelayMs: number;
+  initialDelay: number;
+  maxDelay: number;
   backoffMultiplier: number;
+  jitterEnabled: boolean;
 }
 
 interface ConnectionMetrics {
@@ -49,21 +52,172 @@ interface ConnectionMetrics {
   waitingClients: number;
   totalQueries: number;
   errors: number;
+  lastError?: string;
   lastConnectTime?: Date;
   lastDisconnectTime?: Date;
-  lastError?: string;
+}
+
+// ===========================================================================
+// CONFIGURATION
+// ===========================================================================
+
+/**
+ * Load sensitive credentials from Docker secrets
+ */
+function loadSecret(secretName: string): string {
+  const secretPath = `/run/secrets/${secretName}`;
+
+  try {
+    if (fs.existsSync(secretPath)) {
+      const secret = fs.readFileSync(secretPath, 'utf8').trim();
+      console.log(`✓ Loaded secret: ${secretName}`);
+      return secret;
+    }
+  } catch (error) {
+    console.warn(`⚠ Could not read secret from ${secretPath}: ${error}`);
+  }
+
+  // Fallback to environment variable (for development)
+  const envVar = process.env[secretName.toUpperCase().replace('-', '_')];
+  if (envVar) {
+    console.log(`✓ Using environment variable for: ${secretName}`);
+    return envVar;
+  }
+
+  throw new Error(`Secret not found: ${secretName}`);
+}
+
+/**
+ * Build database configuration from environment and secrets
+ */
+function buildDatabaseConfig(): DatabaseConfig {
+  // In development, use DATABASE_URL if available (simpler setup)
+  if (process.env.DATABASE_URL && process.env.NODE_ENV !== 'production') {
+    const url = new URL(process.env.DATABASE_URL);
+    return {
+      host: url.hostname,
+      port: parseInt(url.port || '5432', 10),
+      database: url.pathname.slice(1),
+      user: url.username,
+      password: url.password,
+      poolMin: parseInt(process.env.DB_POOL_MIN || '5', 10),
+      poolMax: parseInt(process.env.DB_POOL_MAX || '20', 10),
+      idleTimeout: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
+      connectionTimeout: parseInt(process.env.DB_CONNECTION_TIMEOUT || '10000', 10),
+    };
+  }
+
+  // Production: Use Docker secrets and environment variables
+  return {
+    host: process.env.DB_HOST || 'postgres',
+    port: parseInt(process.env.DB_PORT || '5432', 10),
+    database: process.env.DB_NAME || 'shadowcheck',
+    user: process.env.DB_USER || 'shadowcheck_user',
+    password: loadSecret('db_password'),
+    poolMin: parseInt(process.env.DB_POOL_MIN || '5', 10),
+    poolMax: parseInt(process.env.DB_POOL_MAX || '20', 10),
+    idleTimeout: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
+    connectionTimeout: parseInt(process.env.DB_CONNECTION_TIMEOUT || '10000', 10),
+  };
+}
+
+/**
+ * Build retry configuration from environment
+ */
+function buildRetryConfig(): RetryConfig {
+  return {
+    maxAttempts: parseInt(process.env.DB_RETRY_ATTEMPTS || '5', 10),
+    initialDelay: parseInt(process.env.DB_RETRY_DELAY || '2000', 10),
+    maxDelay: parseInt(process.env.DB_RETRY_MAX_DELAY || '30000', 10),
+    backoffMultiplier: parseFloat(process.env.DB_RETRY_BACKOFF_MULTIPLIER || '2.0'),
+    jitterEnabled: process.env.DB_RETRY_JITTER !== 'false',
+  };
+}
+
+// ===========================================================================
+// RETRY LOGIC - EXPONENTIAL BACKOFF WITH JITTER
+// ===========================================================================
+
+/**
+ * Calculate delay for exponential backoff with optional jitter
+ *
+ * Jitter prevents thundering herd problem when multiple containers
+ * retry simultaneously after a backend failure.
+ */
+function calculateBackoffDelay(
+  attempt: number,
+  config: RetryConfig
+): number {
+  const baseDelay = config.initialDelay * Math.pow(config.backoffMultiplier, attempt - 1);
+  const cappedDelay = Math.min(baseDelay, config.maxDelay);
+
+  if (!config.jitterEnabled) {
+    return cappedDelay;
+  }
+
+  // Add random jitter (0-25% of delay)
+  const jitter = Math.random() * 0.25 * cappedDelay;
+  return Math.floor(cappedDelay + jitter);
+}
+
+/**
+ * Sleep utility with promise
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Retry a database operation with exponential backoff
+ */
+async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  operationName: string,
+  retryConfig: RetryConfig
+): Promise<T> {
+  let lastError: Error | undefined;
+
+  for (let attempt = 1; attempt <= retryConfig.maxAttempts; attempt++) {
+    try {
+      console.log(`[DB] Attempting ${operationName} (attempt ${attempt}/${retryConfig.maxAttempts})`);
+
+      const result = await operation();
+
+      if (attempt > 1) {
+        console.log(`✓ [DB] ${operationName} succeeded after ${attempt} attempts`);
+      }
+
+      return result;
+    } catch (error) {
+      lastError = error as Error;
+
+      if (attempt < retryConfig.maxAttempts) {
+        const delay = calculateBackoffDelay(attempt, retryConfig);
+        console.warn(
+          `⚠ [DB] ${operationName} failed (attempt ${attempt}/${retryConfig.maxAttempts}): ${lastError.message}`
+        );
+        console.log(`   Retrying in ${delay}ms...`);
+        await sleep(delay);
+      }
+    }
+  }
+
+  console.error(`✗ [DB] ${operationName} failed after ${retryConfig.maxAttempts} attempts`);
+  throw new Error(
+    `${operationName} failed after ${retryConfig.maxAttempts} attempts: ${lastError?.message}`
+  );
 }
 
 // ===========================================================================
 // DATABASE CONNECTION POOL
 // ===========================================================================
+
 export class DatabaseConnection {
   private pool: Pool | null = null;
   private config: DatabaseConfig;
   private retryConfig: RetryConfig;
   private metrics: ConnectionMetrics;
   private isShuttingDown: boolean = false;
-  private isReconnecting: boolean = false;
 
   constructor() {
     this.config = buildDatabaseConfig();
@@ -180,12 +334,12 @@ export class DatabaseConnection {
    * Handle unexpected disconnections
    */
   private async handleDisconnection(): Promise<void> {
-    if (this.isShuttingDown || this.isReconnecting) {
+    if (this.isShuttingDown) {
       return;
     }
 
-    this.isReconnecting = true;
     this.metrics.lastDisconnectTime = new Date();
+
     console.warn('⚠ [DB] Connection lost, attempting to reconnect...');
 
     try {
@@ -195,81 +349,123 @@ export class DatabaseConnection {
       console.log('✓ [DB] Reconnection successful');
     } catch (error) {
       console.error('✗ [DB] Reconnection failed:', error);
-      // Will retry on next error
-    } finally {
-      this.isReconnecting = false;
+      // In production, you might want to trigger an alert here
     }
   }
 
   /**
    * Execute a query with automatic retry
    */
-  async query<T = any>(text: string, params?: any[]): Promise<any> {
+  async query<T = any>(text: string, params?: any[]): Promise<T> {
     if (!this.pool) {
       throw new Error('Database pool not initialized. Call connect() first.');
     }
 
     this.metrics.totalQueries++;
 
-    const result = await retryWithBackoff(
+    return await retryWithBackoff(
       async () => {
-        const client = await this.pool!.connect();
-        try {
-          return await client.query(text, params);
-        } finally {
-          client.release();
-        }
+        const result = await this.pool!.query(text, params);
+        return result.rows as T;
       },
-      `query: ${text.substring(0, 50)}`,
-      this.retryConfig
+      'query execution',
+      {
+        ...this.retryConfig,
+        maxAttempts: 3, // Fewer retries for individual queries
+      }
     );
-    
-    return result.rows;
   }
 
   /**
-   * Get connection status
+   * Get a client from the pool for transactions
    */
-  getStatus(): {
-    connected: boolean;
-    reconnecting: boolean;
-    pool: { total: number; idle: number; waiting: number } | null;
-  } {
-    return {
-      connected: this.pool !== null,
-      reconnecting: this.isReconnecting,
-      pool: this.pool
-        ? {
-            total: this.pool.totalCount,
-            idle: this.pool.idleCount,
-            waiting: this.pool.waitingCount,
-          }
-        : null,
-    };
+  async getClient(): Promise<PoolClient> {
+    if (!this.pool) {
+      throw new Error('Database pool not initialized. Call connect() first.');
+    }
+
+    return await this.pool.connect();
   }
 
   /**
-   * Gracefully disconnect
+   * Get current connection metrics
    */
-  async disconnect(): Promise<void> {
+  getMetrics(): ConnectionMetrics {
     if (this.pool) {
-      await this.pool.end();
-      this.pool = null;
+      this.metrics.totalConnections = this.pool.totalCount;
+      this.metrics.activeConnections = this.pool.totalCount - this.pool.idleCount;
+      this.metrics.idleConnections = this.pool.idleCount;
+      this.metrics.waitingClients = this.pool.waitingCount;
+    }
+
+    return { ...this.metrics };
+  }
+
+  /**
+   * Health check for monitoring
+   */
+  async healthCheck(): Promise<{ healthy: boolean; message: string; latency?: number }> {
+    if (!this.pool) {
+      return { healthy: false, message: 'Database pool not initialized' };
+    }
+
+    try {
+      const startTime = Date.now();
+      await this.pool.query('SELECT 1');
+      const latency = Date.now() - startTime;
+
+      return {
+        healthy: true,
+        message: 'Database connection healthy',
+        latency,
+      };
+    } catch (error) {
+      return {
+        healthy: false,
+        message: `Database health check failed: ${(error as Error).message}`,
+      };
     }
   }
 
   /**
-   * Graceful shutdown
+   * Graceful shutdown - close all connections
    */
-  async shutdown(): Promise<void> {
+  async disconnect(): Promise<void> {
+    if (this.isShuttingDown) {
+      console.log('[DB] Shutdown already in progress...');
+      return;
+    }
+
     this.isShuttingDown = true;
-    await this.disconnect();
+
+    console.log('[DB] Initiating graceful shutdown...');
+
+    if (this.pool) {
+      try {
+        // Wait for active queries to complete (with timeout)
+        const shutdownTimeout = 10000; // 10 seconds
+        const shutdownPromise = this.pool.end();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Shutdown timeout')), shutdownTimeout)
+        );
+
+        await Promise.race([shutdownPromise, timeoutPromise]);
+
+        console.log('✓ [DB] Connection pool closed gracefully');
+        this.pool = null;
+      } catch (error) {
+        console.error('✗ [DB] Error during shutdown:', error);
+        throw error;
+      }
+    }
   }
 }
 
 // ===========================================================================
-// SINGLETON INSTANCE
+// SINGLETON EXPORT
 // ===========================================================================
+
+// Export singleton instance
 export const db = new DatabaseConnection();
 
 // Export for testing
@@ -288,18 +484,6 @@ export function getPool(): Pool {
     throw new Error('Database pool not initialized. Call db.connect() first.');
   }
   return (db as any).pool;
-}
-
-/**
- * Get connection status (safe version)
- * Returns status without throwing
- */
-export function getConnectionStatus(): {
-  connected: boolean;
-  reconnecting: boolean;
-  pool: { total: number; idle: number; waiting: number } | null;
-} {
-  return (db as any).getStatus();
 }
 
 /**
@@ -333,113 +517,5 @@ export function getConnectionStats(): {
  * Used by graceful shutdown handler
  */
 export async function closePool(): Promise<void> {
-  await db.shutdown();
-}
-
-/**
- * Execute a query
- */
-export async function query<T = any>(text: string, params?: any[]): Promise<any> {
-  return await db.query<T>(text, params);
-}
-
-// ===========================================================================
-// HELPER FUNCTIONS
-// ===========================================================================
-
-/**
- * Load database configuration from environment and secrets
- */
-function buildDatabaseConfig(): DatabaseConfig {
-  const passwordFile = process.env.DB_PASSWORD_FILE;
-  let password = process.env.DB_PASSWORD || '';
-
-  if (passwordFile) {
-    try {
-      password = fs.readFileSync(passwordFile, 'utf-8').trim();
-      console.log('✓ Loaded secret: db_password');
-    } catch (err) {
-      console.error('✗ Failed to load DB password from file:', err);
-    }
-  }
-
-  // Check for DATABASE_URL (common convention)
-  if (process.env.DATABASE_URL) {
-    const url = new URL(process.env.DATABASE_URL);
-    return {
-      host: url.hostname,
-      port: parseInt(url.port || '5432', 10),
-      database: url.pathname.slice(1),
-      user: url.username,
-      password: url.password,
-      poolMin: parseInt(process.env.DB_POOL_MIN || '5', 10),
-      poolMax: parseInt(process.env.DB_POOL_MAX || '20', 10),
-      idleTimeout: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
-      connectionTimeout: parseInt(process.env.DB_CONNECTION_TIMEOUT || '10000', 10),
-    };
-  }
-
-  return {
-    host: process.env.DB_HOST || 'postgres',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    database: process.env.DB_NAME || 'shadowcheck',
-    user: process.env.DB_USER || 'shadowcheck_user',
-    password,
-    poolMin: parseInt(process.env.DB_POOL_MIN || '5', 10),
-    poolMax: parseInt(process.env.DB_POOL_MAX || '20', 10),
-    idleTimeout: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
-    connectionTimeout: parseInt(process.env.DB_CONNECTION_TIMEOUT || '10000', 10),
-  };
-}
-
-/**
- * Load retry configuration from environment
- */
-function buildRetryConfig(): RetryConfig {
-  return {
-    maxAttempts: parseInt(process.env.DB_RETRY_ATTEMPTS || '5', 10),
-    initialDelayMs: parseInt(process.env.DB_RETRY_DELAY || '2000', 10),
-    maxDelayMs: 30000,
-    backoffMultiplier: 2,
-  };
-}
-
-/**
- * Sleep utility
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Retry with exponential backoff
- */
-async function retryWithBackoff<T>(
-  fn: () => Promise<T>,
-  label: string,
-  config: RetryConfig
-): Promise<T> {
-  let lastError: Error | null = null;
-
-  for (let attempt = 1; attempt <= config.maxAttempts; attempt++) {
-    try {
-      console.log(`[DB] Attempting ${label} (attempt ${attempt}/${config.maxAttempts})`);
-      return await fn();
-    } catch (error) {
-      lastError = error as Error;
-      console.error(`[DB] Attempt ${attempt} failed:`, lastError.message);
-
-      if (attempt < config.maxAttempts) {
-        const delayMs = Math.min(
-          config.initialDelayMs * Math.pow(config.backoffMultiplier, attempt - 1) +
-            Math.random() * 1000,
-          config.maxDelayMs
-        );
-        console.log(`[DB] Retrying in ${Math.round(delayMs)}ms...`);
-        await sleep(delayMs);
-      }
-    }
-  }
-
-  throw lastError || new Error(`Failed to ${label} after ${config.maxAttempts} attempts`);
+  await db.disconnect();
 }

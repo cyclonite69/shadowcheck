@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db } from '../db/connection.js';
+import { query } from "../db";
 
 const router = Router();
 
@@ -18,7 +18,7 @@ router.get("/", async (req, res) => {
         (SELECT COUNT(*) FROM app.locations) AS location_rows,
         (SELECT COUNT(*) FROM app.networks)  AS network_rows
     `;
-    const counts = await db.query(countsSql);
+    const counts = await query(countsSql);
 
     const where = hasBefore
       ? "WHERE d.lat IS NOT NULL AND d.lon IS NOT NULL AND d.time < $1"
@@ -39,15 +39,15 @@ router.get("/", async (req, res) => {
       ORDER BY d.time DESC
       LIMIT $${limPos}
     `;
-    const recent = await db.query(recentSql, hasBefore ? [before, recentLimit] : [recentLimit]);
+    const recent = await query(recentSql, hasBefore ? [before, recentLimit] : [recentLimit]);
 
     res.json({
       ok: true,
-      counts: counts[0] ?? {},
+      counts: counts.rows[0] ?? {},
       cursor: {
-        next_before_time_ms: recent.length ? recent[recent.length - 1].time_epoch_ms : null
+        next_before_time_ms: recent.rows.length ? recent.rows[recent.rows.length - 1].time_epoch_ms : null
       },
-      recent: recent
+      recent: recent.rows
     });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message ?? String(err) });

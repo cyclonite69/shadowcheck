@@ -2,10 +2,9 @@
  * ObservationColumnSelector - Column visibility for network observations
  */
 
-import { useState } from 'react';
-import { Settings, Eye, EyeOff, RotateCcw, Check } from 'lucide-react';
+import { Settings, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useNetworkObservationColumns, OBSERVATION_COLUMNS } from '@/hooks/useNetworkObservationColumns';
@@ -22,10 +21,8 @@ export function ObservationColumnSelector() {
     totalCount,
   } = useNetworkObservationColumns();
 
-  const [open, setOpen] = useState(false);
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog>
       <DialogTrigger asChild>
         <Button
           variant="outline"
@@ -136,17 +133,9 @@ export function ObservationColumnSelector() {
             <p className="text-xs text-slate-500">
               {visibleCount} of {totalCount} columns visible
             </p>
-            <DialogClose asChild>
-              <Button
-                variant="default"
-                size="sm"
-                className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => setOpen(false)}
-              >
-                <Check className="h-4 w-4" />
-                OK
-              </Button>
-            </DialogClose>
+            <DialogDescription className="text-xs text-slate-600">
+              Changes apply instantly
+            </DialogDescription>
           </div>
         </DialogFooter>
       </DialogContent>

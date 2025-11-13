@@ -12,7 +12,8 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": false,
+    "noEmit": true,
+    
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "../",
@@ -23,6 +24,6 @@
     },
     "types": ["node"]
   },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist", "**/__tests__/**", "**/*.test.ts", "client/**"]
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

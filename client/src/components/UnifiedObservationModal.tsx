@@ -276,28 +276,20 @@ const CELLULAR_METADATA: Record<CellularGeneration, {
 
 /**
  * Parse encryption string to classification
- * EXPORTED for use in table views
  */
-export function parseSecurityClassification(encryption?: string): SecurityClassification {
+function parseSecurityClassification(encryption?: string): SecurityClassification {
   if (!encryption) return 'unknown';
 
   const enc = encryption.toLowerCase().trim();
 
-  if (enc === 'none' || enc === 'open' || enc === '' || enc === '[ess]') return 'none';
+  if (enc === 'none' || enc === 'open' || enc === '') return 'none';
   if (enc.includes('wep')) return 'wep';
-  if (enc.includes('wpa3') || enc.includes('sae')) return 'wpa3';
-  if (enc.includes('wpa2') || enc.includes('rsn')) return 'wpa2';
+  if (enc.includes('wpa3')) return 'wpa3';
+  if (enc.includes('wpa2')) return 'wpa2';
   if (enc.includes('wpa')) return 'wpa';
-  if (enc.includes('mixed') || enc.includes('sae')) return 'mixed';
+  if (enc.includes('mixed')) return 'mixed';
 
   return 'unknown';
-}
-
-/**
- * Get security metadata - EXPORTED for use in table views
- */
-export function getSecurityMetadata(classification: SecurityClassification) {
-  return SECURITY_METADATA[classification];
 }
 
 /**

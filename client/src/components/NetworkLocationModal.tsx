@@ -11,8 +11,8 @@ interface NetworkLocationModalProps {
   network: {
     bssid: string;
     ssid: string | null;
-    latitude: number | string;
-    longitude: number | string;
+    latitude?: string;
+    longitude?: string;
     signal_strength?: number | null;
   } | null;
   onClose: () => void;
@@ -25,8 +25,8 @@ export function NetworkLocationModal({ network, onClose }: NetworkLocationModalP
   useEffect(() => {
     if (!network || !mapContainer.current) return;
 
-    const lat = parseFloat(String(network.latitude || '0'));
-    const lng = parseFloat(String(network.longitude || '0'));
+    const lat = parseFloat(network.latitude || '0');
+    const lng = parseFloat(network.longitude || '0');
 
     if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
       return;
@@ -66,8 +66,8 @@ export function NetworkLocationModal({ network, onClose }: NetworkLocationModalP
 
   if (!network) return null;
 
-  const lat = parseFloat(String(network.latitude || '0'));
-  const lng = parseFloat(String(network.longitude || '0'));
+  const lat = parseFloat(network.latitude || '0');
+  const lng = parseFloat(network.longitude || '0');
   const hasValidCoords = lat && lng && !isNaN(lat) && !isNaN(lng);
 
   return (
