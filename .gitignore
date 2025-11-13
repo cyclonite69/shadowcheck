@@ -34,6 +34,8 @@ docker/pgadmin/pgpassfile
 pipelines/kml/*.kml
 pipelines/wigle_api/response_*.json
 pipelines/wigle_api/noresponse_*.json
+pipelines/wigle/*.csv
+pipelines/kismet/*.csv
 
 # Monitoring
 monitoring/
