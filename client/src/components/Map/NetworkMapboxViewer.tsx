@@ -150,7 +150,7 @@ export function NetworkMapboxViewer({
     // Process features with calculated radius and color
     const processedFeatures = networks.map((feature) => {
       const zoom = currentMap.getZoom();
-      const signal = feature.properties.signal || feature.properties.signal_strength || null;
+      const signal = feature.properties.signal_strength || null;
       const freq = feature.properties.frequency || 0;
       const bssid = feature.properties.bssid;
 
@@ -311,14 +311,18 @@ export function NetworkMapboxViewer({
       });
     };
 
+    // Create handlers for mouse events
+    const clusterMouseEnter = () => {
+      currentMap.getCanvas().style.cursor = 'pointer';
+    };
+    const clusterMouseLeave = () => {
+      currentMap.getCanvas().style.cursor = '';
+    };
+
     // Add event listeners for clusters
     currentMap.on('click', 'clusters', clusterClickHandler);
-    currentMap.on('mouseenter', 'clusters', () => {
-      currentMap.getCanvas().style.cursor = 'pointer';
-    });
-    currentMap.on('mouseleave', 'clusters', () => {
-      currentMap.getCanvas().style.cursor = '';
-    });
+    currentMap.on('mouseenter', 'clusters', clusterMouseEnter);
+    currentMap.on('mouseleave', 'clusters', clusterMouseLeave);
 
     // Wire up professional tooltips using project's existing system
     const cleanupTooltip = wireTooltipNetwork(currentMap, 'pts', { env: 'urban', min: 8, max: 250 });
@@ -333,13 +337,16 @@ export function NetworkMapboxViewer({
       }
     };
 
-    currentMap.on('click', 'pts', pointClickHandler);
-    currentMap.on('mouseenter', 'pts', () => {
+    const pointMouseEnter = () => {
       currentMap.getCanvas().style.cursor = 'pointer';
-    });
-    currentMap.on('mouseleave', 'pts', () => {
+    };
+    const pointMouseLeave = () => {
       currentMap.getCanvas().style.cursor = '';
-    });
+    };
+
+    currentMap.on('click', 'pts', pointClickHandler);
+    currentMap.on('mouseenter', 'pts', pointMouseEnter);
+    currentMap.on('mouseleave', 'pts', pointMouseLeave);
 
     // Fit bounds to data ONLY on initial load (not on every filter change)
     if (processedFeatures.length > 0 && !hasPerformedInitialFit.current) {
@@ -363,13 +370,13 @@ export function NetworkMapboxViewer({
     return () => {
       // Clean up cluster event listeners
       currentMap.off('click', 'clusters', clusterClickHandler);
-      currentMap.off('mouseenter', 'clusters');
-      currentMap.off('mouseleave', 'clusters');
+      currentMap.off('mouseenter', 'clusters', clusterMouseEnter);
+      currentMap.off('mouseleave', 'clusters', clusterMouseLeave);
 
       // Clean up point event listeners
       currentMap.off('click', 'pts', pointClickHandler);
-      currentMap.off('mouseenter', 'pts');
-      currentMap.off('mouseleave', 'pts');
+      currentMap.off('mouseenter', 'pts', pointMouseEnter);
+      currentMap.off('mouseleave', 'pts', pointMouseLeave);
 
       // Clean up tooltip system
       if (cleanupTooltip) cleanupTooltip();

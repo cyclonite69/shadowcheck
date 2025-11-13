@@ -989,7 +989,7 @@ export function NetworkObservationsTable() {
                   <div className="flex items-center justify-between text-sm">
                     <div className="text-muted-foreground">
                       Showing {displayedNetworks.length} of {filteredAndSortedNetworks.length} networks
-                      {hasActiveFilters && <span className="text-primary ml-2">(filtered from {networks.data.length} total)</span>}
+                      {hasActiveFilters && <span className="text-primary ml-2">(filtered from {networks?.data?.length || 0} total)</span>}
                     </div>
                     <div className="flex items-center gap-2">
                       {hasMore && (
