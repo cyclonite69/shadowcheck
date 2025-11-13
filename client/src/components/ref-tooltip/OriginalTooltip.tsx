@@ -117,7 +117,11 @@ export default function OriginalTooltip(props: any) {
 
       <div className="tech-data">
         <span className="label">Security:</span>
-        <span className={`value ${getSecurityLevelColor(secInfo.level).replace('text-', '')}`}>
+        <span
+          className={`value ${getSecurityLevelColor(secInfo.level).replace('text-', '')}`}
+          title={secInfo.full}
+          style={{ cursor: 'help' }}
+        >
           <i className={`${getSecurityLevelIcon(secInfo.level)} mr-1`}></i>
           {secInfo.short}
         </span>
