@@ -151,7 +151,7 @@ export class DatabaseStorage implements IStorage {
       const result = await dbInstance.execute(sql`
         SELECT * FROM ${networks}
         WHERE ST_DWithin(
-          ${networks.geom}::geometry,
+          ST_SetSRID(ST_MakePoint(${networks.longitude}, ${networks.latitude}), 4326)::geometry,
           ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)::geometry,
           ${radius}
         )
