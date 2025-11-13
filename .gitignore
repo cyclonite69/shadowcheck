@@ -4,6 +4,7 @@ secrets.txt
 secrets/
 .env
 .env.*
+!.env.example
 gitleaks-report.json
 
 # Development artifacts  

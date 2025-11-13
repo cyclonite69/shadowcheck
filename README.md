@@ -67,24 +67,40 @@ Quickstart (Docker Compose)
 ---------------------------
 The fastest way to get ShadowCheck running for development/testing is with Docker.
 
-1. Copy the example env:
+1. **Configure environment variables:**
 ```bash
 cp .env.example .env
 ```
 
-2. Start services:
+Edit `.env` and set secure passwords for all required variables:
+- `POSTGRES_PASSWORD` - Database password (required)
+- `GRAFANA_PASSWORD` - Grafana monitoring dashboard password (required)
+- `PGADMIN_PASSWORD` - pgAdmin password (optional, only if using pgAdmin)
+
+**⚠️ Security Warning:** Never commit the `.env` file. Use strong, unique passwords for each service.
+
+2. **Start all services:**
 ```bash
 docker compose up --build
 ```
 
-3. Wait until Postgres + PostGIS are ready, then run migrations (if applicable):
+This starts:
+- PostgreSQL 18 with PostGIS on port 5432
+- Backend API on port 5000
+- Frontend on port 3001
+- Grafana monitoring on port 3000
+- Prometheus metrics on port 9091
+- Loki logs on port 3100
+
+3. **Optional: Start pgAdmin** (database management UI):
 ```bash
-# Example (replace with your migration tool)
-docker compose exec backend npm run migrate
+docker compose --profile admin up
 ```
 
-4. Open the frontend at:
-- http://localhost:3000 (or the port configured in .env)
+4. **Access the application:**
+- Frontend: http://localhost:3001
+- Grafana: http://localhost:3000
+- pgAdmin: http://localhost:8080 (if running with admin profile)
 
 Manual Local Setup
 ------------------
@@ -130,21 +146,31 @@ CREATE EXTENSION IF NOT EXISTS postgis_topology;
 
 Configuration
 -------------
-Environment configuration should be stored in .env files and secrets handled with a secrets manager in production.
+Environment configuration should be stored in `.env` files. **Never commit `.env` to version control.**
 
-Typical variables (backend .env):
-```
-PORT=4000
-DATABASE_URL=postgres://shadow_user:password@db:5432/shadowcheck
-JWT_SECRET=replace_with_strong_secret
-NODE_ENV=development
-LOG_LEVEL=info
+**Required variables** (see `.env.example`):
+```bash
+# Database
+POSTGRES_PASSWORD=your_secure_postgres_password
+
+# Monitoring
+GRAFANA_PASSWORD=your_secure_grafana_password
+
+# Optional: Database Admin (only if using pgAdmin)
+PGADMIN_PASSWORD=your_secure_pgadmin_password
+
+# Optional: Database connection pool tuning
+DB_POOL_MIN=5
+DB_POOL_MAX=20
+DB_RETRY_ATTEMPTS=5
+DB_RETRY_DELAY=2000
 ```
 
-Typical variables (frontend .env):
-```
-VITE_API_URL=http://localhost:4000/api
-```
+**Production Deployment:**
+- Use a secrets manager (AWS Secrets Manager, HashiCorp Vault, etc.)
+- Never use default passwords or weak credentials
+- Enable TLS/HTTPS for all external connections
+- See `docker-compose.prod.yml` for production configuration with Docker secrets
 
 Usage & Examples
 ----------------
