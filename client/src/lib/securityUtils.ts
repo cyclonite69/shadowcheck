@@ -3,8 +3,8 @@
  */
 
 export interface SecurityInfo {
-  short: string;      // Short flag for tooltips (WPA2-P, WPA3-E, etc.)
-  full: string;       // Full description
+  short: string;      // Short display name (WPA2, WPA3, WEP, etc.)
+  full: string;       // Full description for tooltips
   level: 'high' | 'medium' | 'low' | 'none' | 'unknown';
   cipher?: string;    // Encryption cipher
   auth?: string;      // Authentication method
@@ -32,8 +32,8 @@ export function parseWiFiSecurity(capabilities?: string | null): SecurityInfo {
     if (caps.includes('EAP')) {
       flags.push('WPA3-ENT');
       return {
-        short: 'WPA3-E',
-        full: 'WPA3 Enterprise',
+        short: 'WPA3',
+        full: 'WPA3 Enterprise (802.1X authentication)',
         level: 'high',
         auth: 'EAP',
         cipher: extractCipher(caps),
@@ -42,8 +42,8 @@ export function parseWiFiSecurity(capabilities?: string | null): SecurityInfo {
     } else {
       flags.push('WPA3-PSK');
       return {
-        short: 'WPA3-P',
-        full: 'WPA3 Personal',
+        short: 'WPA3',
+        full: 'WPA3 Personal (Pre-shared key)',
         level: 'high',
         auth: 'PSK',
         cipher: extractCipher(caps),
@@ -57,8 +57,8 @@ export function parseWiFiSecurity(capabilities?: string | null): SecurityInfo {
     if (caps.includes('EAP')) {
       flags.push('WPA2-ENT');
       return {
-        short: 'WPA2-E',
-        full: 'WPA2 Enterprise',
+        short: 'WPA2',
+        full: 'WPA2 Enterprise (802.1X authentication)',
         level: 'high',
         auth: 'EAP',
         cipher: extractCipher(caps),
@@ -67,8 +67,8 @@ export function parseWiFiSecurity(capabilities?: string | null): SecurityInfo {
     } else if (caps.includes('PSK')) {
       flags.push('WPA2-PSK');
       return {
-        short: 'WPA2-P',
-        full: 'WPA2 Personal',
+        short: 'WPA2',
+        full: 'WPA2 Personal (Pre-shared key)',
         level: 'high',
         auth: 'PSK',
         cipher: extractCipher(caps),
@@ -81,8 +81,8 @@ export function parseWiFiSecurity(capabilities?: string | null): SecurityInfo {
   if (caps.includes('WPA-') && caps.includes('PSK')) {
     flags.push('WPA-PSK');
     return {
-      short: 'WPA-P',
-      full: 'WPA Personal',
+      short: 'WPA',
+      full: 'WPA Personal (Deprecated - upgrade recommended)',
       level: 'medium',
       auth: 'PSK',
       cipher: extractCipher(caps),
@@ -106,7 +106,7 @@ export function parseWiFiSecurity(capabilities?: string | null): SecurityInfo {
     flags.push('WEP');
     return {
       short: 'WEP',
-      full: 'WEP (Deprecated)',
+      full: 'WEP (Broken encryption - easily cracked)',
       level: 'low',
       cipher: 'WEP',
       flags: [...flags, ...extractFlags(caps)]

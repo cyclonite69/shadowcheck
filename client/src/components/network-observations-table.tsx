@@ -40,6 +40,7 @@ import { formatForensicsTime, formatRelativeTime } from "@/lib/dateUtils";
 import { parseWiFiSecurity, parseNonWiFiSecurity, getSecurityLevelColor } from "@/lib/securityUtils";
 import { bssidToColor, formatBSSID } from "@/utils/bssid-color";
 import { iconColors } from "@/lib/iconColors";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type SortField = 'ssid' | 'bssid' | 'frequency' | 'signal_strength' | 'observed_at' | 'radio_type' | 'encryption' | 'channel' | 'observation_count';
 type SortDirection = 'asc' | 'desc';
@@ -952,12 +953,24 @@ export function NetworkObservationsTable() {
 
                           {/* Security */}
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-1.5">
-                              <SecurityIcon className={`h-4 w-4 ${getSecurityLevelColor(secInfo.level)}`} />
-                              <span className={`text-xs font-medium ${getSecurityLevelColor(secInfo.level)}`}>
-                                {secInfo.short}
-                              </span>
-                            </div>
+                            <TooltipProvider>
+                              <Tooltip delayDuration={200}>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center gap-1.5 cursor-help">
+                                    <SecurityIcon className={`h-4 w-4 ${getSecurityLevelColor(secInfo.level)}`} />
+                                    <span className={`text-xs font-medium ${getSecurityLevelColor(secInfo.level)}`}>
+                                      {secInfo.short}
+                                    </span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="bg-slate-800 border-slate-700">
+                                  <p className="text-xs">{secInfo.full}</p>
+                                  {secInfo.cipher && (
+                                    <p className="text-xs text-slate-400 mt-1">Cipher: {secInfo.cipher}</p>
+                                  )}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </td>
 
                           {/* Last Seen */}
