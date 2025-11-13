@@ -55,7 +55,7 @@ def parse_wigle_database(db_path):
 
     if 'network' in tables:
         print("Parsing networks table...", file=sys.stderr)
-        cur.execute("SELECT bssid, ssid, frequency, capabilities, type, lasttime, lastlat, lastlon, bestlat, bestlon, bestlevel FROM network WHERE bssid IS NOT NULL")
+        cur.execute("SELECT bssid, ssid, frequency, capabilities, type, lasttime, lastlat, lastlon, bestlat, bestlon, bestlevel, rcois, mfgrid, service FROM network WHERE bssid IS NOT NULL")
         for row in cur.fetchall():
             networks.append({
                 'bssid': sanitize_string(row['bssid']).upper(),
@@ -69,6 +69,9 @@ def parse_wigle_database(db_path):
                 'bestlevel': row['bestlevel'] if 'bestlevel' in row.keys() else None,
                 'bestlat': row['bestlat'] if 'bestlat' in row.keys() else None,
                 'bestlon': row['bestlon'] if 'bestlon' in row.keys() else None,
+                'rcois': sanitize_string(row['rcois']) if 'rcois' in row.keys() and row['rcois'] else None,
+                'mfgrid': row['mfgrid'] if 'mfgrid' in row.keys() and row['mfgrid'] != 0 else None,
+                'service': sanitize_string(row['service']) if 'service' in row.keys() and row['service'] else None,
             })
 
     if 'location' in tables:
@@ -87,10 +90,19 @@ def parse_wigle_database(db_path):
 
     if 'route' in tables:
         print("Parsing route table...", file=sys.stderr)
-        cur.execute("SELECT * FROM route")
-        route_columns = [d[0] for d in cur.description]
+        cur.execute("SELECT run_id, wifi_visible, cell_visible, bt_visible, lat, lon, altitude, accuracy, time FROM route WHERE lat IS NOT NULL AND lon IS NOT NULL AND lat BETWEEN -90 AND 90 AND lon BETWEEN -180 AND 180")
         for row in cur.fetchall():
-            routes.append({col: row[col] for col in route_columns})
+            routes.append({
+                'run_id': row['run_id'],
+                'wifi_visible': row['wifi_visible'] or 0,
+                'cell_visible': row['cell_visible'] or 0,
+                'bt_visible': row['bt_visible'] or 0,
+                'lat': row['lat'],
+                'lon': row['lon'],
+                'altitude': row['altitude'] or 0.0,
+                'accuracy': row['accuracy'] or 0.0,
+                'time': row['time'],
+            })
 
     conn.close()
     return networks, locations, routes
@@ -110,7 +122,9 @@ def load_to_database(source_filename, networks, locations, routes, db_config):
                 (
                     network['bssid'], network.get('ssid'), network.get('frequency'), network.get('capabilities'),
                     network.get('network_type', 'W'), network.get('last_seen'), network.get('last_lat'), network.get('last_lon'),
-                    network.get('bestlevel'), network.get('bestlat'), network.get('bestlon'), source_filename, now
+                    network.get('bestlevel'), network.get('bestlat'), network.get('bestlon'),
+                    network.get('rcois'), network.get('mfgrid'), network.get('service'),
+                    source_filename, now
                 )
                 for network in networks
             ]
@@ -119,7 +133,7 @@ def load_to_database(source_filename, networks, locations, routes, db_config):
                 cur,
                 """
                 INSERT INTO app.wigle_sqlite_networks_staging
-                (bssid, ssid, frequency, capabilities, type, lasttime, lastlat, lastlon, bestlevel, bestlat, bestlon, sqlite_filename, imported_at)
+                (bssid, ssid, frequency, capabilities, type, lasttime, lastlat, lastlon, bestlevel, bestlat, bestlon, rcois, mfgrid, service, sqlite_filename, imported_at)
                 VALUES %s
                 """,
                 network_values,
@@ -154,11 +168,30 @@ def load_to_database(source_filename, networks, locations, routes, db_config):
             locations_inserted = len(locations)
             print(f"✓ Inserted {locations_inserted} locations", file=sys.stderr)
 
-        # SKIP ROUTES - schema requires run_id which SQLite doesn't have
-        # Routes are not critical for network analysis
+        # BATCH INSERT ROUTES
         if routes:
-            print(f"Skipping {len(routes)} route points (incompatible schema)", file=sys.stderr)
-            routes_inserted = 0
+            print(f"Loading {len(routes)} route points into staging (BATCH MODE)...", file=sys.stderr)
+            route_values = [
+                (
+                    route['run_id'], route.get('wifi_visible', 0), route.get('cell_visible', 0), route.get('bt_visible', 0),
+                    route['lat'], route['lon'], route.get('altitude', 0.0), route.get('accuracy', 0.0), route['time'],
+                    source_filename, now
+                )
+                for route in routes
+            ]
+
+            psycopg2.extras.execute_values(
+                cur,
+                """
+                INSERT INTO app.wigle_sqlite_routes_staging
+                (run_id, wifi_visible, cell_visible, bt_visible, lat, lon, altitude, accuracy, time, sqlite_filename, imported_at)
+                VALUES %s
+                """,
+                route_values,
+                page_size=1000
+            )
+            routes_inserted = len(routes)
+            print(f"✓ Inserted {routes_inserted} route points", file=sys.stderr)
 
         conn.commit()
         print(f"✓ Loaded {source_filename}: {networks_inserted} networks, {locations_inserted} locations, {routes_inserted} routes", file=sys.stderr)

@@ -42,6 +42,10 @@ docker/pgadmin/pgpassfile
 pipelines/kml/*.kml
 pipelines/wigle_api/response_*.json
 pipelines/wigle_api/noresponse_*.json
+pipelines/wigle_api/orphan_responses/
+pipelines/wigle/*.sqlite
+pipelines/wigle/*.db
+pipelines/csv/*.csv
 
 # Monitoring
 monitoring/
@@ -57,3 +61,6 @@ scripts/*secrets*.sh
 client/client/
 docker/pgadmin/
 pgadmin-config/pgpassfile
+.env
+secrets.txt
+.env.development

@@ -1,0 +1,200 @@
+=== SHADOWCHECK DECRUSTIFICATION AUDIT ===
+Generated: Mon Nov 10 03:41:16 PM EST 2025
+
+=== PROJECT STRUCTURE ===
+.
+├── backups
+│   ├── backup.log
+│   ├── prod_data_backup.tar.gz
+│   └── shadowcheck_backup_a.sql
+├── client
+│   ├── client
+│   │   └── src
+│   ├── public
+│   │   └── favicon.svg
+│   ├── src
+│   │   ├── components
+│   │   ├── contexts
+│   │   ├── hooks
+│   │   ├── lib
+│   │   ├── pages
+│   │   ├── store
+│   │   ├── utils
+│   │   ├── App.tsx
+│   │   ├── index.css
+│   │   ├── main.tsx
+│   │   └── types.ts
+│   ├── components.json
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── postcss.config.js
+│   ├── tailwind.config.ts
+│   ├── tsconfig.eslint.json
+│   ├── tsconfig.json
+│   └── vite.config.ts
+├── compiled_server
+│   ├── db
+│   │   └── connection.js
+│   ├── routes
+│   │   ├── db
+│   │   ├── routes
+│   │   ├── utils
+│   │   ├── accessPoints.js
+│   │   ├── db.js
+│   │   ├── health.js
+│   │   ├── pipelines.js
+│   │   ├── surveillance.js
+│   │   ├── visualize.js
+│   │   └── wigleEnrichment.js
+│   ├── services
+│   │   └── wigleApi.js
+│   ├── utils
+│   │   ├── securityAnalysis.js
+│   │   └── shutdown.js
+│   ├── db.js
+│   ├── index.js
+│   ├── routes.js
+│   ├── storage.js
+│   └── vite.js
+├── config
+│   └── postgres-config
+│       ├── pg_hba.conf
+│       └── postgresql.conf
+├── db
+├── docker
+│   ├── alertmanager
+│   │   └── alertmanager.yml
+│   ├── backend
+│   │   ├── Dockerfile
+│   │   └── entrypoint.sh
+│   ├── frontend
+│   │   └── Dockerfile
+│   ├── grafana
+│   │   ├── config
+│   │   ├── dashboards
+│   │   ├── provisioning
+│   │   ├── secrets
+│   │   └── README.md
+│   ├── loki
+│   │   ├── loki-local-config.yaml
+│   │   ├── loki-config.yaml
+│   │   └── loki-config.yml
+│   ├── pgadmin
+│   │   ├── pgpassfile
+│   │   └── servers.json
+│   ├── postgres
+│   │   ├── conf
+│   │   └── init
+│   ├── prometheus
+│   │   ├── rules
+│   │   └── prometheus.yml
+│   ├── promtail
+│   │   ├── promtail-config.yaml
+│   │   └── promtail-config.yml
+│   └── MONITORING_SETUP.md
+├── docs
+│   ├── evidence
+│   │   ├── EVIDENCE_CHAIN_OF_CUSTODY.md
+│   │   ├── FEDERAL_SURVEILLANCE_NETWORK_PATTERNS.md
+│   │   ├── FORENSIC_EVIDENCE_ERICWIFI.md
+│   │   └── VIDEO_EVIDENCE_CORRELATION_FBI_WATCHING.md
+│   ├── guides
+│   │   ├── CLAUDE_CODE_CHECKLIST.md
+│   │   ├── DASHBOARD_ACCESS.md
+│   │   ├── DASHBOARD_SETUP.md
+│   │   ├── EVIDENCE_BASED_ANALYSIS.md
+│   │   ├── MONITORING_GUIDE.md
+│   │   ├── MULTI_RADIO_ANALYSIS.md
+│   │   ├── NETWORK_CONFIGURATION.md
+│   │   ├── QUICK_START.md
+│   │   ├── SECURITY_MODAL_GUIDE.md
+│   │   ├── TROUBLESHOOTING.md
+│   │   ├── WIGLE_ALPHA_V3_PIPELINE.md
+│   │   └── WIGLE_API_CACHE_STRATEGY.md
+│   ├── session-logs
+│   │   ├── 2025-11-01_pipeline_integration.md
+│   │   ├── FIXES_APPLIED.md
+│   │   ├── IMPLEMENTATION_SUMMARY.md
+│   │   ├── QUICK_FIXES_APPLIED.md
+│   │   ├── SESSION_FIXES.md
+│   │   ├── SESSION_SUMMARY.md
+│   │   ├── STATUS.md
+│   │   ├── SYSTEM_AUDIT.md
+│   │   ├── TYPOGRAPHY_AND_LOGO_FIXES.md
+│   │   ├── WIGLE_ALPHA_V3_FINAL.md
+│   │   └── WIGLE_ALPHA_V3_IMPLEMENTATION.md
+│   ├── technical-notes
+│   │   ├── CRITICAL_FIXES_TESTING.md
+│   │   ├── DATABASE_BACKUP_SYSTEM.md
+│   │   ├── DATABASE_CLEANUP_ANALYSIS.md
+│   │   ├── DOCKER_REBUILD_REQUIRED.md
+│   │   ├── TOOLTIP_MIGRATION_SUMMARY.md
+│   │   ├── WIGLE_API_FIXES.md
+│   │   └── WIGLE_PIPELINE_FIX.md
+│   ├── BACKUP_QUICKSTART.md
+│   ├── distinct_capabilities.md
+│   ├── DOCKER_NETWORKING_BEST_PRACTICES.md
+│   ├── network-security-pill-demo.html
+│   ├── network-security-pill-integration.md
+│   ├── QUICK_START_UNIFIED_VIEWS.md
+│   ├── RADIO_TYPE_CLASSIFICATION.md
+│   ├── README_SCRIPTS.md
+│   ├── UNIFIED_VIEWS_IMPLEMENTATION.md
+│   └── WIGLE_ALPHA_V3_FIXED.md
+├── logs
+├── migrations
+│   ├── migrate_wigle_to_legacy.sql
+│   └── MIGRATION_SUMMARY.md
+├── monitoring
+│   └── grafana
+│       └── provisioning
+├── output
+│   ├── avi
+│   ├── bmp
+│   ├── dll
+│   ├── doc
+│   ├── docs
+│   │   ├── api
+│   │   ├── archive
+│   │   ├── diagrams
+│   │   ├── analysis.md
+│   │   ├── current_schema_erd.md
+│   │   ├── DASHBOARD_ACCESS.md
+│   │   ├── DASHBOARD_SETUP.md
+│   │   ├── DEPLOYMENT_CHECKLIST.md
+│   │   ├── DEPLOYMENT.md
+│   │   ├── DEPLOYMENT_OPTIMIZED.md
+│   │   ├── DOCKER_RESILIENCE_IMPLEMENTATION_GUIDE.md
+│   │   ├── documentation.md
+│   │   ├── DUE_DILIGENCE_REPORT.md
+│   │   ├── FIXES_APPLIED.md
+│   │   ├── IMPLEMENTATION_SUMMARY.md
+│   │   ├── PGADMIN_ACCESS.md
+│   │   ├── PGADMIN_CONNECTION_GUIDE.md
+│   │   ├── QUICK_START.md
+│   │   ├── README_COMPREHENSIVE.md
+│   │   ├── README_DEPLOYMENT.md
+│   │   ├── README.md
+│   │   ├── shadowcheck_refactor_prompt.md
+│   │   ├── STARTUP_SHUTDOWN_GUIDE.md
+│   │   ├── STATUS.md
+│   │   ├── SURVEILLANCE_DETECTION_GUIDE.md
+│   │   ├── TRANSFORMATION_COMPLETE.md
+│   │   └── TROUBLESHOOTING.md
+│   ├── docx
+│   ├── exe
+│   ├── gif
+│   ├── htm
+│   ├── jar
+│   ├── jpg
+│   ├── mbd
+│   ├── mov
+│   ├── mp4
+│   ├── mpg
+│   ├── ole
+│   ├── pdf
+│   ├── png
+│   ├── ppt
+│   ├── pptx
+│   ├── rar

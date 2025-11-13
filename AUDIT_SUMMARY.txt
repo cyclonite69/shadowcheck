@@ -1,0 +1,216 @@
+=============================================================================
+SHADOWCHECK CODE AUDIT SUMMARY
+Generated: 2025-11-13
+=============================================================================
+
+CRITICAL FINDINGS (Must Fix)
+=============================================================================
+
+1. DUPLICATE ROUTE: GET /api/v1/security-analysis
+   Location: server/index.ts lines 557-690 and 745-798
+   Problem: Second definition overrides first
+   Fix: Keep one implementation, remove the other
+   Impact: HIGH - First implementation is unreachable
+
+2. UNUSED ROUTE FILES (3 files defined but not mounted)
+   - server/routes/networks.ts (Lines 1-80+)
+   - server/routes/within.ts (Lines 1-61)
+   - server/routes/sourceComparison.ts (Lines 1-80+)
+   Action: Either mount these routes or delete the files
+   Impact: MEDIUM - Code duplication/bloat
+
+HIGH PRIORITY ISSUES
+=============================================================================
+
+1. DEMO ROUTES IN PRODUCTION
+   - /wifi-tooltip-demo route in App.tsx (lines 49, 66)
+   - Appears to be development-only
+   Action: Remove or move to separate dev configuration
+   Impact: MEDIUM - Potential security/maintenance issue
+
+2. LEGACY URL REDIRECTS
+   - /visualization → /geospatial-intelligence
+   - /access-points → /geospatial-intelligence
+   Action: Verify if still needed, remove if fully migrated
+   Impact: LOW - Maintenance debt
+
+3. LEGACY HEALTH ENDPOINT
+   - GET /healthz still registered (line 93-94)
+   Action: Document deprecation or remove if not needed
+   Impact: LOW - Backward compatibility
+
+CODE PATTERNS
+=============================================================================
+
+GOOD:
+- 11 well-organized route files with clear separation of concerns
+- Comprehensive AdminPanel component at /admin
+- All required pages (home, dashboard, surveillance, geospatial-intelligence)
+- Good documentation in route comments
+- Clean import statements (no unused imports found)
+
+NEEDS IMPROVEMENT:
+- Mix of inline endpoints in server/index.ts and separate router files
+- No consistent API documentation (no OpenAPI/Swagger spec)
+- Legacy database references throughout code (app.locations_legacy, app.networks_legacy)
+
+BACKEND ROUTES SUMMARY
+=============================================================================
+
+Total Endpoints: 40+
+Registered Routers: 11
+Inline Endpoints: 10+
+Active Pages: 5
+Admin Features: Yes (/admin route)
+
+REGISTERED ROUTER FILES:
+- health.ts - Health/status checks (4 endpoints)
+- visualize.ts - Visualization data (1 endpoint)
+- surveillance.ts - Threat detection (6+ endpoints)
+- pipelines.ts - Data import pipelines (17 endpoints)
+- accessPoints.ts - WiFi access points
+- wigleEnrichment.ts - WiGLE API enrichment
+- wigleStagingRoutes.ts - WiGLE staging tables
+- wigle_alpha_v3.ts - WiGLE Alpha v3 compatibility
+- networkObservations.ts - Network observations
+- locationMarkers.ts - Location markers management
+- networkTimeline.ts - Timeline data
+- classification.ts - Network classification (11+ endpoints)
+- federatedObservations.ts - Federated data
+
+UNREGISTERED ROUTER FILES:
+- networks.ts - Alternative networks endpoint (UNUSED)
+- within.ts - Spatial radius query (DUPLICATE with inline version)
+- sourceComparison.ts - Multi-source comparison (UNUSED)
+- metrics.ts - Alternative metrics (UNUSED/OVERRIDE)
+- analytics.ts - Alternative analytics (UNUSED/OVERRIDE)
+
+FRONTEND PAGES SUMMARY
+=============================================================================
+
+Active Pages (5):
+- / (Home) - home.tsx
+- /dashboard - dashboard.tsx
+- /geospatial-intelligence - geospatial-intelligence.tsx
+- /surveillance - surveillance.tsx
+- /admin - AdminPanel component
+- 404 - not-found.tsx
+
+Legacy Redirects (2):
+- /visualization → /geospatial-intelligence
+- /access-points → /geospatial-intelligence
+
+Demo Routes (1):
+- /wifi-tooltip-demo - Development/testing only
+
+RECOMMENDATIONS (Priority Order)
+=============================================================================
+
+IMMEDIATE (Critical):
+[ ] Fix duplicate GET /api/v1/security-analysis route
+    Est. Time: 30 minutes
+    Action: Choose implementation, delete duplicate
+
+SHORT-TERM (High Priority):
+[ ] Delete unused route files or mount them
+    - networks.ts, within.ts, sourceComparison.ts
+    Est. Time: 1-2 hours
+    Action: Delete or integrate into server/index.ts
+
+[ ] Remove demo routes from production
+    - /wifi-tooltip-demo
+    Est. Time: 15 minutes
+    Action: Delete or move to dev-only config
+
+[ ] Clean up legacy redirects
+    - /visualization, /access-points
+    Est. Time: 15 minutes
+    Action: Remove if fully migrated
+
+MEDIUM-TERM (Code Quality):
+[ ] Consolidate inline routes to separate files
+    - Move 10+ inline endpoints from index.ts to routers
+    Est. Time: 3-4 hours
+    Action: Refactor for consistency
+
+[ ] Create API documentation
+    - OpenAPI/Swagger spec for all endpoints
+    Est. Time: 4-6 hours
+    Action: Document all 40+ endpoints
+
+[ ] Add route usage tracking
+    - Monitor which endpoints are actually used
+    Est. Time: 2-3 hours
+    Action: Implement telemetry
+
+DETAILED FINDINGS BY FILE
+=============================================================================
+
+server/index.ts
+- 1197 lines total
+- Contains 10+ inline route definitions (poor pattern)
+- Duplicate route at lines 557-690 and 745-798 (CRITICAL)
+- Mix of API logic and route registration (violates SoC)
+- Inline health endpoint at line 93-94 (legacy)
+
+server/routes/networks.ts
+- Status: Defined but not mounted
+- Contains GET / endpoint for network list
+- Uses cursor pagination with before_time_ms
+- Supports distinct_latest mode
+- Decision needed: mount or delete
+
+server/routes/within.ts
+- Status: Defined but not mounted
+- Contains GET / endpoint for spatial radius search
+- Uses Haversine formula (not PostGIS)
+- Duplicate logic exists inline at server/index.ts:951
+- Decision needed: consolidate or mount
+
+server/routes/sourceComparison.ts
+- Status: Defined but not mounted
+- Contains GET /observations endpoint
+- Multi-source data comparison
+- Never imported in index.ts
+- Decision needed: mount at /api/v1/comparison or delete
+
+client/src/App.tsx
+- 94 lines total
+- Router configuration is clean
+- Uses wouter library for routing
+- Mobile/Desktop shell pattern
+- Demo route included (wifi-tooltip-demo)
+
+client/src/pages/
+- 5 active page files (good)
+- All required pages present
+- Clean, focused components
+
+client/src/components/admin-panel.tsx
+- Comprehensive admin interface
+- System monitoring
+- Health metrics display
+- API endpoint testing
+- Grafana integration
+- Good feature coverage
+
+METRICS
+=============================================================================
+Files Analyzed: 25+
+Total Route Files: 18
+Active Routes: 40+
+Inline Routes: 10+
+Unused Routes: 3
+Duplicate Routes: 1 (critical)
+Orphaned Components: 1 (demo)
+Legacy Endpoints: 1
+
+CODE QUALITY SCORE: 7/10
+- Good structure and documentation
+- Need consolidation of patterns
+- Duplicate routes need fixing
+- Some dead code to clean up
+
+=============================================================================
+END OF AUDIT SUMMARY
+=============================================================================

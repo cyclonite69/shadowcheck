@@ -31,6 +31,7 @@ import { getRadioTypeDisplay } from '@/components/NetworkObservationsTableView';
 import { getSecurityTypeStyle } from '@/lib/securityDecoder';
 import type { NetworkFilters } from '@/hooks/useInfiniteNetworkObservations';
 import { useFilterCounts } from '@/hooks/useFilterCounts';
+import { MapStyleSelector, type MapStyle } from '@/components/MapStyleSelector';
 
 interface FilterBarProps {
   filters: NetworkFilters;
@@ -46,6 +47,8 @@ interface FilterBarProps {
   homeLocation: { lat: number; lng: number } | null;
   onGetGPS: () => void;
   gpsLoading?: boolean;
+  mapStyle?: MapStyle;
+  onMapStyleChange?: (style: MapStyle) => void;
 }
 
 export function FilterBar({
@@ -62,6 +65,8 @@ export function FilterBar({
   homeLocation,
   onGetGPS,
   gpsLoading = false,
+  mapStyle = 'dark',
+  onMapStyleChange,
 }: FilterBarProps) {
   // Fetch filter counts for sorting
   const { data: filterCounts } = useFilterCounts('locations_legacy');
@@ -514,6 +519,15 @@ export function FilterBar({
           </div>
         </PopoverContent>
       </Popover>
+
+      {/* Map Style Selector */}
+      {onMapStyleChange && (
+        <MapStyleSelector
+          currentStyle={mapStyle}
+          onStyleChange={onMapStyleChange}
+          className="ml-auto"
+        />
+      )}
     </div>
   );
 }

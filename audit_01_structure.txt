@@ -1,0 +1,492 @@
+=== SHADOWCHECK DECRUSTIFICATION AUDIT ===
+Generated: Mon Nov 10 03:47:39 PM EST 2025
+
+=== PROJECT STRUCTURE ===
+.
+├── backups
+│   ├── backup.log
+│   ├── prod_data_backup.tar.gz
+│   └── shadowcheck_backup_a.sql
+├── client
+│   ├── client
+│   │   └── src
+│   ├── public
+│   │   └── favicon.svg
+│   ├── src
+│   │   ├── components
+│   │   ├── contexts
+│   │   ├── hooks
+│   │   ├── lib
+│   │   ├── pages
+│   │   ├── store
+│   │   ├── utils
+│   │   ├── App.tsx
+│   │   ├── index.css
+│   │   ├── main.tsx
+│   │   └── types.ts
+│   ├── components.json
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── postcss.config.js
+│   ├── tailwind.config.ts
+│   ├── tsconfig.eslint.json
+│   ├── tsconfig.json
+│   └── vite.config.ts
+├── compiled_server
+│   ├── db
+│   │   └── connection.js
+│   ├── routes
+│   │   ├── db
+│   │   ├── routes
+│   │   ├── utils
+│   │   ├── accessPoints.js
+│   │   ├── db.js
+│   │   ├── health.js
+│   │   ├── pipelines.js
+│   │   ├── surveillance.js
+│   │   ├── visualize.js
+│   │   └── wigleEnrichment.js
+│   ├── services
+│   │   └── wigleApi.js
+│   ├── utils
+│   │   ├── securityAnalysis.js
+│   │   └── shutdown.js
+│   ├── db.js
+│   ├── index.js
+│   ├── routes.js
+│   ├── storage.js
+│   └── vite.js
+├── config
+│   └── postgres-config
+│       ├── pg_hba.conf
+│       └── postgresql.conf
+├── db
+├── docker
+│   ├── alertmanager
+│   │   └── alertmanager.yml
+│   ├── backend
+│   │   ├── Dockerfile
+│   │   └── entrypoint.sh
+│   ├── frontend
+│   │   └── Dockerfile
+│   ├── grafana
+│   │   ├── config
+│   │   ├── dashboards
+│   │   ├── provisioning
+│   │   ├── secrets
+│   │   └── README.md
+│   ├── loki
+│   │   ├── loki-local-config.yaml
+│   │   ├── loki-config.yaml
+│   │   └── loki-config.yml
+│   ├── pgadmin
+│   │   ├── pgpassfile
+│   │   └── servers.json
+│   ├── postgres
+│   │   ├── conf
+│   │   └── init
+│   ├── prometheus
+│   │   ├── rules
+│   │   └── prometheus.yml
+│   ├── promtail
+│   │   ├── promtail-config.yaml
+│   │   └── promtail-config.yml
+│   └── MONITORING_SETUP.md
+├── docs
+│   ├── evidence
+│   │   ├── EVIDENCE_CHAIN_OF_CUSTODY.md
+│   │   ├── FEDERAL_SURVEILLANCE_NETWORK_PATTERNS.md
+│   │   ├── FORENSIC_EVIDENCE_ERICWIFI.md
+│   │   └── VIDEO_EVIDENCE_CORRELATION_FBI_WATCHING.md
+│   ├── guides
+│   │   ├── CLAUDE_CODE_CHECKLIST.md
+│   │   ├── DASHBOARD_ACCESS.md
+│   │   ├── DASHBOARD_SETUP.md
+│   │   ├── EVIDENCE_BASED_ANALYSIS.md
+│   │   ├── MONITORING_GUIDE.md
+│   │   ├── MULTI_RADIO_ANALYSIS.md
+│   │   ├── NETWORK_CONFIGURATION.md
+│   │   ├── QUICK_START.md
+│   │   ├── SECURITY_MODAL_GUIDE.md
+│   │   ├── TROUBLESHOOTING.md
+│   │   ├── WIGLE_ALPHA_V3_PIPELINE.md
+│   │   └── WIGLE_API_CACHE_STRATEGY.md
+│   ├── session-logs
+│   │   ├── 2025-11-01_pipeline_integration.md
+│   │   ├── FIXES_APPLIED.md
+│   │   ├── IMPLEMENTATION_SUMMARY.md
+│   │   ├── QUICK_FIXES_APPLIED.md
+│   │   ├── SESSION_FIXES.md
+│   │   ├── SESSION_SUMMARY.md
+│   │   ├── STATUS.md
+│   │   ├── SYSTEM_AUDIT.md
+│   │   ├── TYPOGRAPHY_AND_LOGO_FIXES.md
+│   │   ├── WIGLE_ALPHA_V3_FINAL.md
+│   │   └── WIGLE_ALPHA_V3_IMPLEMENTATION.md
+│   ├── technical-notes
+│   │   ├── CRITICAL_FIXES_TESTING.md
+│   │   ├── DATABASE_BACKUP_SYSTEM.md
+│   │   ├── DATABASE_CLEANUP_ANALYSIS.md
+│   │   ├── DOCKER_REBUILD_REQUIRED.md
+│   │   ├── TOOLTIP_MIGRATION_SUMMARY.md
+│   │   ├── WIGLE_API_FIXES.md
+│   │   └── WIGLE_PIPELINE_FIX.md
+│   ├── BACKUP_QUICKSTART.md
+│   ├── distinct_capabilities.md
+│   ├── DOCKER_NETWORKING_BEST_PRACTICES.md
+│   ├── network-security-pill-demo.html
+│   ├── network-security-pill-integration.md
+│   ├── QUICK_START_UNIFIED_VIEWS.md
+│   ├── RADIO_TYPE_CLASSIFICATION.md
+│   ├── README_SCRIPTS.md
+│   ├── UNIFIED_VIEWS_IMPLEMENTATION.md
+│   └── WIGLE_ALPHA_V3_FIXED.md
+├── logs
+├── migrations
+│   ├── migrate_wigle_to_legacy.sql
+│   └── MIGRATION_SUMMARY.md
+├── monitoring
+│   └── grafana
+│       └── provisioning
+├── output
+│   ├── avi
+│   ├── bmp
+│   ├── dll
+│   ├── doc
+│   ├── docs
+│   │   ├── api
+│   │   ├── archive
+│   │   ├── diagrams
+│   │   ├── analysis.md
+│   │   ├── current_schema_erd.md
+│   │   ├── DASHBOARD_ACCESS.md
+│   │   ├── DASHBOARD_SETUP.md
+│   │   ├── DEPLOYMENT_CHECKLIST.md
+│   │   ├── DEPLOYMENT.md
+│   │   ├── DEPLOYMENT_OPTIMIZED.md
+│   │   ├── DOCKER_RESILIENCE_IMPLEMENTATION_GUIDE.md
+│   │   ├── documentation.md
+│   │   ├── DUE_DILIGENCE_REPORT.md
+│   │   ├── FIXES_APPLIED.md
+│   │   ├── IMPLEMENTATION_SUMMARY.md
+│   │   ├── PGADMIN_ACCESS.md
+│   │   ├── PGADMIN_CONNECTION_GUIDE.md
+│   │   ├── QUICK_START.md
+│   │   ├── README_COMPREHENSIVE.md
+│   │   ├── README_DEPLOYMENT.md
+│   │   ├── README.md
+│   │   ├── shadowcheck_refactor_prompt.md
+│   │   ├── STARTUP_SHUTDOWN_GUIDE.md
+│   │   ├── STATUS.md
+│   │   ├── SURVEILLANCE_DETECTION_GUIDE.md
+│   │   ├── TRANSFORMATION_COMPLETE.md
+│   │   └── TROUBLESHOOTING.md
+│   ├── docx
+│   ├── exe
+│   ├── gif
+│   ├── htm
+│   ├── jar
+│   ├── jpg
+│   ├── mbd
+│   ├── mov
+│   ├── mp4
+│   ├── mpg
+│   ├── ole
+│   ├── pdf
+│   ├── png
+│   ├── ppt
+│   ├── pptx
+│   ├── rar
+│   ├── rif
+│   ├── sdw
+│   ├── sx
+│   ├── sxc
+│   ├── sxi
+│   ├── sxw
+│   ├── vis
+│   ├── wav
+│   ├── wmv
+│   ├── xls
+│   ├── xlsx
+│   ├── zip
+│   ├── ACCESS_POINTS_EXPLORER_COMPLETE.md
+│   ├── API_IMPLEMENTATION_SUMMARY.md
+│   ├── ARCHITECTURE_DIAGRAM.md
+│   ├── audit.txt
+│   ├── backend_fix.md
+│   ├── batch_tag_orphaned_networks.py
+│   ├── build_script.sql
+│   ├── cleanup_script_fixed.sql
+│   ├── cleanup_script.sql
+│   ├── COMPLETE_SPATIAL_INTEGRATION.md
+│   ├── DATA_FEDERATION_GUIDE.md
+│   ├── DEPLOYMENT_TEST_RESULTS.md
+│   ├── EXECUTIVE_SUMMARY.md
+│   ├── FORENSIC_AUDIT_REPORT.md
+│   ├── FUZZY_DEDUPLICATION_GUIDE.md
+│   ├── IMPLEMENTATION_SUMMARY.md
+│   ├── ORPHANED_NETWORKS_ANALYSIS.md
+│   ├── orphaned_networks.csv
+│   ├── PLACEMENT_AND_ARCHITECTURE.md
+│   ├── QUICK_START.md
+│   ├── QUICK_START_RESULTS.md
+│   ├── security_dashboard_section.tsx
+│   ├── SPATIAL_INTEGRATION_COMPLETE.md
+│   ├── SURVEILLANCE_API_DOCUMENTATION.md
+│   ├── tag_all_orphaned_networks.sql
+│   ├── TESTING_CHECKLIST.md
+│   ├── UI_INTEGRATION_COMPLETE.md
+│   └── WIFI_DETECTION_SYSTEM.md
+├── pgadmin-config
+│   ├── ensure-server.sh
+│   ├── pgpassfile
+│   ├── README.md
+│   ├── register-server.sh
+│   └── servers.json
+├── pipelines
+│   ├── kismet
+│   │   └── kismet_parser.py
+│   ├── kml
+│   │   ├── kml_parser.py
+│   │   └── kml_to_sql.py
+│   ├── logs
+│   ├── shared
+│   │   └── safe_ingest.py
+│   ├── wigle
+│   │   ├── deduplicate_sqlite_staging.sql
+│   │   ├── export_sqlite_all_tables_to_csv.sh
+│   │   ├── pgcc_wrapper.sh
+│   │   ├── pg_stage_import_all.sh
+│   │   ├── update_networks_from_locations.sql
+│   │   ├── wigle_sqlite_parser_OLD_SLOW.py
+│   │   └── wigle_sqlite_parser.py
+│   ├── wigle_api
+│   │   ├── batch_import_details.sh
+│   │   └── import_network_detail.py
+│   └── bt_channel_tool.py
+├── schema
+│   ├── future_iterations
+│   │   ├── activate_surveillance_system_fixed.sql
+│   │   ├── activate_surveillance_system.sql
+│   │   ├── analyze_wifi_bluetooth_surveillance.sql
+│   │   ├── calibrated_surveillance_detection.sql
+│   │   ├── comprehensive_surveillance_analysis.sql
+│   │   ├── comprehensive_surveillance_operation_report.sql
+│   │   ├── consolidate_tables.sql
+│   │   ├── data_quality_audit.sql
+│   │   ├── fix_missing_coordinates.sql
+│   │   ├── implement_wifi_surveillance_detection.sql
+│   │   ├── location_marking_system.sql
+│   │   ├── populate_manufacturers_final.sql
+│   │   ├── precise_surveillance_detection.sql
+│   │   ├── refactor_migration.sql
+│   │   ├── refactor_migration_v2.sql
+│   │   ├── refactor_step_by_step.sql
+│   │   ├── sightings_analysis_corrected.sql
+│   │   ├── simple_precise_detection.sql
+│   │   ├── simple_stalking_analysis.sql
+│   │   ├── step2_rename_legacy.sql
+│   │   ├── step3_fix_naming.sql
+│   │   ├── step3_rename_current_tables.sql
+│   │   ├── step4_consolidate_tables.sql
+│   │   ├── surveillance_geojson_export.sql
+│   │   ├── surveillance_stalking_detection.sql
+│   │   ├── system_verification.sql
+│   │   └── test_full_system.sql
+│   ├── schema_comprehensive
+│   │   ├── 01_extensions_and_schema.sql
+│   │   ├── 02_reference_tables.sql
+│   │   ├── 03_core_tables.sql
+│   │   ├── 04_temporal_tracking.sql
+│   │   ├── 05_audit_custody.sql
+│   │   ├── 06_deduplication.sql
+│   │   ├── 07_wigle_enrichment.sql
+│   │   ├── 08_spatial_analysis.sql
+│   │   ├── 09_import_pipelines.sql
+│   │   ├── 10_performance_optimization.sql
+│   │   └── 11_api_design.sql
+│   ├── 009_wigle_alpha_v3_cache.sql
+│   ├── 009_wigle_alpha_v3_simple.sql
+│   ├── 010_evidence_storage.sql
+│   ├── 011_wigle_routes_staging.sql
+│   ├── 012_locations_staging_unique.sql
+│   ├── bssid_enrichment_tags.sql
+│   ├── data_source_federation.sql
+│   ├── data_source_smart_merge.sql
+│   ├── deploy_surveillance_detection.sql
+│   ├── fuzzy_deduplication.sql
+│   ├── government_infrastructure_correlation.sql
+│   ├── hybrid_merge_strategy.sql
+│   ├── indexes.sql
+│   ├── ingestion_deduplication.sql
+│   ├── kismet_attack_detection_views.sql
+│   ├── kismet_tables.sql
+│   ├── materialized_views.sql
+│   ├── migration.sql
+│   ├── network_classification.sql
+│   ├── network_enrichments.sql
+│   ├── precision_aware_merge.sql
+│   ├── radio_type_normalized_view.sql
+│   ├── roles_secure.sql
+│   ├── roles.sql
+│   ├── schema_refactored.sql
+│   ├── surveillance_alert_management.sql
+│   ├── surveillance_automation_scheduler.sql
+│   ├── surveillance_compatibility_bridge.sql
+│   ├── surveillance_detection_functions.sql
+│   ├── surveillance_detection_system.sql
+│   └── wigle_api_tables.sql
+├── scripts
+│   ├── backup
+│   │   └── full_backup_strategy.sh
+│   ├── docker
+│   │   ├── restart.sh
+│   │   ├── restart-stack.sh
+│   │   ├── start-dev.sh
+│   │   ├── start.sh
+│   │   └── stop.sh
+│   ├── future_iterations
+│   │   ├── analyze_schema.sh
+│   │   ├── deploy_complete_surveillance_system.sh
+│   │   ├── deploy_master.sh
+│   │   ├── deploy_secure.sh
+│   │   ├── deploy.sh
+│   │   ├── generate_complete_surveillance_geojson.sh
+│   │   ├── generate_corrected_surveillance_geojson.sh
+│   │   └── generate_simple_surveillance_geojson.sh
+│   ├── monitoring
+│   │   ├── monitoring-start.sh
+│   │   ├── monitoring-stop.sh
+│   │   └── monitoring-toggle.sh
+│   ├── network
+│   │   ├── check-network.sh
+│   │   ├── fix-docker-bridge.sh
+│   │   └── network-update.sh
+│   ├── optimize_system.sh
+│   ├── README.md
+│   └── shadowcheck_postgres
+├── secrets
+│   ├── api_key.txt
+│   ├── db_password.txt
+│   ├── grafana_password.txt
+│   └── jwt_secret.txt
+├── server
+│   ├── db
+│   │   ├── connection.ts
+│   │   └── schema.ts
+│   ├── pipelines
+│   │   ├── enrichment
+│   │   ├── parsers
+│   │   ├── scripts
+│   │   ├── shared
+│   │   ├── __init__.py
+│   │   └── README.md
+│   ├── routes
+│   │   ├── __tests__
+│   │   ├── accessPoints.ts
+│   │   ├── analytics.ts
+│   │   ├── classification.ts
+│   │   ├── federatedObservations.ts
+│   │   ├── health.ts
+│   │   ├── locationMarkers.ts
+│   │   ├── metrics.ts
+│   │   ├── networkObservations.ts
+│   │   ├── networks.ts
+│   │   ├── networkTimeline.ts
+│   │   ├── pipelines.ts
+│   │   ├── sourceComparison.ts
+│   │   ├── surveillance.ts
+│   │   ├── visualize.ts
+│   │   ├── wigle_alpha_v3.ts
+│   │   ├── wigleEnrichment.ts
+│   │   ├── wigleStagingRoutes.ts
+│   │   └── within.ts
+│   ├── services
+│   │   └── wigleApi.ts
+│   ├── utils
+│   │   ├── securityAnalysis.ts
+│   │   ├── shutdown.ts
+│   │   └── wigleTypeMapping.ts
+│   ├── db.ts
+│   ├── index.ts
+│   ├── routes.ts
+│   ├── storage.ts
+│   ├── tsconfig.eslint.json
+│   ├── tsconfig.json
+│   └── vite.ts
+├── shared
+│   ├── schema.d.ts
+│   ├── schema.js
+│   └── schema.ts
+├── =
+├── 11.6.2
+├── 20251012_010318.mp4
+├── audit_01_structure.txt
+├── audit_preview.txt
+├── backup-database.sh
+├── [builder
+├── CACHED
+├── capability_parsing_test.sql
+├── check_all_whitespace.sql
+├── comprehensive_trim_triggers.sql
+├── CONTRIBUTING.md
+├── [dependencies
+├── docker-compose.monitoring-extended.yml
+├── docker-compose.monitoring.yml
+├── docker-compose.prod.yml
+├── docker-compose.yml
+├── DOCKER_NETWORKING.md
+├── ERROR
+├── eslint.config.js
+├── file_00000000d55861f9bd86646cf9ee19e6.png
+├── fix-bridge-and-update.sh
+├── fix-bridge.sh
+├── fix_trigger_and_trim_ssid.sql
+├── fix_wigle_constraints.sql
+├── fix_wigle_import_function.sql
+├── generated-image-1 (1).png
+├── generated-image-1.png
+├── gitleaks-report.json
+├── grafana-toggle.sh
+├── import_wigle_routes.py
+├── install-backup-timer.sh
+├── interesting
+├── [internal]
+├── KISMET_EVIDENCE_HASHES.txt
+├── package.json
+├── package-lock.json
+├── postcss.config.js
+├── [production
+├── production-status.sh
+├── query_capabilities.sql
+├── reading
+├── README.md
+├── restart-prod-clean.sh
+├── restart-prod.sh
+├── restart.sh
+├── restart-working-backup.sh
+├── secrets.txt
+├── security-scan.sh
+├── shadowcheck-client@0.0.0
+├── shadowcheck_decrust_audit.txt
+├── start-prod-clean.sh
+├── start-prod.sh
+├── start.sh
+├── start-working-backup.sh
+├── stop-prod-clean.sh
+├── stop-prod.sh
+├── stop.sh
+├── stop-working-backup.sh
+├── tailwind.config.ts
+├── test-altitude-display.sh
+├── test_trim_triggers.sql
+├── transferring
+├── trim_ssid_whitespace.sql
+├── troubleshoot-network.sh
+├── tsc
+├── tsconfig.json
+├── wigle-import.sh
+└── wigle-queue-status.sh
+
+120 directories, 366 files

@@ -43,7 +43,8 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
     const minDistanceKm = parseFloat(String(req.query.min_distance_km || '0.5'));
     const homeRadiusM = parseFloat(String(req.query.home_radius_m || '500'));
     const minHomeSightings = parseInt(String(req.query.min_home_sightings || '1'));
-    const limit = Math.min(parseInt(String(req.query.limit || '100')), 500);
+    const limit = Math.min(parseInt(String(req.query.limit || '100')), 1000); // Increased max to 1000
+    const offset = Math.max(parseInt(String(req.query.offset || '0')), 0);
 
     // Validate parameters
     if (isNaN(minDistanceKm) || minDistanceKm < 0 || minDistanceKm > 100) {
@@ -59,6 +60,35 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
         error: "Invalid home_radius_m. Must be between 0 and 5000."
       });
     }
+
+    // First, get total count (without LIMIT/OFFSET for accurate pagination)
+    const countResult = await query(`
+      WITH home_zone AS (
+        SELECT ST_SetSRID(ST_MakePoint(-83.6968461, 43.02342188), 4326)::geography as home_point
+      ),
+      network_analysis AS (
+        SELECT
+          l.bssid
+        FROM app.locations_legacy l
+        WHERE l.lat IS NOT NULL
+          AND l.lon IS NOT NULL
+          AND l.lat BETWEEN -90 AND 90
+          AND l.lon BETWEEN -180 AND 180
+        GROUP BY l.bssid
+        HAVING COUNT(*) FILTER (WHERE ST_DWithin(
+          ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+          (SELECT home_point FROM home_zone),
+          $2
+        )) >= $3
+        AND MAX(ST_Distance(
+          ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+          (SELECT home_point FROM home_zone)
+        )) / 1000.0 >= $1
+      )
+      SELECT COUNT(*) as total_count FROM network_analysis
+    `, [minDistanceKm, homeRadiusM, minHomeSightings]);
+
+    const totalCount = parseInt(countResult[0]?.total_count || '0');
 
     // Direct query for WiFi surveillance threats using legacy tables
     const threatsResult = await query(`
@@ -85,6 +115,27 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
             ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
             (SELECT home_point FROM home_zone)
           )) / 1000.0 as max_distance_km,
+          -- Temporal spread: distinct dates seen
+          COUNT(DISTINCT DATE(TO_TIMESTAMP(l.time / 1000))) as distinct_dates,
+          -- Geographic spread: distinct locations (100m clustering)
+          COUNT(DISTINCT ST_SnapToGrid(
+            ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geometry,
+            0.001 -- ~100m grid
+          )) as distinct_locations,
+          -- Time span: days between first and last sighting
+          EXTRACT(EPOCH FROM (
+            MAX(TO_TIMESTAMP(l.time / 1000)) - MIN(TO_TIMESTAMP(l.time / 1000))
+          )) / 86400.0 as time_span_days,
+          -- Check if seen both at home AND away
+          (COUNT(*) FILTER (WHERE ST_DWithin(
+            ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+            (SELECT home_point FROM home_zone),
+            $2
+          )) > 0 AND COUNT(*) FILTER (WHERE NOT ST_DWithin(
+            ST_SetSRID(ST_MakePoint(l.lon, l.lat), 4326)::geography,
+            (SELECT home_point FROM home_zone),
+            $2
+          )) > 0) as seen_both_home_and_away,
           CASE
             WHEN n.frequency >= 2400 AND n.frequency < 2500 THEN '2.4GHz'
             WHEN n.frequency >= 5000 AND n.frequency < 6000 THEN '5GHz'
@@ -122,6 +173,10 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
         away_sightings,
         max_distance_km,
         is_mobile_hotspot,
+        distinct_dates,
+        distinct_locations,
+        time_span_days,
+        seen_both_home_and_away,
         CASE
           WHEN max_distance_km > 20 THEN 'EXTREME'
           WHEN max_distance_km > 10 THEN 'CRITICAL'
@@ -136,11 +191,77 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
           WHEN max_distance_km > 2 THEN 'Network detected beyond typical home range (>2km)'
           ELSE 'Network detected beyond home zone but within normal range'
         END as threat_description,
-        LEAST(max_distance_km / 10.0, 1.0) as confidence_score
+        LEAST(max_distance_km / 10.0, 1.0) as confidence_score,
+        -- RELEVANCE SCORE (0-100): Multi-factor analysis of how suspicious this network is
+        LEAST(100, GREATEST(0,
+          -- Factor 1: Temporal persistence (seen over many days) - max 25 points
+          (CASE
+            WHEN distinct_dates >= 10 THEN 25
+            WHEN distinct_dates >= 5 THEN 20
+            WHEN distinct_dates >= 3 THEN 15
+            WHEN distinct_dates >= 2 THEN 10
+            ELSE 5
+          END) +
+          -- Factor 2: Home AND away presence (following behavior) - max 30 points
+          (CASE
+            WHEN seen_both_home_and_away AND home_sightings >= 3 AND away_sightings >= 3 THEN 30
+            WHEN seen_both_home_and_away AND home_sightings >= 2 AND away_sightings >= 2 THEN 25
+            WHEN seen_both_home_and_away THEN 20
+            ELSE 0
+          END) +
+          -- Factor 3: Geographic spread (multiple locations) - max 20 points
+          (CASE
+            WHEN distinct_locations >= 10 THEN 20
+            WHEN distinct_locations >= 5 THEN 15
+            WHEN distinct_locations >= 3 THEN 10
+            ELSE 5
+          END) +
+          -- Factor 4: Distance tracking (far from home) - max 15 points
+          (CASE
+            WHEN max_distance_km > 20 THEN 15
+            WHEN max_distance_km > 10 THEN 12
+            WHEN max_distance_km > 5 THEN 9
+            WHEN max_distance_km > 2 THEN 6
+            ELSE 3
+          END) +
+          -- Factor 5: Frequency of sightings - max 10 points
+          (CASE
+            WHEN total_sightings >= 50 THEN 10
+            WHEN total_sightings >= 20 THEN 8
+            WHEN total_sightings >= 10 THEN 6
+            WHEN total_sightings >= 5 THEN 4
+            ELSE 2
+          END)
+        )) as relevance_score,
+        -- RELEVANCE LABEL
+        CASE
+          WHEN LEAST(100, GREATEST(0,
+            (CASE WHEN distinct_dates >= 10 THEN 25 WHEN distinct_dates >= 5 THEN 20 WHEN distinct_dates >= 3 THEN 15 WHEN distinct_dates >= 2 THEN 10 ELSE 5 END) +
+            (CASE WHEN seen_both_home_and_away AND home_sightings >= 3 AND away_sightings >= 3 THEN 30 WHEN seen_both_home_and_away AND home_sightings >= 2 AND away_sightings >= 2 THEN 25 WHEN seen_both_home_and_away THEN 20 ELSE 0 END) +
+            (CASE WHEN distinct_locations >= 10 THEN 20 WHEN distinct_locations >= 5 THEN 15 WHEN distinct_locations >= 3 THEN 10 ELSE 5 END) +
+            (CASE WHEN max_distance_km > 20 THEN 15 WHEN max_distance_km > 10 THEN 12 WHEN max_distance_km > 5 THEN 9 WHEN max_distance_km > 2 THEN 6 ELSE 3 END) +
+            (CASE WHEN total_sightings >= 50 THEN 10 WHEN total_sightings >= 20 THEN 8 WHEN total_sightings >= 10 THEN 6 WHEN total_sightings >= 5 THEN 4 ELSE 2 END)
+          )) >= 80 THEN 'CRITICAL'
+          WHEN LEAST(100, GREATEST(0,
+            (CASE WHEN distinct_dates >= 10 THEN 25 WHEN distinct_dates >= 5 THEN 20 WHEN distinct_dates >= 3 THEN 15 WHEN distinct_dates >= 2 THEN 10 ELSE 5 END) +
+            (CASE WHEN seen_both_home_and_away AND home_sightings >= 3 AND away_sightings >= 3 THEN 30 WHEN seen_both_home_and_away AND home_sightings >= 2 AND away_sightings >= 2 THEN 25 WHEN seen_both_home_and_away THEN 20 ELSE 0 END) +
+            (CASE WHEN distinct_locations >= 10 THEN 20 WHEN distinct_locations >= 5 THEN 15 WHEN distinct_locations >= 3 THEN 10 ELSE 5 END) +
+            (CASE WHEN max_distance_km > 20 THEN 15 WHEN max_distance_km > 10 THEN 12 WHEN max_distance_km > 5 THEN 9 WHEN max_distance_km > 2 THEN 6 ELSE 3 END) +
+            (CASE WHEN total_sightings >= 50 THEN 10 WHEN total_sightings >= 20 THEN 8 WHEN total_sightings >= 10 THEN 6 WHEN total_sightings >= 5 THEN 4 ELSE 2 END)
+          )) >= 60 THEN 'HIGH'
+          WHEN LEAST(100, GREATEST(0,
+            (CASE WHEN distinct_dates >= 10 THEN 25 WHEN distinct_dates >= 5 THEN 20 WHEN distinct_dates >= 3 THEN 15 WHEN distinct_dates >= 2 THEN 10 ELSE 5 END) +
+            (CASE WHEN seen_both_home_and_away AND home_sightings >= 3 AND away_sightings >= 3 THEN 30 WHEN seen_both_home_and_away AND home_sightings >= 2 AND away_sightings >= 2 THEN 25 WHEN seen_both_home_and_away THEN 20 ELSE 0 END) +
+            (CASE WHEN distinct_locations >= 10 THEN 20 WHEN distinct_locations >= 5 THEN 15 WHEN distinct_locations >= 3 THEN 10 ELSE 5 END) +
+            (CASE WHEN max_distance_km > 20 THEN 15 WHEN max_distance_km > 10 THEN 12 WHEN max_distance_km > 5 THEN 9 WHEN max_distance_km > 2 THEN 6 ELSE 3 END) +
+            (CASE WHEN total_sightings >= 50 THEN 10 WHEN total_sightings >= 20 THEN 8 WHEN total_sightings >= 10 THEN 6 WHEN total_sightings >= 5 THEN 4 ELSE 2 END)
+          )) >= 40 THEN 'MEDIUM'
+          ELSE 'LOW'
+        END as relevance_label
       FROM network_analysis
-      ORDER BY max_distance_km DESC, home_sightings DESC
-      LIMIT $4
-    `, [minDistanceKm, homeRadiusM, minHomeSightings, limit]);
+      ORDER BY relevance_score DESC, max_distance_km DESC
+      LIMIT $4 OFFSET $5
+    `, [minDistanceKm, homeRadiusM, minHomeSightings, limit, offset]);
 
     // For each threat, get ALL observation details
     const threatsWithObservations = await Promise.all(
@@ -224,6 +345,14 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
           confidence_score: Number(threat.confidence_score),
           is_mobile_hotspot: threat.is_mobile_hotspot,
 
+          // Relevance scoring fields
+          distinct_dates: Number(threat.distinct_dates),
+          distinct_locations: Number(threat.distinct_locations),
+          time_span_days: Number(threat.time_span_days).toFixed(1),
+          seen_both_home_and_away: threat.seen_both_home_and_away,
+          relevance_score: Number(threat.relevance_score),
+          relevance_label: threat.relevance_label,
+
           // ALL observation details
           observations: observationsResult.map((obs: any) => ({
             id: obs.unified_id,
@@ -249,12 +378,16 @@ router.get("/wifi/threats", async (req: Request, res: Response) => {
     return res.json({
       ok: true,
       count: threatsWithObservations.length,
+      total_count: totalCount,
+      offset,
+      limit,
       responseTime: `${responseTime}ms`,
       parameters: {
         min_distance_km: minDistanceKm,
         home_radius_m: homeRadiusM,
         min_home_sightings: minHomeSightings,
-        limit
+        limit,
+        offset
       },
       data: threatsWithObservations
     });

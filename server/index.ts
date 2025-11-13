@@ -145,6 +145,75 @@ app.get("/api/v1/networks", async (req, res) => {
         where.push(`n.type = ANY($${params.length})`);
       }
 
+      // Signal strength filter
+      if (minSignal !== null) {
+        params.push(minSignal);
+        where.push(`lo.level >= $${params.length}`);
+      }
+      if (maxSignal !== null) {
+        params.push(maxSignal);
+        where.push(`lo.level <= $${params.length}`);
+      }
+
+      // Frequency filter
+      if (minFreq !== null) {
+        params.push(minFreq);
+        where.push(`n.frequency >= $${params.length}`);
+      }
+      if (maxFreq !== null) {
+        params.push(maxFreq);
+        where.push(`n.frequency <= $${params.length}`);
+      }
+
+      // Date range filter (time is in milliseconds since epoch)
+      // Only show networks that were observed within the specified date range
+      if (dateStart) {
+        const startMs = new Date(dateStart).getTime();
+        params.push(startMs);
+        where.push(`lo.time >= $${params.length}`);
+      }
+      if (dateEnd) {
+        const endMs = new Date(dateEnd).getTime() + (24 * 60 * 60 * 1000); // End of day
+        params.push(endMs);
+        where.push(`lo.time <= $${params.length}`);
+      }
+
+      // Security type filter (WiFi only - matches capabilities field)
+      if (securityTypes.length > 0) {
+        const securityConditions: string[] = [];
+        securityTypes.forEach(type => {
+          if (type === 'Open') {
+            securityConditions.push(`(n.capabilities = '[ESS]' OR n.capabilities IS NULL OR n.capabilities = '')`);
+          } else if (type === 'WEP') {
+            securityConditions.push(`n.capabilities ILIKE '%WEP%'`);
+          } else if (type === 'WPA') {
+            securityConditions.push(`(n.capabilities ILIKE '%WPA%' AND n.capabilities NOT ILIKE '%WPA2%' AND n.capabilities NOT ILIKE '%WPA3%')`);
+          } else if (type === 'WPA2') {
+            securityConditions.push(`n.capabilities ILIKE '%WPA2%'`);
+          } else if (type === 'WPA3') {
+            securityConditions.push(`n.capabilities ILIKE '%WPA3%'`);
+          }
+        });
+        if (securityConditions.length > 0) {
+          where.push(`(${securityConditions.join(' OR ')})`);
+        }
+      }
+
+      // Radius search filter (Haversine formula for geodesic distance)
+      // Filter observations to only those within the specified radius from center point
+      if (radiusLat !== null && radiusLng !== null && radiusMeters !== null) {
+        params.push(radiusLat, radiusLng, radiusMeters);
+        where.push(`
+          (6371000 * acos(
+            cos(radians($${params.length - 2})) *
+            cos(radians(lo.lat)) *
+            cos(radians(lo.lon) - radians($${params.length - 1})) +
+            sin(radians($${params.length - 2})) *
+            sin(radians(lo.lat))
+          )) <= $${params.length}
+        `);
+      }
+
       params.push(limit, offset);
 
       // Parse sorting parameters

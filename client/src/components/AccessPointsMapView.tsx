@@ -16,13 +16,15 @@ interface AccessPointsMapViewProps {
   mapboxToken: string;
   centerPoint?: { lat: number; lng: number } | null;
   searchRadius?: number;
+  initialMapStyle?: MapStyle;
 }
 
 export function AccessPointsMapView({
   selectedObservations,
   mapboxToken,
   centerPoint,
-  searchRadius = 1000
+  searchRadius = 1000,
+  initialMapStyle
 }: AccessPointsMapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -32,8 +34,9 @@ export function AccessPointsMapView({
 
   // Map style state with persistence
   const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
+    if (initialMapStyle) return initialMapStyle;
     const saved = sessionStorage.getItem('mapStyle');
-    return (saved as MapStyle) || 'standard';
+    return (saved as MapStyle) || 'dark';
   });
 
   // Handle style changes
@@ -77,7 +80,9 @@ export function AccessPointsMapView({
       style: getMapStyleUrl(mapStyle),
       center: [-83.6875, 43.0125], // Default center
       zoom: 10,
-      maxZoom: 20
+      maxZoom: 20,
+      pitch: 45, // Tilt map for 3D view
+      bearing: 0
     });
 
     map.current.on('load', () => {
@@ -85,6 +90,58 @@ export function AccessPointsMapView({
 
       // Add navigation controls
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-left');
+
+      // Add terrain DEM source
+      map.current.addSource('mapbox-dem', {
+        type: 'raster-dem',
+        url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+        tileSize: 512,
+        maxzoom: 14
+      });
+
+      // Enable 3D terrain
+      map.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+
+      // Add 3D buildings layer
+      const layers = map.current.getStyle().layers;
+      if (layers) {
+        // Find the first symbol layer to insert buildings before labels
+        const firstSymbolId = layers.find(layer => layer.type === 'symbol')?.id;
+
+        map.current.addLayer(
+          {
+            id: '3d-buildings',
+            source: 'composite',
+            'source-layer': 'building',
+            filter: ['==', 'extrude', 'true'],
+            type: 'fill-extrusion',
+            minzoom: 15,
+            paint: {
+              'fill-extrusion-color': '#aaa',
+              'fill-extrusion-height': [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                15,
+                0,
+                15.05,
+                ['get', 'height']
+              ],
+              'fill-extrusion-base': [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                15,
+                0,
+                15.05,
+                ['get', 'min_height']
+              ],
+              'fill-extrusion-opacity': 0.6
+            }
+          },
+          firstSymbolId
+        );
+      }
 
       setMapLoaded(true);
 
@@ -429,16 +486,6 @@ export function AccessPointsMapView({
       {!mapLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
           <div className="text-slate-400 text-sm">Loading map...</div>
-        </div>
-      )}
-
-      {/* Map Style Selector - Top Left */}
-      {mapLoaded && (
-        <div className="absolute top-2 left-2 z-10">
-          <MapStyleSelector
-            currentStyle={mapStyle}
-            onStyleChange={handleStyleChange}
-          />
         </div>
       )}
 

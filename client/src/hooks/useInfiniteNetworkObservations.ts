@@ -148,7 +148,10 @@ export function useInfiniteNetworkObservations({
       filters.sortBy,
       filters.sortDir,
       filters.dateStart,
-      filters.dateEnd
+      filters.dateEnd,
+      filters.radiusLat,
+      filters.radiusLng,
+      filters.radiusMeters
     ],
     queryFn: ({ pageParam = 0 }) =>
       fetchNetworkObservations({ pageParam, filters, pageSize }),

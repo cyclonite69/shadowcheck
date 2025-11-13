@@ -1,0 +1,186 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                   WiGLE WiFi Data - FINAL VERSION                          ║
+║              ✅ Type Codes Converted to Letters (W/G/L/B/E)                ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+🎯 FOR SHADOWCHECK PROJECT
+═══════════════════════════════════════════════════════════════════════════
+
+Copy these files to: shadowcheck/pipelines/csv/
+
+  • wigle_csv_networks_final.csv (8.0 MB)
+  • wigle_csv_locations_final.csv (17 MB)
+
+Both files now use WiGLE.net standard type codes:
+  W = WiFi/802.11
+  G = GSM (2G cellular)
+  L = LTE (4G cellular)
+  B = Bluetooth
+  E = Bluetooth LE
+
+
+📊 DATA SUMMARY
+═══════════════════════════════════════════════════════════════════════════
+
+NETWORKS (46,507 unique):
+  E (Bluetooth LE):     27,365 (58.8%)
+  W (WiFi):              9,580 (20.6%)
+  B (Bluetooth):         9,490 (20.4%)
+  L (LTE):                  55 (0.1%)
+  G (GSM):                  17 (0.0%)
+
+OBSERVATIONS (123,047 total):
+  E (Bluetooth LE):     48,428 (39.4%)
+  W (WiFi):             46,096 (37.5%)
+  B (Bluetooth):        24,536 (20.0%)
+  L (LTE):               2,020 (1.6%)
+  G (GSM):               1,967 (1.6%)
+
+
+✅ WHAT'S INCLUDED
+═══════════════════════════════════════════════════════════════════════════
+
+✓ SSID Cleaned
+  "  WiFi Name  " → "WiFi Name"
+
+✓ BSSID Normalized
+  c0:94:35:1e:83:60 → C0:94:35:1E:83:60
+
+✓ Type Codes Converted
+  WIFI → W
+  GSM  → G
+  LTE  → L
+  BT   → B
+  BLE  → E
+
+✓ Timestamps Converted
+  2024-03-19 21:58:35 → 1710885515 (Unix epoch)
+
+✓ Networks Deduplicated
+  123,047 records → 46,507 unique (by strongest RSSI)
+
+
+📁 KEY FILES
+═══════════════════════════════════════════════════════════════════════════
+
+FOR YOUR APP:
+  wigle_csv_networks_final.csv     → Networks table
+  wigle_csv_locations_final.csv    → Observations table
+
+FOR LOADING TO DATABASE:
+  load_to_docker_final.sh          → One-command importer
+
+FOR REFERENCE:
+  WIGLE_TYPE_CODES.md              → Type code mapping
+  SHADOWCHECK_INTEGRATION.md       → Integration guide
+  FINAL_SUMMARY.md                 → Complete documentation
+
+
+🚀 QUICK START
+═══════════════════════════════════════════════════════════════════════════
+
+1. COPY FILES TO SHADOWCHECK:
+   cp wigle_csv_networks_final.csv ~/shadowcheck/pipelines/csv/
+   cp wigle_csv_locations_final.csv ~/shadowcheck/pipelines/csv/
+
+2. UPDATE YOUR APP CODE:
+   - Type column now uses: W, G, L, B, E
+   - Timestamps are Unix epoch (integer seconds)
+   - BSSID is always UPPERCASE
+
+3. LOAD TO DATABASE (optional):
+   bash load_to_docker_final.sh
+
+4. VERIFY DATA:
+   SELECT type, COUNT(*) FROM app.wigle_csv_networks GROUP BY type;
+
+
+📋 COLUMN REFERENCE
+═══════════════════════════════════════════════════════════════════════════
+
+Networks Table (46,507 rows):
+  • bssid (UPPERCASE MAC address)
+  • ssid (cleaned, no spaces)
+  • type (single letter code)
+  • frequency, capabilities
+  • lasttime (Unix epoch)
+  • lastlat, lastlon (coordinates)
+  • bestlevel (RSSI signal strength)
+  • rcois, mfgrid, service
+
+Locations Table (123,047 rows):
+  • _id (sequential 1-123047)
+  • bssid (UPPERCASE MAC address)
+  • type (single letter code)
+  • level (RSSI at this location)
+  • lat, lon (coordinates)
+  • altitude, accuracy
+  • time (Unix epoch)
+  • mfgrid
+
+
+💻 SQL EXAMPLES FOR YOUR APP
+═══════════════════════════════════════════════════════════════════════════
+
+-- Count networks by type
+SELECT type, COUNT(*) FROM app.wigle_csv_networks GROUP BY type;
+
+-- Find all WiFi networks
+SELECT * FROM app.wigle_csv_networks WHERE type = 'W';
+
+-- Find Bluetooth devices (standard + LE)
+SELECT * FROM app.wigle_csv_networks WHERE type IN ('B', 'E');
+
+-- Get all observations for a network
+SELECT * FROM app.wigle_csv_locations WHERE bssid = 'C0:94:35:1E:83:60';
+
+
+🔄 TYPE CODE MAPPING (WiGLE.net Standard)
+═══════════════════════════════════════════════════════════════════════════
+
+W ← WiFi (IEEE 802.11)
+    Routers, hotspots, access points
+    9,580 networks, 46,096 observations
+
+G ← GSM (Global System for Mobile)
+    Cellular networks (2G/3G)
+    17 networks, 1,967 observations
+
+L ← LTE (Long-Term Evolution)
+    Cellular networks (4G/5G)
+    55 networks, 2,020 observations
+
+B ← Bluetooth (Standard)
+    Bluetooth devices, speakers, headphones
+    9,490 networks, 24,536 observations
+
+E ← Bluetooth LE (Low Energy)
+    Fitness trackers, smartwatches, beacons
+    27,365 networks, 48,428 observations
+
+
+📚 DOCUMENTATION
+═══════════════════════════════════════════════════════════════════════════
+
+Read These:
+  WIGLE_TYPE_CODES.md           Type code reference & distribution
+  SHADOWCHECK_INTEGRATION.md    How to integrate with your project
+  FINAL_SUMMARY.md              Complete data mapping & SQL examples
+  README.md                     Quick start guide
+
+Reference:
+  final_wigle_cleanup.py        Python implementation
+  INDEX.md                      Complete file listing
+
+
+═══════════════════════════════════════════════════════════════════════════
+
+READY? 
+
+1. Copy CSVs to: ~/shadowcheck/pipelines/csv/
+2. Update app code to use type codes: W, G, L, B, E
+3. Run queries above
+4. Questions? See SHADOWCHECK_INTEGRATION.md
+
+Status: ✅ READY FOR PRODUCTION
+═══════════════════════════════════════════════════════════════════════════
