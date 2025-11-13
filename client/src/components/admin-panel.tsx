@@ -71,6 +71,15 @@ export function AdminPanel() {
     { path: "GET /api/v1/surveillance/network-patterns", description: "Network behavior patterns", active: systemStatus?.database.connected || false },
     { path: "GET /api/v1/surveillance/home-following", description: "Home following detection", active: systemStatus?.database.connected || false },
     { path: "GET /api/v1/surveillance/network-timeline/:bssid", description: "Network timeline by BSSID", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/surveillance/wifi/threats", description: "WiFi threat detection", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/surveillance/wifi/summary", description: "WiFi surveillance summary", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/surveillance/settings", description: "Surveillance settings", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/access-points", description: "Access points list", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/access-points/columns", description: "Access points columns", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/wigle/stats", description: "WiGLE enrichment statistics", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/wigle/queue", description: "WiGLE enrichment queue", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/wigle/orphaned-networks", description: "Networks without location", active: systemStatus?.database.connected || false },
+    { path: "GET /api/v1/wigle/networks", description: "WiGLE enriched networks", active: systemStatus?.database.connected || false },
   ];
 
   return (

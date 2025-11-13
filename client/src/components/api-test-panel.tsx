@@ -80,6 +80,33 @@ export function ApiTestPanel() {
             // Use a sample BSSID for testing
             result = await fetch('/api/v1/surveillance/network-timeline/00:00:00:00:00:00').then(r => r.json());
             break;
+          case "surveillance-wifi-threats":
+            result = await fetch('/api/v1/surveillance/wifi/threats').then(r => r.json());
+            break;
+          case "surveillance-wifi-summary":
+            result = await fetch('/api/v1/surveillance/wifi/summary').then(r => r.json());
+            break;
+          case "surveillance-settings":
+            result = await fetch('/api/v1/surveillance/settings').then(r => r.json());
+            break;
+          case "access-points":
+            result = await fetch('/api/v1/access-points?limit=10').then(r => r.json());
+            break;
+          case "access-points-columns":
+            result = await fetch('/api/v1/access-points/columns').then(r => r.json());
+            break;
+          case "wigle-stats":
+            result = await fetch('/api/v1/wigle/stats').then(r => r.json());
+            break;
+          case "wigle-queue":
+            result = await fetch('/api/v1/wigle/queue').then(r => r.json());
+            break;
+          case "wigle-orphaned":
+            result = await fetch('/api/v1/wigle/orphaned-networks').then(r => r.json());
+            break;
+          case "wigle-networks":
+            result = await fetch('/api/v1/wigle/networks?limit=10').then(r => r.json());
+            break;
           default:
             throw new Error("Unknown endpoint");
         }
@@ -291,6 +318,82 @@ export function ApiTestPanel() {
       description: "Network timeline by BSSID (sample)",
       category: "Surveillance",
     },
+    {
+      method: "GET",
+      path: "/api/v1/surveillance/wifi/threats",
+      endpoint: "surveillance-wifi-threats",
+      available: systemStatus?.database.connected || false,
+      description: "WiFi threat detection analysis",
+      category: "Surveillance",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/surveillance/wifi/summary",
+      endpoint: "surveillance-wifi-summary",
+      available: systemStatus?.database.connected || false,
+      description: "WiFi surveillance summary",
+      category: "Surveillance",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/surveillance/settings",
+      endpoint: "surveillance-settings",
+      available: systemStatus?.database.connected || false,
+      description: "Get surveillance detection settings",
+      category: "Surveillance",
+    },
+
+    // Access Points Endpoints
+    {
+      method: "GET",
+      path: "/api/v1/access-points?limit=10",
+      endpoint: "access-points",
+      available: systemStatus?.database.connected || false,
+      description: "List access points with filtering",
+      category: "Access Points",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/access-points/columns",
+      endpoint: "access-points-columns",
+      available: systemStatus?.database.connected || false,
+      description: "Get available data columns",
+      category: "Access Points",
+    },
+
+    // WiGLE Enrichment Endpoints
+    {
+      method: "GET",
+      path: "/api/v1/wigle/stats",
+      endpoint: "wigle-stats",
+      available: systemStatus?.database.connected || false,
+      description: "WiGLE enrichment statistics",
+      category: "WiGLE",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/wigle/queue",
+      endpoint: "wigle-queue",
+      available: systemStatus?.database.connected || false,
+      description: "View WiGLE enrichment queue",
+      category: "WiGLE",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/wigle/orphaned-networks",
+      endpoint: "wigle-orphaned",
+      available: systemStatus?.database.connected || false,
+      description: "Networks without location data",
+      category: "WiGLE",
+    },
+    {
+      method: "GET",
+      path: "/api/v1/wigle/networks?limit=10",
+      endpoint: "wigle-networks",
+      available: systemStatus?.database.connected || false,
+      description: "WiGLE enriched networks list",
+      category: "WiGLE",
+    },
   ];
 
   return (
@@ -330,7 +433,7 @@ export function ApiTestPanel() {
       </div>
       <div className="p-6 space-y-6">
         {/* Group endpoints by category */}
-        {['System', 'Data', 'Analytics', 'Surveillance'].map(category => {
+        {['System', 'Data', 'Analytics', 'Surveillance', 'Access Points', 'WiGLE'].map(category => {
           const categoryEndpoints = endpoints.filter(ep => ep.category === category);
           if (categoryEndpoints.length === 0) return null;
 
@@ -341,7 +444,9 @@ export function ApiTestPanel() {
                   category === 'System' ? 'bg-blue-400' :
                   category === 'Data' ? 'bg-green-400' :
                   category === 'Analytics' ? 'bg-purple-400' :
-                  'bg-orange-400'
+                  category === 'Surveillance' ? 'bg-orange-400' :
+                  category === 'Access Points' ? 'bg-cyan-400' :
+                  'bg-pink-400'
                 }`}></div>
                 {category} Endpoints
               </h4>
