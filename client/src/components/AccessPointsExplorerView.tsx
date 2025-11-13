@@ -18,7 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useInfiniteAccessPoints, type AccessPointFilters, flattenAccessPoints, getTotalCount } from '@/hooks/useInfiniteAccessPoints';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
 import { useColumnPreferences } from '@/hooks/useColumnPreferences';
 import { ObservationsExpandedRow } from './ObservationsExpandedRow';
 import { ColumnSelector } from './ColumnSelector';
@@ -720,7 +720,7 @@ export function AccessPointsExplorerView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {virtualItems.map((virtualRow) => {
+                  {virtualItems.map((virtualRow: VirtualItem) => {
                     const ap = allAccessPoints[virtualRow.index];
                     if (!ap) return null;
 

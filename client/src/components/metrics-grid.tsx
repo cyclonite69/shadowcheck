@@ -98,7 +98,7 @@ export function MetricsGrid() {
                 <p className={`text-2xl font-bold ${metric.status ? 'text-slate-100' : 'text-slate-400'}`}>{metric.value}</p>
               </div>
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-slate-800/30 border border-slate-700/50`}>
-                <Icon className={`h-7 w-7 ${getIconColor(metric.title, metric.status)}`} strokeWidth={2.5} />
+                <Icon className={`h-7 w-7 ${getIconColor(metric.title, metric.status ?? false)}`} strokeWidth={2.5} />
               </div>
             </div>
           </div>

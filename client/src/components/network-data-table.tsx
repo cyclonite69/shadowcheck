@@ -32,7 +32,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
 
   const { data: networks, isLoading } = useQuery({
     queryKey: ['/api/v1/networks'],
-    queryFn: () => api.getNetworks(showAll ? 1000 : 100),
+    queryFn: () => api.getNetworks({ limit: showAll ? 1000 : 100 }),
     refetchInterval: 30000,
   });
 
@@ -48,7 +48,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
   const sortedAndFilteredNetworks = useMemo(() => {
     if (!networks?.data) return [];
 
-    let filtered = (networks.data as Network[]).filter((network: Network) => 
+    let filtered = (networks.data as unknown as Network[]).filter((network: Network) => 
       network.ssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
       network.bssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
       network.capabilities.toLowerCase().includes(searchTerm.toLowerCase())
@@ -206,7 +206,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
           <div className="h-[60vh] md:h-[80vh] overflow-y-auto overflow-x-auto md:overflow-x-visible space-y-1 bg-background/20 border border-dashed border-yellow-500/50 min-h-[200px]">
             {sortedAndFilteredNetworks.length === 0 ? (
               <div className="p-8 text-center text-red-600 bg-red-500/10 rounded">
-                No networks to display after filtering. Total available: {g63Networks?.data?.length || 0}
+                No networks to display after filtering. Total available: {networks?.data?.length || 0}
               </div>
             ) : (
               sortedAndFilteredNetworks.map((network) => {
@@ -305,7 +305,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
           {/* Table Footer */}
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/30">
             <p className="text-sm text-muted-foreground">
-              Showing {sortedAndFilteredNetworks.length} of {g63Networks?.data?.length || 0} networks
+              Showing {sortedAndFilteredNetworks.length} of {networks?.data?.length || 0} networks
             </p>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Show all data:</span>

@@ -79,7 +79,7 @@ export function AccessPointsPage() {
         })
       }))
     } : data
-  };
+  } as typeof queryResult;
 
   return (
     <div className="flex flex-col h-full bg-slate-900">

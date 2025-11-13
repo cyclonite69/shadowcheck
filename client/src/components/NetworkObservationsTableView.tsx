@@ -9,7 +9,7 @@
  */
 
 import { useRef, useEffect, useMemo, useState } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
 import { Loader2, Wifi, Signal, ArrowUpDown, ArrowUp, ArrowDown, Bluetooth, Radio, HelpCircle } from 'lucide-react';
 import { type NetworkObservation, flattenNetworkObservations, getTotalNetworkCount } from '@/hooks/useInfiniteNetworkObservations';
 import { cn } from '@/lib/utils';
@@ -238,6 +238,7 @@ export function NetworkObservationsTableView({ queryResult, columnConfig }: Netw
 
   const [sortConfig, setSortConfig] = useState<SortConfig[]>([]);
   const [selectedNetworks, setSelectedNetworks] = useState<Set<string>>(new Set());
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkObservation | null>(null);
   const [showMap, setShowMap] = useState(false);
 
   // Toggle network selection
@@ -656,7 +657,7 @@ export function NetworkObservationsTableView({ queryResult, columnConfig }: Netw
             position: 'relative',
           }}
         >
-          {virtualItems.map((virtualRow) => {
+          {virtualItems.map((virtualRow: VirtualItem) => {
             const obs = sortedObservations[virtualRow.index];
             if (!obs) return null;
 

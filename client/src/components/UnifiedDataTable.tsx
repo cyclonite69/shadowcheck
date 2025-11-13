@@ -11,7 +11,7 @@
  */
 
 import { useRef, useEffect, useState, useMemo } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
 import {
   ArrowUpDown,
   ArrowUp,
@@ -325,7 +325,7 @@ export function UnifiedDataTable({
               </tr>
             </thead>
             <tbody>
-              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              {rowVirtualizer.getVirtualItems().map((virtualRow: VirtualItem) => {
                 const row = sortedData[virtualRow.index];
                 if (!row) return null;
 

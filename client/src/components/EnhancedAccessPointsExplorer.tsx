@@ -19,7 +19,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
 import {
   useInfiniteAccessPoints,
   flattenAccessPoints,
@@ -638,7 +638,7 @@ export function EnhancedAccessPointsExplorer() {
                   </tr>
                 </thead>
                 <tbody>
-                  {virtualItems.map((virtualRow) => {
+                  {virtualItems.map((virtualRow: VirtualItem) => {
                     const row = sortedData[virtualRow.index];
                     if (!row) return null;
 
