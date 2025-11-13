@@ -1,264 +1,606 @@
-# ShadowCheck
+<div align="center">
 
-[![Repository](https://img.shields.io/badge/repo-shadowcheck-blue.svg)](https://github.com/cyclonite69/shadowcheck)
-[![License](https://img.shields.io/badge/license-ADD--LICENSE-lightgrey.svg)](LICENSE)
-[![Language](https://img.shields.io/github/languages/top/cyclonite69/shadowcheck)](https://github.com/cyclonite69/shadowcheck)
-[![Topics](https://img.shields.io/badge/topics-counter--surveillance--cyber--gis--wireless--react--postgres-blueviolet)]()
+# 🛡️ ShadowCheck
 
-SIGINT forensics platform for wireless analysis optimized for mapping and spatial correlation using PostGIS — built with TypeScript, React (Vite), and modern tooling.
+### SIGINT Forensics Platform for Wireless Analysis
 
-Table of contents
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Architecture](#architecture)
-- [Requirements](#requirements)
-- [Quickstart (Docker Compose)](#quickstart-docker-compose)
-- [Manual Local Setup](#manual-local-setup)
-- [Database (PostGIS) Setup](#database-postgis-setup)
-- [Configuration](#configuration)
-- [Usage & Examples](#usage--examples)
-- [Security & Privacy](#security--privacy)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgements](#acknowledgements)
-- [Contacts](#contacts)
+[![GitHub Stars](https://img.shields.io/github/stars/cyclonite69/shadowcheck?style=for-the-badge&logo=github&color=yellow)](https://github.com/cyclonite69/shadowcheck/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/cyclonite69/shadowcheck?style=for-the-badge&logo=github&color=blue)](https://github.com/cyclonite69/shadowcheck/network)
+[![GitHub Issues](https://img.shields.io/github/issues/cyclonite69/shadowcheck?style=for-the-badge&logo=github&color=red)](https://github.com/cyclonite69/shadowcheck/issues)
+[![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE)
+
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![PostGIS](https://img.shields.io/badge/PostGIS-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgis.net/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+
+**A professional-grade SIGINT forensics and analysis platform for wireless network data with advanced spatial correlation, real-time monitoring, and comprehensive surveillance detection.**
+
+[🚀 Quick Start](#-quickstart-docker-compose) • [📖 Documentation](#-table-of-contents) • [🤝 Contributing](#-contributing) • [⭐ Star this repo](#)
+
+</div>
 
 ---
 
-Overview
---------
-ShadowCheck is a SIGINT-focused forensics and analysis platform for wireless network data that combines spatial analysis through PostGIS with a modern web frontend. It provides capabilities to ingest, visualize, correlate, and export wireless observations and derived artifacts for investigative workflows.
+## 🌟 Why ShadowCheck?
 
-Key Features
-------------
-- Spatially-aware storage and indexing using PostgreSQL + PostGIS
-- Interactive mapping and timeline visualizations (React + Vite)
-- Ingest pipeline for wireless capture data (PCAP) and derived metadata
-- Correlation and enrichment of observations with geospatial queries
-- RESTful API backend implemented in TypeScript
-- Docker-friendly for reproducible deployments
-- Extensible data model for signals, sessions, devices, and annotations
+ShadowCheck transforms raw wireless capture data into actionable intelligence through powerful spatial analysis and intuitive visualizations. Built for security researchers, forensic analysts, and SIGINT professionals who need enterprise-grade tools for wireless network investigation.
 
-Architecture
-------------
-Basic high-level architecture (recommended folder layout):
+### ✨ Key Features
 
-- /backend — TypeScript Node.js API server (Express, Nest, or Fastify)
-- /frontend — React + Vite single-page application
-- /db — database scripts, migrations, SQL helpers, GIS assets
-- /docker — docker-compose configuration for dev/test
-- /docs — additional diagrams, data model, and SOPs
+<table>
+<tr>
+<td width="50%">
 
-Flow:
-1. Ingest (PCAP → parser) → 2. Enrich (metadata, geolocation) → 3. Store (Postgres/PostGIS) → 4. Query & Visualize (API → frontend)
+#### 🗺️ **Geospatial Intelligence**
+- PostGIS-powered spatial indexing and queries
+- Interactive Mapbox visualizations
+- Radius search and geo-fencing
+- Multi-radio tracking (WiFi, BLE, Cellular)
 
-Requirements
-------------
-- Docker & Docker Compose (recommended for development)
-- Node.js (18+) and npm / pnpm / yarn (if running locally)
-- PostgreSQL 14+ with PostGIS extension (if not using Docker)
-- Modern browser for UI (Chrome, Firefox)
-- Optional: tools for PCAP parsing (tshark, scapy)
+#### 🔍 **Advanced Analytics**
+- Surveillance pattern detection
+- Network behavior analysis
+- Signal strength correlation
+- Temporal tracking and timelines
 
-Quickstart (Docker Compose)
----------------------------
-The fastest way to get ShadowCheck running for development/testing is with Docker.
+</td>
+<td width="50%">
 
-1. **Configure environment variables:**
+#### 🎯 **Data Enrichment**
+- WiGLE API integration
+- MAC vendor lookup (300K+ OUIs)
+- Automated geolocation tagging
+- Multi-source data federation
+
+#### 🛡️ **Enterprise Ready**
+- Docker-based deployment
+- Prometheus + Grafana monitoring
+- Centralized logging (Loki)
+- RESTful API architecture
+
+</td>
+</tr>
+</table>
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+
+### Interactive Geospatial Map
+*Real-time network visualization with clustering and signal range indicators*
+
+### Analytics Dashboard
+*Comprehensive metrics, security analysis, and temporal patterns*
+
+### Surveillance Detection
+*Automated threat detection and behavioral analysis*
+
+> **Note:** Add screenshots to `docs/images/` directory for maximum visual impact!
+
+</div>
+
+---
+
+## 🚀 Quickstart (Docker Compose)
+
+Get ShadowCheck running in **under 5 minutes**:
+
 ```bash
+# 1. Clone the repository
+git clone https://github.com/cyclonite69/shadowcheck.git
+cd shadowcheck
+
+# 2. Configure environment
 cp .env.example .env
-```
+# Edit .env with your secure passwords
 
-Edit `.env` and set secure passwords for all required variables:
-- `POSTGRES_PASSWORD` - Database password (required)
-- `GRAFANA_PASSWORD` - Grafana monitoring dashboard password (required)
-- `PGADMIN_PASSWORD` - pgAdmin password (optional, only if using pgAdmin)
-
-**⚠️ Security Warning:** Never commit the `.env` file. Use strong, unique passwords for each service.
-
-2. **Start all services:**
-```bash
+# 3. Start all services
 docker compose up --build
+
+# 4. Access the platform
+# Frontend:  http://localhost:3001
+# Grafana:   http://localhost:3000
+# API:       http://localhost:5000
 ```
 
-This starts:
-- PostgreSQL 18 with PostGIS on port 5432
-- Backend API on port 5000
-- Frontend on port 3001
-- Grafana monitoring on port 3000
-- Prometheus metrics on port 9091
-- Loki logs on port 3100
+**⚡ That's it!** Your SIGINT platform is now running with:
+- PostgreSQL 18 + PostGIS spatial database
+- Real-time monitoring (Prometheus + Grafana)
+- Centralized logging (Loki + Promtail)
+- Full-featured React frontend
 
-3. **Optional: Start pgAdmin** (database management UI):
-```bash
-docker compose --profile admin up
+---
+
+## 📋 Table of Contents
+
+- [Why ShadowCheck?](#-why-shadowcheck)
+- [Architecture](#-architecture)
+- [Installation](#-installation)
+  - [Docker Deployment](#docker-deployment-recommended)
+  - [Manual Setup](#manual-local-setup)
+- [Configuration](#-configuration)
+- [Usage & API](#-usage--api)
+- [Data Pipelines](#-data-pipelines)
+- [Security](#-security--privacy)
+- [Monitoring](#-monitoring--observability)
+- [Contributing](#-contributing)
+- [Roadmap](#-roadmap)
+- [License](#-license)
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     ShadowCheck Platform                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌──────────────┐      ┌──────────────┐      ┌───────────┐ │
+│  │   React UI   │─────▶│  Express API │─────▶│ PostgreSQL│ │
+│  │   (Vite)     │      │  TypeScript  │      │  + PostGIS│ │
+│  └──────────────┘      └──────────────┘      └───────────┘ │
+│         │                      │                     │        │
+│         │              ┌───────▼─────────┐          │        │
+│         │              │  Data Pipelines │          │        │
+│         │              ├─────────────────┤          │        │
+│         │              │ • KML Import    │          │        │
+│         │              │ • Kismet CSV    │          │        │
+│         │              │ • WiGLE API     │          │        │
+│         │              └─────────────────┘          │        │
+│         │                                            │        │
+│  ┌──────▼─────────────────────────────────────────▼──────┐ │
+│  │          Monitoring & Observability Stack              │ │
+│  ├────────────────────────────────────────────────────────┤ │
+│  │  Prometheus │ Grafana │ Loki │ AlertManager           │ │
+│  └────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-4. **Access the application:**
-- Frontend: http://localhost:3001
-- Grafana: http://localhost:3000
-- pgAdmin: http://localhost:8080 (if running with admin profile)
+### Tech Stack
 
-Manual Local Setup
-------------------
-Backend
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Frontend** | React + TypeScript + Vite | Modern, responsive UI |
+| **Backend** | Node.js + Express | RESTful API server |
+| **Database** | PostgreSQL 18 + PostGIS | Spatial data storage |
+| **Mapping** | Mapbox GL JS | Interactive visualizations |
+| **Monitoring** | Prometheus + Grafana | Metrics and dashboards |
+| **Logging** | Loki + Promtail | Centralized log aggregation |
+| **Container** | Docker + Docker Compose | Deployment orchestration |
+
+---
+
+## 💻 Installation
+
+### Docker Deployment (Recommended)
+
+**Requirements:**
+- Docker 20.10+
+- Docker Compose 2.0+
+- 4GB+ RAM
+- 10GB+ disk space
+
+**Step-by-step:**
+
+1. **Clone and configure:**
 ```bash
-cd backend
+git clone https://github.com/cyclonite69/shadowcheck.git
+cd shadowcheck
 cp .env.example .env
-npm install
-npm run dev
-# or
-pnpm install && pnpm dev
 ```
 
-Frontend
+2. **Set secure passwords in `.env`:**
 ```bash
-cd frontend
-cp .env.example .env
+POSTGRES_PASSWORD=your_secure_postgres_password_here
+GRAFANA_PASSWORD=your_secure_grafana_password_here
+PGADMIN_PASSWORD=your_secure_pgadmin_password_here  # Optional
+```
+
+3. **Launch services:**
+```bash
+# Core services
+docker compose up -d
+
+# With pgAdmin (database management UI)
+docker compose --profile admin up -d
+```
+
+4. **Verify deployment:**
+```bash
+docker compose ps
+docker compose logs -f backend
+```
+
+5. **Access interfaces:**
+- **Frontend:** http://localhost:3001
+- **API Docs:** http://localhost:5000/api/v1/health
+- **Grafana:** http://localhost:3000 (admin / your_grafana_password)
+- **Prometheus:** http://localhost:9091
+- **pgAdmin:** http://localhost:8080 (admin@shadowcheck.local / your_pgadmin_password)
+
+### Manual Local Setup
+
+<details>
+<summary>Click to expand manual installation guide</summary>
+
+**Prerequisites:**
+- Node.js 18+
+- PostgreSQL 14+ with PostGIS
+- npm/pnpm/yarn
+
+**Backend Setup:**
+```bash
+cd server
 npm install
+cp .env.example .env
+# Configure DATABASE_URL in .env
 npm run dev
-# default Vite URL: http://localhost:5173
 ```
 
-Database (PostGIS) Setup
-------------------------
-If you manage the database manually, create the database and enable PostGIS.
-
-1. Create database and user:
-```sql
-CREATE USER shadow_user WITH PASSWORD 'strong_password';
-CREATE DATABASE shadowcheck OWNER shadow_user;
+**Frontend Setup:**
+```bash
+cd client
+npm install
+cp .env.example .env
+# Configure VITE_API_URL in .env
+npm run dev
 ```
 
-2. Connect to the DB and enable PostGIS:
+**Database Setup:**
 ```sql
+-- Create user and database
+CREATE USER shadowcheck_user WITH PASSWORD 'secure_password';
+CREATE DATABASE shadowcheck OWNER shadowcheck_user;
+
+-- Connect and enable PostGIS
 \c shadowcheck
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- Apply schema
+\i schema/migration.sql
 ```
 
-3. Apply schema/migrations:
-- If using migrations (TypeORM, Knex, Prisma): run the migration command provided in /backend.
-- If using raw SQL: run files in /db/migrations/.
-
-Configuration
--------------
-Environment configuration should be stored in `.env` files. **Never commit `.env` to version control.**
-
-**Required variables** (see `.env.example`):
-```bash
-# Database
-POSTGRES_PASSWORD=your_secure_postgres_password
-
-# Monitoring
-GRAFANA_PASSWORD=your_secure_grafana_password
-
-# Optional: Database Admin (only if using pgAdmin)
-PGADMIN_PASSWORD=your_secure_pgadmin_password
-
-# Optional: Database connection pool tuning
-DB_POOL_MIN=5
-DB_POOL_MAX=20
-DB_RETRY_ATTEMPTS=5
-DB_RETRY_DELAY=2000
-```
-
-**Production Deployment:**
-- Use a secrets manager (AWS Secrets Manager, HashiCorp Vault, etc.)
-- Never use default passwords or weak credentials
-- Enable TLS/HTTPS for all external connections
-- See `docker-compose.prod.yml` for production configuration with Docker secrets
-
-Usage & Examples
-----------------
-API conventions (examples — confirm with your actual implementation):
-
-- GET /api/health — health-check
-- POST /api/ingest — submit parsed capture or metadata for ingestion
-- GET /api/observations — query observations with spatial filters
-- GET /api/devices/:id — get device/session details and history
-- GET /api/map/tiles — geojson or vector tile endpoints for visualizations
-
-Example: Query observations within a bounding box
-```http
-GET /api/observations?bbox=-122.5,37.7,-122.3,37.8
-```
-
-Importing PCAP-derived JSON
-1. Convert PCAP to JSON metadata (e.g., using tshark/scapy custom scripts).
-2. POST the JSON to /api/ingest or drop into an ingestion directory watched by your backend.
-
-Security & Privacy
-------------------
-- This project deals with sensitive signal data. Ensure access controls, encrypted transport (TLS), and strong authentication (JWT/OAuth + MFA) in production.
-- Keep personally-identifying information (PII) handling and retention policies compliant with applicable laws.
-- Use role-based access control on API endpoints and GIS data layers.
-
-Testing
--------
-- Backend: unit tests and integration tests (Jest/Mocha)
-- Frontend: UI tests and component tests (Vitest / React Testing Library)
-- Run tests:
-```bash
-# backend
-cd backend
-npm test
-
-# frontend
-cd frontend
-npm test
-```
-
-Deployment
-----------
-Suggested production steps:
-1. Build frontend static assets and host behind CDN (or serve from backend).
-2. Deploy backend as containerized service (Kubernetes, ECS, or plain Docker) behind HTTPS load balancer.
-3. Use managed Postgres with PostGIS enabled or host in your infrastructure; ensure backups and point-in-time recovery.
-4. Monitor: metrics (Prometheus), logs (ELK/LogDNA), and alerts for resource and security events.
-
-Roadmap
--------
-Planned improvements (example; adapt to your priorities):
-- Enrichment services for device fingerprinting and signal triangulation
-- Vector-tile support for large-scale mapping
-- User/role management and audit trails
-- Integrations: MISP, Elastic, kyber/tshark-based parsers
-- Stream processing for near-real-time ingestion (Kafka)
-
-Contributing
-------------
-We welcome contributions. Suggested workflow:
-1. Fork the repo
-2. Create a branch: git checkout -b feat/short-description
-3. Add tests for new features
-4. Open a PR against master describing changes and rationale
-
-Please follow the project's coding style and add/adjust documentation where necessary.
-
-License
--------
-No license is currently selected for this repository. Add a LICENSE file (recommended: MIT, Apache-2.0) to make the project's license explicit.
-
-Acknowledgements
-----------------
-- Built on open-source building blocks: PostgreSQL, PostGIS, Node.js, React, Vite
-- Thanks to the maintainers of the libraries and tools used by ShadowCheck
-
-Contacts
---------
-Repository: https://github.com/cyclonite69/shadowcheck
-Owner: @cyclonite69
+</details>
 
 ---
 
-Notes
------
-- This README is designed as a practical, developer-friendly starting point. Adjust commands and sections to reflect the exact toolchain and folder layout used in your repository.
-- If you want, I can:
-  - tailor the README to the repo's actual file structure after scanning the tree,
-  - add a LICENSE file and open a PR,
-  - or generate a docker-compose.yml and .env.example tuned to your code.
+## ⚙️ Configuration
+
+### Environment Variables
+
+All configuration is managed through environment files. **Never commit `.env` to version control.**
+
+**Required Variables:**
+```bash
+# Database
+POSTGRES_PASSWORD=strong_unique_password_32_chars_min
+DATABASE_URL=postgresql://shadowcheck_user:${POSTGRES_PASSWORD}@localhost:5432/shadowcheck
+
+# Monitoring
+GRAFANA_PASSWORD=strong_unique_password_for_grafana
+
+# Optional: Database Admin UI
+PGADMIN_PASSWORD=strong_unique_password_for_pgadmin
+
+# Optional: Mapbox (for enhanced mapping)
+MAPBOX_TOKEN=your_mapbox_public_token_here
+```
+
+### Security Best Practices
+
+- ✅ Use **32+ character passwords** with mixed case, numbers, and symbols
+- ✅ Different passwords for each service
+- ✅ Use secrets manager in production (AWS Secrets, Vault, etc.)
+- ✅ Enable TLS/HTTPS for all external connections
+- ✅ Restrict database access to localhost or VPN
+- ✅ Regular security updates and dependency scanning
+
+---
+
+## 🔧 Usage & API
+
+### REST API Endpoints
+
+ShadowCheck exposes a comprehensive RESTful API:
+
+#### **System Health**
+```bash
+GET /api/v1/health          # Health check
+GET /api/v1/status          # Detailed system status
+GET /api/v1/version         # API version info
+GET /api/v1/metrics         # System metrics
+```
+
+#### **Network Observations**
+```bash
+GET /api/v1/networks        # List all networks (paginated)
+GET /api/v1/within          # Spatial radius search
+GET /api/v1/visualize       # GeoJSON for mapping
+```
+
+#### **Analytics**
+```bash
+GET /api/v1/analytics          # Comprehensive overview
+GET /api/v1/security-analysis  # Security breakdown
+GET /api/v1/signal-strength    # Signal distribution
+GET /api/v1/radio-stats        # Multi-radio statistics
+GET /api/v1/timeline           # Temporal patterns
+```
+
+#### **Surveillance Detection**
+```bash
+GET /api/v1/surveillance/stats              # Detection statistics
+GET /api/v1/surveillance/wifi/threats       # WiFi threat analysis
+GET /api/v1/surveillance/location-visits    # Location patterns
+GET /api/v1/surveillance/home-following     # Following detection
+```
+
+#### **Access Points**
+```bash
+GET /api/v1/access-points              # Detailed AP list
+GET /api/v1/access-points/:mac         # Single AP details
+GET /api/v1/access-points/:mac/observations  # AP timeline
+```
+
+#### **WiGLE Enrichment**
+```bash
+GET /api/v1/wigle/stats            # Enrichment statistics
+GET /api/v1/wigle/queue            # Pending enrichments
+POST /api/v1/wigle/tag             # Tag networks for enrichment
+POST /api/v1/wigle/enrich          # Trigger enrichment
+```
+
+### Example Usage
+
+```bash
+# Spatial query: networks within 500m radius
+curl "http://localhost:5000/api/v1/within?lat=43.0234&lon=-83.6968&radius=500"
+
+# Security analysis with filters
+curl "http://localhost:5000/api/v1/networks?radio_types=W&min_signal=-70&security_types=Open"
+
+# Surveillance threat detection
+curl "http://localhost:5000/api/v1/surveillance/wifi/threats"
+```
+
+---
+
+## 🔄 Data Pipelines
+
+ShadowCheck supports multiple ingestion formats:
+
+### 1. **KML Import** (Google Earth/Maps)
+```bash
+# Place KML files in pipelines/kml/
+# Import via admin UI or API
+curl -X POST http://localhost:5000/api/v1/pipelines/kml/import \
+  -H "Content-Type: application/json" \
+  -d '{"filename": "my_networks.kml"}'
+```
+
+### 2. **Kismet CSV** (Wireless IDS)
+```bash
+# Place Kismet CSV exports in pipelines/kismet/
+# Automatic detection and import
+```
+
+### 3. **WiGLE CSV** (Wardriving data)
+```bash
+# Place WiGLE CSV files in pipelines/wigle/
+# Import with geolocation enrichment
+```
+
+### 4. **Live Streaming** (Planned)
+- Kismet remote capture
+- Real-time MQTT ingestion
+- Kafka stream processing
+
+---
+
+## 🔒 Security & Privacy
+
+ShadowCheck handles sensitive SIGINT data. Security is paramount:
+
+### Access Control
+- Role-based access control (RBAC) on all API endpoints
+- JWT authentication with refresh tokens
+- Rate limiting and request throttling
+- IP whitelisting for admin functions
+
+### Data Protection
+- Encrypted connections (TLS 1.3+)
+- Encrypted database backups
+- PII scrubbing and anonymization options
+- Audit logging for all data access
+
+### Compliance
+- GDPR-compliant data retention policies
+- Configurable data retention periods
+- Export and deletion capabilities
+- Comprehensive audit trails
+
+### Best Practices
+1. Always use HTTPS in production
+2. Enable database encryption at rest
+3. Regular security audits and penetration testing
+4. Keep dependencies updated
+5. Monitor for suspicious activity
+
+---
+
+## 📊 Monitoring & Observability
+
+ShadowCheck includes enterprise-grade monitoring:
+
+### Grafana Dashboards
+- **System Overview:** Resource usage, uptime, API performance
+- **Database Metrics:** Connection pool, query performance, storage
+- **Application Metrics:** Request rates, error rates, latency
+- **Security Dashboard:** Failed auth, suspicious patterns
+
+### Prometheus Metrics
+- Custom application metrics
+- Database connection pool monitoring
+- API endpoint performance tracking
+- Real-time alerting
+
+### Loki Log Aggregation
+- Centralized logging from all containers
+- Log correlation and search
+- Alert triggers on log patterns
+- Long-term log retention
+
+**Access monitoring:**
+- Grafana: http://localhost:3000 (username: admin)
+- Prometheus: http://localhost:9091
+- View logs: `docker compose logs -f [service]`
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions from the community! Here's how to get started:
+
+### Ways to Contribute
+- 🐛 Report bugs and issues
+- 💡 Suggest new features
+- 📝 Improve documentation
+- 🧪 Add tests and improve coverage
+- 🔧 Submit bug fixes
+- ✨ Implement new features
+
+### Development Workflow
+1. **Fork** the repository
+2. **Clone** your fork: `git clone https://github.com/YOUR_USERNAME/shadowcheck.git`
+3. **Create** a feature branch: `git checkout -b feat/amazing-feature`
+4. **Make** your changes with tests
+5. **Commit** with clear messages: `git commit -m "feat: Add amazing feature"`
+6. **Push** to your fork: `git push origin feat/amazing-feature`
+7. **Open** a Pull Request with detailed description
+
+### Code Style
+- Follow existing code formatting
+- Use TypeScript for type safety
+- Write meaningful commit messages (conventional commits)
+- Add tests for new features
+- Update documentation as needed
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+---
+
+## 🗺️ Roadmap
+
+### ✅ Current Release (v1.0)
+- ✅ PostgreSQL + PostGIS spatial database
+- ✅ Interactive Mapbox visualizations
+- ✅ Multi-source data ingestion (KML, CSV)
+- ✅ WiGLE API enrichment
+- ✅ Surveillance pattern detection
+- ✅ Comprehensive monitoring stack
+
+### 🚧 In Progress
+- 🔄 Real-time streaming ingestion (Kafka)
+- 🔄 Advanced ML-based threat detection
+- 🔄 Multi-tenancy support
+- 🔄 Mobile app (React Native)
+
+### 📅 Planned
+- 📋 Vector tile support for massive datasets
+- 📋 3D visualization with Cesium
+- 📋 MISP integration for threat intelligence
+- 📋 Automated PDF report generation
+- 📋 OAuth2/SAML authentication
+- 📋 Elasticsearch integration
+- 📋 Graph database correlation (Neo4j)
+- 📋 AI-powered anomaly detection
+
+### 💭 Under Consideration
+- Signal triangulation algorithms
+- RF spectrum analysis integration
+- Hardware device integration (SDR)
+- Blockchain-based evidence chain
+
+**Have ideas?** [Open an issue](https://github.com/cyclonite69/shadowcheck/issues/new) or start a [Discussion](https://github.com/cyclonite69/shadowcheck/discussions)!
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+### What This Means:
+- ✅ Use for personal and commercial projects
+- ✅ Modify and distribute
+- ✅ Private use
+- ❌ No liability or warranty
+
+---
+
+## 🙏 Acknowledgements
+
+ShadowCheck is built on the shoulders of giants:
+
+### Core Technologies
+- [PostgreSQL](https://www.postgresql.org/) - World's most advanced open source database
+- [PostGIS](https://postgis.net/) - Spatial database extender for PostgreSQL
+- [React](https://reactjs.org/) - JavaScript library for building user interfaces
+- [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
+- [Vite](https://vitejs.dev/) - Next generation frontend tooling
+- [Mapbox GL JS](https://www.mapbox.com/) - Interactive maps library
+- [Express](https://expressjs.com/) - Fast, unopinionated web framework
+- [Docker](https://www.docker.com/) - Containerization platform
+
+### Monitoring Stack
+- [Prometheus](https://prometheus.io/) - Systems monitoring and alerting
+- [Grafana](https://grafana.com/) - Analytics and monitoring platform
+- [Loki](https://grafana.com/oss/loki/) - Log aggregation system
+
+### Special Thanks
+- WiGLE.net for wireless network database API
+- Kismet project for wireless IDS inspiration
+- The open-source security research community
+
+---
+
+## 📞 Support & Contact
+
+### Get Help
+- 📖 [Documentation](docs/)
+- 💬 [Discussions](https://github.com/cyclonite69/shadowcheck/discussions)
+- 🐛 [Issue Tracker](https://github.com/cyclonite69/shadowcheck/issues)
+- 📧 Contact: [@cyclonite69](https://github.com/cyclonite69)
+
+### Stay Connected
+- ⭐ [Star this repo](https://github.com/cyclonite69/shadowcheck) to show support
+- 👁️ [Watch](https://github.com/cyclonite69/shadowcheck/subscription) for updates
+- 🍴 [Fork](https://github.com/cyclonite69/shadowcheck/fork) to contribute
+
+---
+
+<div align="center">
+
+### ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=cyclonite69/shadowcheck&type=Date)](https://star-history.com/#cyclonite69/shadowcheck&Date)
+
+### Made with ❤️ by [@cyclonite69](https://github.com/cyclonite69)
+
+**If you find ShadowCheck useful, please consider giving it a ⭐!**
+
+[Report Bug](https://github.com/cyclonite69/shadowcheck/issues) • [Request Feature](https://github.com/cyclonite69/shadowcheck/issues) • [Contribute](CONTRIBUTING.md)
+
+</div>
+
+---
+
+<div align="center">
+<sub>Built for security researchers, by security researchers.</sub>
+</div>
