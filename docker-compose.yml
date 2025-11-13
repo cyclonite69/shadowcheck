@@ -194,7 +194,7 @@ services:
     container_name: shadowcheck_grafana
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-changeme}
       GF_SERVER_ROOT_URL: http://localhost:3000
       GF_AUTH_ANONYMOUS_ENABLED: true
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
@@ -226,7 +226,7 @@ services:
     container_name: shadowcheck_pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@shadowcheck.local
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-changeme}
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     volumes:
       - shadowcheck_pgadmin:/var/lib/pgadmin
