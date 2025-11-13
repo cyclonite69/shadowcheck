@@ -5,11 +5,14 @@
 ## Current Status
 
 ### Line Count
-- **Started:** 40,466 lines
-- **Current:** 36,950 lines
-- **Removed:** 10,432 lines (**25.8%** reduction)
-- **Target:** 16,186 lines (40% reduction)
-- **Remaining:** 5,754 lines needed (**14.2%** more)
+- **Started:** 40,466 lines (code only)
+- **Current Code:** 36,950 lines
+- **Current Docs:** 5,051 lines (down from 16,540)
+- **Code Removed:** 10,432 lines (**25.8%** code reduction)
+- **Docs Removed:** 1,198 tracked + ~7,500 untracked (69.5% doc reduction)
+- **Total Removed:** 11,630+ lines
+- **Target:** 16,186 lines (40% of original code)
+- **Remaining to target:** 4,556 lines needed (**11.3%** more)
 
 ### Breakdown by Area
 - **Backend:** 6,296 lines
@@ -56,6 +59,18 @@
 - **Lines removed:** 1,330
 - **Commit:** 9e8109c
 
+### Phase 5: Documentation Cruft
+**Status:** ✅ COMPLETE
+**Removed abandoned refactor documentation:**
+- Deleted `output/` directory entirely (30 files, ~7,500 untracked lines)
+- Removed `docs/FIXES_APPLIED.md` (155 lines) - historical bug fixes
+- Removed `docs/STATUS.md` (241 lines) - outdated project status
+- Removed `docs/IMPLEMENTATION_SUMMARY.md` (447 lines) - dev notes
+- Removed `docs/QUICK_START_UNIFIED_VIEWS.md` (355 lines) - redundant guide
+- **Lines removed:** 1,198 tracked + ~7,500 untracked = **8,698 total**
+- **Documentation reduction:** 69.5% (16,540 → 5,051 lines)
+- **Commit:** 1c86dca
+
 ---
 
 ## Next Targets 🎯
@@ -93,8 +108,11 @@
 | 2 | Deprecated files | 501 | ✅ |
 | 3 | Dead backend routes | 2,186 | ✅ |
 | 4 | Dead frontend components | 1,330 | ✅ |
-| **Total** | **Removed so far** | **10,432** | **25.8%** |
-| **Remaining** | **To reach 40% goal** | **5,754** | **14.2%** |
+| 5 | Documentation cruft | 1,198 | ✅ |
+| **Code Total** | **Code removed** | **10,432** | **25.8%** |
+| **Docs Total** | **Docs removed** | **~8,698** | **69.5%** |
+| **Grand Total** | **Total removed** | **~19,130** | **Combined** |
+| **Remaining** | **To reach 40% code goal** | **4,556** | **11.3%** |
 
 ---
 
