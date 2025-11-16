@@ -1,6 +1,6 @@
 // server/routes/networks.ts
 import { Router } from "express";
-import { query } from "../db";
+import { query } from "../db.js";
 
 const router = Router();
 

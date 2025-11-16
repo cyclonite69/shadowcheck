@@ -61,11 +61,11 @@ COPY --from=builder /app/server/dist ./server/dist
 COPY package.json .
 
 # Install runtime utilities like tini for process management
-RUN apt-get update && apt-get install -y tini && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y tini wget && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 5000
 
 # Use tini to properly handle signals and reap zombie processes
 # Run the compiled JavaScript output
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["node", "server/dist/index.js"]
+CMD ["node", "server/dist/server/index.js"]

@@ -10,7 +10,7 @@
  */
 
 import { Router, Request, Response } from "express";
-import { getPool } from '../db/connection';
+import { getPool } from '../db/connection.js';
 
 const router = Router();
 

@@ -188,6 +188,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     try {
+      // Valid timestamp range (milliseconds since epoch)
+      const MIN_VALID_TIMESTAMP = 946684800000; // January 1, 2000
+      const MAX_VALID_TIMESTAMP_OFFSET = 86400000; // 1 day in milliseconds
+
       // Get analytics from app.locations_legacy
       const result = await dbInstance.execute(sql`
         SELECT
@@ -195,6 +199,8 @@ export class DatabaseStorage implements IStorage {
           COUNT(DISTINCT l.bssid) as distinct_networks,
           ROUND(AVG(l.level)::numeric, 2) as avg_signal_strength
         FROM app.locations_legacy l
+        WHERE l.time >= ${MIN_VALID_TIMESTAMP}
+          AND l.time <= EXTRACT(EPOCH FROM NOW())::bigint * 1000 + ${MAX_VALID_TIMESTAMP_OFFSET}
       `);
 
       const overview = result[0] || {};
@@ -220,6 +226,10 @@ export class DatabaseStorage implements IStorage {
         return { ok: true, data: [] };
       }
 
+      // Valid timestamp range (milliseconds since epoch)
+      const MIN_VALID_TIMESTAMP = 946684800000; // January 1, 2000
+      const MAX_VALID_TIMESTAMP_OFFSET = 86400000; // 1 day in milliseconds
+
       // Query signal strength distribution from app.locations_legacy
       const result = await dbInstance.execute(sql`
         SELECT
@@ -234,6 +244,8 @@ export class DatabaseStorage implements IStorage {
           ROUND(AVG(level)::numeric, 2) as avg_signal_in_range
         FROM app.locations_legacy
         WHERE level IS NOT NULL
+          AND time >= ${MIN_VALID_TIMESTAMP}
+          AND time <= EXTRACT(EPOCH FROM NOW())::bigint * 1000 + ${MAX_VALID_TIMESTAMP_OFFSET}
         GROUP BY signal_range
         ORDER BY count DESC
       `);
@@ -255,6 +267,10 @@ export class DatabaseStorage implements IStorage {
         return { ok: true, data: [] };
       }
 
+      // Valid timestamp range (milliseconds since epoch)
+      const MIN_VALID_TIMESTAMP = 946684800000; // January 1, 2000
+      const MAX_VALID_TIMESTAMP_OFFSET = 86400000; // 1 day in milliseconds
+
       // Query security analysis from app.network using app.locations_legacy
       const result = await dbInstance.execute(sql`
         WITH security_counts AS (
@@ -264,6 +280,8 @@ export class DatabaseStorage implements IStorage {
             COUNT(*) as network_count
           FROM app.locations_legacy l
           JOIN app.network n ON l.bssid = n.bssid
+          WHERE l.time >= ${MIN_VALID_TIMESTAMP}
+            AND l.time <= EXTRACT(EPOCH FROM NOW())::bigint * 1000 + ${MAX_VALID_TIMESTAMP_OFFSET}
           GROUP BY security
         ),
         total AS (
@@ -304,6 +322,10 @@ export class DatabaseStorage implements IStorage {
         return { ok: true, data: [] };
       }
 
+      // Valid timestamp range (milliseconds since epoch)
+      const MIN_VALID_TIMESTAMP = 946684800000; // January 1, 2000
+      const MAX_VALID_TIMESTAMP_OFFSET = 86400000; // 1 day in milliseconds
+
       // Query using app.locations_legacy as source of truth
       const result = await dbInstance.execute(sql`
         SELECT
@@ -312,6 +334,8 @@ export class DatabaseStorage implements IStorage {
           COUNT(*) as total_observations
         FROM app.locations_legacy l
         JOIN app.network n ON l.bssid = n.bssid
+        WHERE l.time >= ${MIN_VALID_TIMESTAMP}
+          AND l.time <= EXTRACT(EPOCH FROM NOW())::bigint * 1000 + ${MAX_VALID_TIMESTAMP_OFFSET}
         GROUP BY n.type
         ORDER BY total_observations DESC
       `);
@@ -333,6 +357,10 @@ export class DatabaseStorage implements IStorage {
         return { ok: true, data: [] };
       }
 
+      // Valid timestamp range (milliseconds since epoch)
+      const MIN_VALID_TIMESTAMP = 946684800000; // January 1, 2000
+      const MAX_VALID_TIMESTAMP_OFFSET = 86400000; // 1 day in milliseconds
+
       // Get network detections over the last 24 hours grouped by hour using app.locations_legacy
       const result = await dbInstance.execute(sql`
         SELECT
@@ -342,6 +370,8 @@ export class DatabaseStorage implements IStorage {
         FROM app.locations_legacy l
         JOIN app.network n ON l.bssid = n.bssid
         WHERE l.time >= EXTRACT(EPOCH FROM NOW() - INTERVAL '24 hours') * 1000
+          AND l.time >= ${MIN_VALID_TIMESTAMP}
+          AND l.time <= EXTRACT(EPOCH FROM NOW())::bigint * 1000 + ${MAX_VALID_TIMESTAMP_OFFSET}
         GROUP BY hour, n.type
         ORDER BY hour ASC
       `);

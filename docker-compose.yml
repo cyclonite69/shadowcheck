@@ -1,13 +1,12 @@
-
-
 services:
   postgres:
     image: postgis/postgis:18-3.6
     container_name: shadowcheck_postgres_18
+    env_file: .env
     environment:
-      POSTGRES_DB: shadowcheck
-      POSTGRES_USER: shadowcheck
-      POSTGRES_PASSWORD: your_secure_password_here
+      POSTGRES_DB: ${DB_NAME:-shadowcheck}
+      POSTGRES_USER: ${DB_ADMIN_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C --auth-host=scram-sha-256"
       # Performance environment variables
       POSTGRES_SHARED_BUFFERS: "4GB"
@@ -15,7 +14,7 @@ services:
       POSTGRES_WORK_MEM: "128MB"
       POSTGRES_MAINTENANCE_WORK_MEM: "1GB"
     volumes:
-      - shadowcheck_postgres_data:/var/lib/postgresql/data
+      - shadowcheck-prod_postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
       - ./config/postgres-config:/etc/postgresql/conf.d:ro
       - /dev/shm:/dev/shm  # Use host shared memory for better performance
@@ -46,7 +45,7 @@ services:
         soft: 65536
         hard: 65536
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U shadowcheck -d shadowcheck"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_ADMIN_USER:-postgres} -d ${DB_NAME:-shadowcheck}"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -61,10 +60,16 @@ services:
       dockerfile: docker/backend/Dockerfile
       target: production
     container_name: shadowcheck_backend
+    env_file: .env
     environment:
       NODE_ENV: production
       PORT: 5000
-      DATABASE_URL: postgresql://shadowcheck:${POSTGRES_PASSWORD}@postgres:5432/shadowcheck
+      # Database connection settings
+      PGHOST: ${DB_HOST:-postgres}
+      PGPORT: ${DB_PORT:-5432}
+      PGUSER: ${DB_USER:-shadowcheck_user}
+      PGPASSWORD: ${DB_PASSWORD}
+      PGDATABASE: ${DB_NAME:-shadowcheck}
       # Optional overrides
       DB_POOL_MIN: ${DB_POOL_MIN:-5}
       DB_POOL_MAX: ${DB_POOL_MAX:-20}
@@ -246,7 +251,7 @@ networks:
     driver: bridge
 
 volumes:
-  shadowcheck_postgres_data:
+  shadowcheck-prod_postgres_data:
     external: true
   shadowcheck_pgadmin:
     driver: local

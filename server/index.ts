@@ -4,7 +4,7 @@ import cors from "cors";
 import { createServer } from "http";
 import pg from "pg";
 import { setupVite, log } from "./vite.js";
-import { registerShutdownHandlers } from "./utils/shutdown.js";
+// import { registerShutdownHandlers } from "./utils/shutdown.js";
 import healthRouter from "./routes/health.js";
 import visualizeRouter from "./routes/visualize.js";
 import surveillanceRouter from "./routes/surveillance.js";
@@ -427,13 +427,17 @@ app.get("/api/v1/networks", async (req, res) => {
  */
 app.get("/api/v1/analytics", async (_req, res) => {
   try {
+    // Filter out invalid timestamps (before year 2000 or more than 1 day in future)
+    const MIN_VALID_TIMESTAMP = 946684800000; // January 1, 2000
+    const MAX_VALID_TIMESTAMP_OFFSET = 86400000; // 1 day in milliseconds
+
     const query = `
       SELECT
-        (SELECT COUNT(*) FROM app.locations_legacy) as total_observations,
-        (SELECT COUNT(DISTINCT bssid) FROM app.locations_legacy WHERE bssid IS NOT NULL) as distinct_networks,
-        (SELECT MIN(time) FROM app.locations_legacy WHERE time IS NOT NULL AND time > 0) as earliest_observation,
-        (SELECT MAX(time) FROM app.locations_legacy WHERE time IS NOT NULL) as latest_observation,
-        (SELECT COUNT(*) FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL) as geolocated_observations
+        (SELECT COUNT(*) FROM app.locations_legacy WHERE time >= ${MIN_VALID_TIMESTAMP} AND time <= EXTRACT(EPOCH FROM NOW())::bigint * 1000 + ${MAX_VALID_TIMESTAMP_OFFSET}) as total_observations,
+        (SELECT COUNT(DISTINCT bssid) FROM app.locations_legacy WHERE bssid IS NOT NULL AND time >= ${MIN_VALID_TIMESTAMP} AND time <= EXTRACT(EPOCH FROM NOW())::bigint * 1000 + ${MAX_VALID_TIMESTAMP_OFFSET}) as distinct_networks,
+        (SELECT MIN(time) FROM app.locations_legacy WHERE time IS NOT NULL AND time >= ${MIN_VALID_TIMESTAMP}) as earliest_observation,
+        (SELECT MAX(time) FROM app.locations_legacy WHERE time IS NOT NULL AND time <= EXTRACT(EPOCH FROM NOW())::bigint * 1000 + ${MAX_VALID_TIMESTAMP_OFFSET}) as latest_observation,
+        (SELECT COUNT(*) FROM app.locations_legacy WHERE lat IS NOT NULL AND lon IS NOT NULL AND time >= ${MIN_VALID_TIMESTAMP} AND time <= EXTRACT(EPOCH FROM NOW())::bigint * 1000 + ${MAX_VALID_TIMESTAMP_OFFSET}) as geolocated_observations
     `;
 
     const result = await pool.query(query);
@@ -1023,8 +1027,8 @@ const port = Number(process.env.PORT || 5000);
 
   // Register graceful shutdown handlers after server is listening
   // This ensures clean shutdown with zero data loss
-  registerShutdownHandlers(server, {
-    timeout: 10000, // 10 seconds for graceful shutdown
-    signals: ['SIGTERM', 'SIGINT'],
-  });
+  // registerShutdownHandlers(server, {
+  //   timeout: 10000, // 10 seconds for graceful shutdown
+  //   signals: ['SIGTERM', 'SIGINT'],
+  // });
 })();

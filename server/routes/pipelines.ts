@@ -75,15 +75,17 @@ router.post('/kml/import', async (req, res) => {
 
     // Run the Python parser
     const parserPath = path.join(process.cwd(), 'pipelines', 'kml', 'kml_parser.py');
-    const dbPassword = process.env.DATABASE_URL?.match(/password=([^&\s]+)/)?.[1] ||
-                       'DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8=';
+    const dbPassword = process.env.PGPASSWORD ||
+                       process.env.DB_PASSWORD ||
+                       process.env.DATABASE_URL?.match(/password=([^&\s]+)/)?.[1] ||
+                       '';
 
     const env = {
       ...process.env,
-      DB_HOST: '127.0.0.1',
-      DB_PORT: '5432',
-      DB_NAME: 'shadowcheck',
-      DB_USER: 'shadowcheck_user',
+      DB_HOST: process.env.PGHOST || process.env.DB_HOST || '127.0.0.1',
+      DB_PORT: process.env.PGPORT || process.env.DB_PORT || '5432',
+      DB_NAME: process.env.PGDATABASE || process.env.DB_NAME || 'shadowcheck',
+      DB_USER: process.env.PGUSER || process.env.DB_USER || 'shadowcheck_user',
       DB_PASSWORD: dbPassword
     };
 
@@ -142,14 +144,14 @@ router.post('/kml/import-all', async (_req, res) => {
 
     const parserPath = path.join(process.cwd(), 'pipelines', 'kml', 'kml_parser.py');
     const dbPassword = process.env.DATABASE_URL?.match(/password=([^&\s]+)/)?.[1] ||
-                       'DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8=';
+                       '';
 
     const env = {
       ...process.env,
-      DB_HOST: '127.0.0.1',
-      DB_PORT: '5432',
-      DB_NAME: 'shadowcheck',
-      DB_USER: 'shadowcheck_user',
+      DB_HOST: process.env.PGHOST || process.env.DB_HOST || '127.0.0.1',
+      DB_PORT: process.env.PGPORT || process.env.DB_PORT || '5432',
+      DB_NAME: process.env.PGDATABASE || process.env.DB_NAME || 'shadowcheck',
+      DB_USER: process.env.PGUSER || process.env.DB_USER || 'shadowcheck_user',
       DB_PASSWORD: dbPassword
     };
 
@@ -362,14 +364,14 @@ router.post('/wigle/import', async (req, res) => {
     // Run the Python parser
     const parserPath = path.join(process.cwd(), 'pipelines', 'wigle', 'wigle_sqlite_parser.py');
     const dbPassword = process.env.DATABASE_URL?.match(/password=([^&\s]+)/)?.[1] ||
-                       'DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8=';
+                       '';
 
     const env = {
       ...process.env,
-      DB_HOST: '127.0.0.1',
-      DB_PORT: '5432',
-      DB_NAME: 'shadowcheck',
-      DB_USER: 'shadowcheck_user',
+      DB_HOST: process.env.PGHOST || process.env.DB_HOST || '127.0.0.1',
+      DB_PORT: process.env.PGPORT || process.env.DB_PORT || '5432',
+      DB_NAME: process.env.PGDATABASE || process.env.DB_NAME || 'shadowcheck',
+      DB_USER: process.env.PGUSER || process.env.DB_USER || 'shadowcheck_user',
       DB_PASSWORD: dbPassword
     };
 
@@ -494,14 +496,14 @@ router.post('/kismet/import', async (req, res) => {
     // Run the Python parser
     const parserPath = path.join(process.cwd(), 'pipelines', 'kismet', 'kismet_parser.py');
     const dbPassword = process.env.DATABASE_URL?.match(/password=([^&\s]+)/)?.[1] ||
-                       'DJvHRxGZ2e+rDgkO4LWXZG1np80rU4daQNQpQ3PwvZ8=';
+                       '';
 
     const env = {
       ...process.env,
-      DB_HOST: '127.0.0.1',
-      DB_PORT: '5432',
-      DB_NAME: 'shadowcheck',
-      DB_USER: 'shadowcheck_user',
+      DB_HOST: process.env.PGHOST || process.env.DB_HOST || '127.0.0.1',
+      DB_PORT: process.env.PGPORT || process.env.DB_PORT || '5432',
+      DB_NAME: process.env.PGDATABASE || process.env.DB_NAME || 'shadowcheck',
+      DB_USER: process.env.PGUSER || process.env.DB_USER || 'shadowcheck_user',
       DB_PASSWORD: dbPassword
     };
 
