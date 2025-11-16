@@ -21,7 +21,7 @@ WORKDIR /build
 # Copy client dependency manifests first (cache optimization)
 COPY client/package*.json ./client/
 # Install ALL client dependencies
-RUN npm ci --prefix client --timeout=120000
+RUN npm install --prefix client --timeout=120000
 # ==============================================================================
 # STAGE 2: BUILD
 # Build the Vite application
