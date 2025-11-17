@@ -8,28 +8,61 @@
  * - Dynamic column visibility
  */
 
-import { useRef, useEffect, useMemo, useState } from 'react';
-import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
+import type { Row, Header, Cell, HeaderGroup, SortingState, Updater } from '@tanstack/react-table';
+import { NetworkObservation } from '@/types';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Loader2, Wifi, Signal, ArrowUpDown, ArrowUp, ArrowDown, Bluetooth, Radio, HelpCircle } from 'lucide-react';
-import { type NetworkObservation, flattenNetworkObservations, getTotalNetworkCount } from '@/hooks/useInfiniteNetworkObservations';
 import { cn } from '@/lib/utils';
 import type { UseInfiniteQueryResult } from '@tanstack/react-query';
 import { useNetworkObservationColumns } from '@/hooks/useNetworkObservationColumns';
 import { iconColors } from '@/lib/iconColors';
-import { NetworkLocationModal } from './NetworkLocationModal';
+import { categorizeSecurityType, getSecurityTypeStyle } from '@/lib/securityDecoder';
+import { NetworkSecurityPill } from '@/components/NetworkSecurityPill';
+import { TruncatedCell } from '@/components/TruncatedCell';
+import {
+  ColumnDef,
+  ColumnOrderState,
+  ColumnVisibility,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  DragOverlay,
+  useDraggable,
+  useDroppable,
+} from '@dnd-kit/core';
+import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
+import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
+
+import { flattenNetworkObservations, getTotalNetworkCount } from '@/types';
 
 interface NetworkObservationsTableViewProps {
-  queryResult: UseInfiniteQueryResult<any, Error>;
+  data: NetworkObservation[];
   columnConfig: ReturnType<typeof useNetworkObservationColumns>;
+  sorting: SortingState;
+  onSortingChange: (updater: Updater<SortingState>) => void;
+  fetchNextPage: () => void;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
+  selectedRows?: Record<string, boolean>;
+  onSelectedRowsChange?: (selectedRows: Record<string, boolean>) => void;
 }
 
-type SortColumn = 'ssid' | 'bssid' | 'signal' | 'frequency' | 'type' | 'observations' | 'seen' | 'channel' | 'latitude' | 'longitude' | 'altitude' | 'accuracy' | 'security' | 'manufacturer';
-type SortDirection = 'asc' | 'desc';
 
-interface SortConfig {
-  column: SortColumn;
-  direction: SortDirection;
-}
 
 /**
  * Format frequency from Hz to MHz/GHz
@@ -83,69 +116,74 @@ function formatTimestamp(isoString: string): string {
 }
 
 /**
- * Get radio type icon and label with intelligent Kismet → WiGLE classification
- * Kismet uses different type codes that need interpretation:
- * - E = "Ethernet" but actually means Bluetooth (freq 7936) or WiFi bridges
- * - L = LTE (should be Cellular)
- * - G = GPRS/GSM (should be Cellular)
- * - N = Unknown/NFC
+ * Get radio type icon and label based on WiGLE type codes
+ * WiGLE Type Codes (https://api.wigle.net/csvFormat.html):
+ * - W = WiFi (802.11)
+ * - B = BT (Bluetooth Classic)
+ * - E = BLE (Bluetooth Low Energy)
+ * - G = GSM (2G cellular)
+ * - C = CDMA (2G/3G cellular)
+ * - D = WCDMA (3G cellular)
+ * - L = LTE (4G cellular)
+ * - N = NR (5G New Radio)
  */
-function getRadioTypeDisplay(observation: { type: string; frequency?: number | null }): { icon: JSX.Element; label: string } {
+export function getRadioTypeDisplay(observation: { type: string; frequency?: number | null }): { icon: JSX.Element; label: string } {
   const type = observation.type?.toUpperCase();
-  const freq = observation.frequency || 0;
-
-  // Analyze Kismet 'E' type by frequency
-  if (type === 'E') {
-    if (freq === 7936 || freq === 0 || !freq) {
-      return {
-        icon: <Bluetooth className={`h-4 w-4 ${iconColors.secondary.text}`} />,
-        label: 'BT'
-      };
-    } else if ((freq >= 2412 && freq <= 2484) || (freq >= 5000 && freq <= 7125)) {
-      return {
-        icon: <Wifi className={`h-4 w-4 ${iconColors.primary.text}`} />,
-        label: 'WiFi'
-      };
-    }
-    return {
-      icon: <HelpCircle className={`h-4 w-4 ${iconColors.neutral.text}`} />,
-      label: 'Unknown'
-    };
-  }
 
   // Standard WiGLE types
   switch (type) {
+    case 'WIFI':
     case 'W':
       return {
         icon: <Wifi className={`h-4 w-4 ${iconColors.primary.text}`} />,
         label: 'WiFi'
       };
+    case 'BT':
     case 'B':
       return {
         icon: <Bluetooth className={`h-4 w-4 ${iconColors.secondary.text}`} />,
         label: 'BT'
       };
-    case 'C':
+    case 'BLE':
+    case 'E':
       return {
-        icon: <Radio className={`h-4 w-4 ${iconColors.info.text}`} />,
-        label: 'Cellular'
+        icon: <Bluetooth className={`h-4 w-4 ${iconColors.warning.text}`} />,
+        label: 'BLE'
       };
-
-    // Cellular variants
-    case 'L':
-      return {
-        icon: <Radio className={`h-4 w-4 ${iconColors.info.text}`} />,
-        label: 'LTE'
-      };
+    case 'GSM':
     case 'G':
       return {
         icon: <Radio className={`h-4 w-4 ${iconColors.info.text}`} />,
         label: 'GSM'
       };
+    case 'CDMA':
+    case 'C':
+      return {
+        icon: <Radio className={`h-4 w-4 ${iconColors.info.text}`} />,
+        label: 'CDMA'
+      };
+    case 'WCDMA':
+    case 'D':
+      return {
+        icon: <Radio className={`h-4 w-4 ${iconColors.info.text}`} />,
+        label: 'WCDMA'
+      };
+    case 'LTE':
+    case 'L':
+      return {
+        icon: <Radio className={`h-4 w-4 ${iconColors.info.text}`} />,
+        label: 'LTE'
+      };
+    case 'NR':
+    case 'N':
+      return {
+        icon: <Radio className={`h-4 w-4 ${iconColors.success.text}`} />,
+        label: '5G'
+      };
 
     // Unknown types
-    case 'N':
     case '?':
+    case 'UNKNOWN':
       return {
         icon: <HelpCircle className={`h-4 w-4 ${iconColors.neutral.text}`} />,
         label: 'Unknown'
@@ -182,328 +220,353 @@ function formatAltitude(value: number | null): string {
  */
 function formatAccuracy(value: number | null): string {
   if (value === null || value === undefined) return '-';
-  return `±${value.toFixed(1)}m`;
+  return `${value.toFixed(1)}m`;
 }
 
-/**
- * Table header with sorting
- */
-function SortableHeader({
-  column,
-  sortConfig,
-  onSort,
-  children,
-}: {
-  column: SortColumn;
-  sortConfig: SortConfig[];
-  onSort: (column: SortColumn, shiftKey: boolean) => void;
-  children: React.ReactNode;
-}) {
-  const sortIndex = sortConfig.findIndex((s) => s.column === column);
-  const config = sortIndex >= 0 ? sortConfig[sortIndex] : null;
 
-  const SortIcon = config
-    ? config.direction === 'asc'
-      ? ArrowUp
-      : ArrowDown
-    : ArrowUpDown;
+
+function DraggableColumnHeader({ header }: { header: Header<NetworkObservation, unknown> }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: header.id,
+  });
+
+  // Handle column sorting with shift-click for multi-sort
+  const handleClick = (e: React.MouseEvent) => {
+    console.log('[CLICK] Header clicked:', header.id, 'shift:', e.shiftKey, 'at', new Date().getTime());
+    e.stopPropagation();
+
+    if (e.shiftKey) {
+      // Shift-click: multi-sort mode (keep other sorts, add this column)
+      header.column.toggleSorting(undefined, true);
+    } else {
+      // Regular click: single-sort mode (clear other sorts)
+      header.column.toggleSorting(undefined, false);
+    }
+  };
+
+  const style = {
+    width: header.getSize(),
+    ...(transform ? {
+      transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      transition,
+    } : {})
+  };
 
   return (
     <th
-      className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase cursor-pointer hover:bg-slate-800 transition-colors select-none bg-slate-900 border-b border-slate-700"
-      onClick={(e) => onSort(column, e.shiftKey)}
-      title="Click to sort, Shift+Click for multi-column sort"
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      className="p-4 text-left text-xs font-semibold text-slate-400 uppercase relative group cursor-move"
     >
-      <div className="flex items-center gap-2">
-        {children}
-        <SortIcon className={cn('h-3 w-3', config ? 'text-blue-400' : 'text-slate-600')} />
-        {sortConfig.length > 1 && config && (
-          <span className="text-xs text-blue-400">{sortIndex + 1}</span>
-        )}
-      </div>
+      {/* Drag handle zone (left side) - use drag listeners here */}
+      <div
+        {...listeners}
+        className="absolute left-0 top-0 bottom-0 w-2 hover:bg-blue-500/20"
+        title="Drag to reorder"
+      />
+
+      {/* Clickable header content - NO listeners here */}
+      <button
+        onClick={handleClick}
+        className="w-full text-left hover:text-slate-200 transition-colors flex items-center gap-2"
+        title="Click to sort • Shift+Click for multi-sort"
+      >
+        <span className="flex-1">
+          {header.isPlaceholder
+            ? null
+            : flexRender(
+                header.column.columnDef.header,
+                header.getContext()
+              )}
+        </span>
+
+        {/* Sort indicator */}
+        <div className="flex-shrink-0">
+          {header.column.getIsSorted() ? (
+            header.column.getIsSorted() === 'desc' ? (
+              <ArrowDown className="w-4 h-4" />
+            ) : (
+              <ArrowUp className="w-4 h-4" />
+            )
+          ) : null}
+        </div>
+      </button>
     </th>
   );
 }
 
-export function NetworkObservationsTableView({ queryResult, columnConfig }: NetworkObservationsTableViewProps) {
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-    isError,
-    error,
-  } = queryResult;
+export function NetworkObservationsTableView({
+  data: allObservations,
+  columnConfig,
+  sorting,
+  onSortingChange,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
+  isLoading,
+  isError,
+  error,
+  selectedRows = {},
+  onSelectedRowsChange = () => {},
+}: NetworkObservationsTableViewProps) {
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-  const [sortConfig, setSortConfig] = useState<SortConfig[]>([]);
-  const [selectedNetworks, setSelectedNetworks] = useState<Set<string>>(new Set());
-  const [selectedNetwork, setSelectedNetwork] = useState<NetworkObservation | null>(null);
-  const [showMap, setShowMap] = useState(false);
-
-  // Toggle network selection
-  const toggleNetworkSelection = (bssid: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setSelectedNetworks(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(bssid)) {
-        newSet.delete(bssid);
-      } else {
-        newSet.add(bssid);
-      }
-      return newSet;
-    });
-  };
-
-  // Select all visible networks
-  const selectAll = () => {
-    const allBssids = new Set(sortedObservations.map(obs => obs.bssid));
-    setSelectedNetworks(allBssids);
-  };
-
-  // Clear all selections
-  const clearSelection = () => {
-    setSelectedNetworks(new Set());
-  };
-
-  // Define all column metadata
-  const columnMetadata: Record<string, { label: string; width: string; sortable: boolean }> = {
-    select: { label: '', width: '50px', sortable: false },
-    type: { label: 'Type', width: '80px', sortable: true },
-    ssid: { label: 'SSID', width: '200px', sortable: true },
-    bssid: { label: 'BSSID', width: '180px', sortable: true },
-    manufacturer: { label: 'Manufacturer', width: '200px', sortable: true },
-    signal: { label: 'Signal', width: '100px', sortable: true },
-    frequency: { label: 'Frequency', width: '120px', sortable: true },
-    channel: { label: 'Channel', width: '80px', sortable: true },
-    security: { label: 'Security', width: '150px', sortable: true },
-    observations: { label: 'Obs', width: '80px', sortable: true },
-    latitude: { label: 'Latitude', width: '120px', sortable: true },
-    longitude: { label: 'Longitude', width: '120px', sortable: true },
-    altitude: { label: 'Altitude', width: '100px', sortable: true },
-    accuracy: { label: 'Accuracy', width: '100px', sortable: true },
-    seen: { label: 'Last Seen', width: 'flex-1', sortable: true },
-  };
-
-  // Get visible columns in order
-  const visibleColumns = useMemo(() => {
-    return Object.keys(columnMetadata).filter((id) => columnConfig.isColumnVisible(id));
-  }, [columnConfig]);
-
-  // Flatten all pages
-  const allObservations = useMemo(() => flattenNetworkObservations(data?.pages), [data?.pages]);
-  const totalCount = getTotalNetworkCount(data?.pages);
-
-  // Apply sorting
-  const sortedObservations = useMemo(() => {
-    if (sortConfig.length === 0) return allObservations;
-
-    return [...allObservations].sort((a, b) => {
-      for (const { column, direction } of sortConfig) {
-        let comparison = 0;
-
-        switch (column) {
-          case 'ssid':
-            comparison = (a.ssid || '').localeCompare(b.ssid || '');
-            break;
-          case 'bssid':
-            comparison = a.bssid.localeCompare(b.bssid);
-            break;
-          case 'manufacturer':
-            comparison = (a.manufacturer || '').localeCompare(b.manufacturer || '');
-            break;
-          case 'signal':
-            const signalA = a.signal_strength ?? -999;
-            const signalB = b.signal_strength ?? -999;
-            comparison = signalA - signalB;
-            break;
-          case 'frequency':
-            comparison = (a.frequency || 0) - (b.frequency || 0);
-            break;
-          case 'channel':
-            comparison = (a.channel || 0) - (b.channel || 0);
-            break;
-          case 'type':
-            comparison = (a.type || '').localeCompare(b.type || '');
-            break;
-          case 'security':
-            comparison = (a.encryption || '').localeCompare(b.encryption || '');
-            break;
-          case 'observations':
-            comparison = a.observation_count - b.observation_count;
-            break;
-          case 'latitude':
-            const latA = a.latitude ? parseFloat(a.latitude) : -999;
-            const latB = b.latitude ? parseFloat(b.latitude) : -999;
-            comparison = latA - latB;
-            break;
-          case 'longitude':
-            const lonA = a.longitude ? parseFloat(a.longitude) : -999;
-            const lonB = b.longitude ? parseFloat(b.longitude) : -999;
-            comparison = lonA - lonB;
-            break;
-          case 'altitude':
-            comparison = (a.altitude ?? -999) - (b.altitude ?? -999);
-            break;
-          case 'accuracy':
-            comparison = (a.accuracy ?? -999) - (b.accuracy ?? -999);
-            break;
-          case 'seen':
-            const dateA = new Date(a.observed_at || 0).getTime();
-            const dateB = new Date(b.observed_at || 0).getTime();
-            comparison = dateA - dateB;
-            break;
-        }
-
-        if (comparison !== 0) {
-          return direction === 'asc' ? comparison : -comparison;
-        }
-      }
-      return 0;
-    });
-  }, [allObservations, sortConfig]);
-
-  // Handle sorting
-  const handleSort = (column: SortColumn, shiftKey: boolean) => {
-    setSortConfig((prev) => {
-      if (shiftKey) {
-        // Multi-column sort
-        const existingIndex = prev.findIndex((s) => s.column === column);
-        if (existingIndex >= 0) {
-          // Toggle direction
-          const newConfig = [...prev];
-          newConfig[existingIndex] = {
-            column,
-            direction: prev[existingIndex].direction === 'asc' ? 'desc' : 'asc',
-          };
-          return newConfig;
-        } else {
-          // Add new column
-          return [...prev, { column, direction: 'asc' }];
-        }
-      } else {
-        // Single column sort
-        const existing = prev.find((s) => s.column === column);
-        if (existing) {
-          return [{ column, direction: existing.direction === 'asc' ? 'desc' : 'asc' }];
-        }
-        return [{ column, direction: 'asc' }];
-      }
-    });
-  };
-
-  // Helper to render cell content
-  const renderCellContent = (columnId: string, obs: NetworkObservation) => {
-    switch (columnId) {
-      case 'select':
+  const columns = useMemo<ColumnDef<NetworkObservation>[]>(() => [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <input
+          type="checkbox"
+          checked={table.getIsAllRowsSelected()}
+          onChange={(e) => table.toggleAllRowsSelected(!!e.target.checked)}
+          className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          checked={row.getIsSelected()}
+          onChange={(e) => row.toggleSelected(!!e.target.checked)}
+          onClick={(e) => e.stopPropagation()}
+          className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+      size: 50,
+      minSize: 50,
+      maxSize: 50,
+    },
+    {
+      accessorKey: 'type',
+      header: 'Type',
+      cell: ({ row }) => {
+        const radioType = getRadioTypeDisplay(row.original);
         return (
-          <div className="px-4 py-3 flex items-center justify-center">
-            <input
-              type="checkbox"
-              checked={selectedNetworks.has(obs.bssid)}
-              onChange={(e) => toggleNetworkSelection(obs.bssid, e as any)}
-              onClick={(e) => e.stopPropagation()}
-              className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
-            />
-          </div>
-        );
-      case 'type':
-        const radioType = getRadioTypeDisplay(obs);
-        return (
-          <div className="px-4 py-3 flex items-center gap-2">
+          <div className="flex items-center gap-2">
             {radioType.icon}
             <span className="text-slate-300 text-xs uppercase">
               {radioType.label}
             </span>
           </div>
         );
-      case 'ssid':
-        return (
-          <span className="px-4 py-3 text-slate-200 font-medium truncate block">
-            {obs.ssid || <span className="text-slate-500 italic">Hidden</span>}
+      },
+      size: 90,
+      minSize: 90,
+      maxSize: 90,
+    },
+    {
+      accessorKey: 'ssid',
+      header: 'SSID',
+      cell: ({ row }) => (
+        <TruncatedCell
+          text={row.original.ssid}
+          className="text-slate-200 font-medium text-xs"
+          fallback={<span className="text-slate-500 italic">Hidden</span>}
+        />
+      ),
+      size: 140,
+      minSize: 120,
+      maxSize: 180,
+    },
+    {
+      accessorKey: 'bssid',
+      header: 'BSSID',
+      cell: ({ row }) => (
+        <code className="text-xs text-slate-400 truncate block">{row.original.bssid.toUpperCase()}</code>
+      ),
+      size: 135,
+      minSize: 135,
+      maxSize: 135,
+    },
+    {
+      accessorKey: 'manufacturer',
+      header: 'Manufacturer',
+      cell: ({ row }) => (
+        <TruncatedCell
+          text={row.original.manufacturer}
+          className="text-slate-300 text-xs"
+          fallback={<span className="text-slate-500 italic">Unknown</span>}
+        />
+      ),
+      enableSorting: true,
+      size: 150,
+      minSize: 140,
+      maxSize: 180,
+    },
+    {
+      accessorKey: 'signal_strength',
+      header: 'Signal',
+      cell: ({ row }) => (
+        <span className={cn('font-mono text-xs truncate block', getSignalColor(row.original.signal_strength))}>
+          {formatSignal(row.original.signal_strength)}
+        </span>
+      ),
+      size: 85,
+      minSize: 85,
+      maxSize: 85,
+    },
+    {
+      accessorKey: 'frequency',
+      header: 'Frequency',
+      cell: ({ row }) => (
+        <span className="text-slate-300 text-xs truncate block">
+          {formatFrequency(row.original.frequency)}
+        </span>
+      ),
+      size: 100,
+      minSize: 100,
+      maxSize: 100,
+    },
+    {
+      accessorKey: 'channel',
+      header: 'Channel',
+      cell: ({ row }) => (
+        <span className="text-slate-300 text-xs text-center block">
+          {row.original.channel || '-'}
+        </span>
+      ),
+      size: 70,
+      minSize: 70,
+      maxSize: 70,
+    },
+    {
+      accessorKey: 'capabilities',
+      header: 'Security',
+      cell: ({ row }) => {
+        const securityType = categorizeSecurityType(row.original.capabilities, row.original.type);
+        return <NetworkSecurityPill type={securityType} radioType={row.original.type} />;
+      },
+      size: 120,
+      minSize: 100,
+      maxSize: 140,
+    },
+    {
+      accessorKey: 'observation_count',
+      header: 'Obs',
+      cell: ({ row }) => (
+        <span className="block">
+          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            {row.original.observation_count}
           </span>
-        );
-      case 'bssid':
-        return (
-          <code className="px-4 py-3 text-xs text-slate-400 truncate block">{obs.bssid.toUpperCase()}</code>
-        );
-      case 'manufacturer':
-        return (
-          <span className="px-4 py-3 text-slate-300 text-xs truncate block" title={obs.manufacturer || 'Unknown'}>
-            {obs.manufacturer || <span className="text-slate-500 italic">Unknown</span>}
-          </span>
-        );
-      case 'signal':
-        return (
-          <span className={cn('px-4 py-3 font-mono text-xs truncate block', getSignalColor(obs.signal_strength))}>
-            {formatSignal(obs.signal_strength)}
-          </span>
-        );
-      case 'frequency':
-        return (
-          <span className="px-4 py-3 text-slate-300 text-xs truncate block">
-            {formatFrequency(obs.frequency)}
-          </span>
-        );
-      case 'channel':
-        return (
-          <span className="px-4 py-3 text-slate-300 text-xs truncate block">
-            {obs.channel || '-'}
-          </span>
-        );
-      case 'security':
-        return (
-          <span className="px-4 py-3 text-slate-400 text-xs truncate block">
-            {obs.encryption || '-'}
-          </span>
-        );
-      case 'observations':
-        return (
-          <span className="px-4 py-3 block">
-            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              {obs.observation_count}
-            </span>
-          </span>
-        );
-      case 'latitude':
-        return (
-          <span className="px-4 py-3 text-slate-400 text-xs font-mono truncate block">
-            {formatCoordinate(obs.latitude)}
-          </span>
-        );
-      case 'longitude':
-        return (
-          <span className="px-4 py-3 text-slate-400 text-xs font-mono truncate block">
-            {formatCoordinate(obs.longitude)}
-          </span>
-        );
-      case 'altitude':
-        return (
-          <span className="px-4 py-3 text-slate-400 text-xs truncate block">
-            {formatAltitude(obs.altitude)}
-          </span>
-        );
-      case 'accuracy':
-        return (
-          <span className="px-4 py-3 text-slate-400 text-xs truncate block">
-            {formatAccuracy(obs.accuracy)}
-          </span>
-        );
-      case 'seen':
-        return (
-          <span className="px-4 py-3 text-slate-400 text-xs truncate block">
-            {formatTimestamp(obs.observed_at)}
-          </span>
-        );
-      default:
-        return <span className="px-4 py-3 block">-</span>;
-    }
-  };
+        </span>
+      ),
+      size: 70,
+      minSize: 70,
+      maxSize: 70,
+    },
+    {
+      accessorKey: 'latitude',
+      header: 'Latitude',
+      cell: ({ row }) => (
+        <span className="text-slate-400 text-xs font-mono truncate block">
+          {formatCoordinate(row.original.latitude)}
+        </span>
+      ),
+      size: 95,
+      minSize: 95,
+      maxSize: 95,
+    },
+    {
+      accessorKey: 'longitude',
+      header: 'Longitude',
+      cell: ({ row }) => (
+        <span className="text-slate-400 text-xs font-mono truncate block">
+          {formatCoordinate(row.original.longitude)}
+        </span>
+      ),
+      size: 95,
+      minSize: 95,
+      maxSize: 95,
+    },
+    {
+      accessorKey: 'altitude',
+      header: 'Altitude',
+      cell: ({ row }) => (
+        <span className="text-slate-400 text-xs truncate block">
+          {formatAltitude(row.original.altitude)}
+        </span>
+      ),
+      size: 85,
+      minSize: 85,
+      maxSize: 85,
+    },
+    {
+      accessorKey: 'accuracy',
+      header: 'Accuracy',
+      cell: ({ row }) => (
+        <span className="text-slate-400 text-xs truncate block">
+          {formatAccuracy(row.original.accuracy)}
+        </span>
+      ),
+      size: 80,
+      minSize: 80,
+      maxSize: 80,
+    },
+    {
+      accessorKey: 'observed_at',
+      header: 'Last Seen',
+      cell: ({ row }) => (
+        <span className="text-slate-400 text-xs truncate block">
+          {formatTimestamp(row.original.observed_at)}
+        </span>
+      ),
+      size: 145,
+      minSize: 145,
+      maxSize: 145,
+    },
+  ], []);
 
-  // Virtual scrolling
+  const table = useReactTable({
+    data: allObservations,
+    columns,
+    state: {
+      columnVisibility: columnConfig.columnVisibility,
+      columnOrder: columnConfig.columnOrder,
+      sorting: sorting,
+      rowSelection: selectedRows,
+    },
+    onSortingChange: onSortingChange,
+    onColumnVisibilityChange: columnConfig.setColumnVisibility,
+    onColumnOrderChange: columnConfig.setColumnOrder,
+    onRowSelectionChange: (updater) => {
+      const newSelection = typeof updater === 'function' ? updater(selectedRows) : updater;
+      onSelectedRowsChange(newSelection);
+    },
+    getCoreRowModel: getCoreRowModel(),
+    // getSortedRowModel: getSortedRowModel(), // Add this if you want client-side sorting too
+    manualPagination: true,
+    enableMultiSort: true,
+    enableSortingRemoval: false,
+    enableRowSelection: true,
+    getRowId: (row) => row.bssid,
+  });
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {}),
+    useSensor(TouchSensor, {}),
+    useSensor(KeyboardSensor, {})
+  );
+
+  function handleDragStart(event: DragEndEvent) {
+    setActiveId(event.active.id as string);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (active && over && active.id !== over.id) {
+      const oldIndex = columnConfig.columnOrder.indexOf(active.id as string);
+      const newIndex = columnConfig.columnOrder.indexOf(over.id as string);
+      const newOrder = arrayMove(columnConfig.columnOrder, oldIndex, newIndex);
+      columnConfig.setColumnOrder(newOrder);
+    }
+    setActiveId(null);
+  }
+
   const parentRef = useRef<HTMLDivElement>(null);
   const rowVirtualizer = useVirtualizer({
-    count: sortedObservations.length,
+    count: table.getRowModel().rows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 48,
     overscan: 5,
@@ -511,215 +574,103 @@ export function NetworkObservationsTableView({ queryResult, columnConfig }: Netw
 
   const virtualItems = rowVirtualizer.getVirtualItems();
 
-  // Infinite scroll trigger
   useEffect(() => {
     const lastItem = virtualItems[virtualItems.length - 1];
-
     if (!lastItem) return;
-
-    if (
-      lastItem.index >= sortedObservations.length - 10 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
+    if (lastItem.index >= table.getRowModel().rows.length - 10 && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-  }, [
-    virtualItems,
-    sortedObservations.length,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-  ]);
+  }, [virtualItems, table.getRowModel().rows.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Loading state
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full bg-slate-900">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
-          <p className="text-sm text-slate-400">Loading network observations...</p>
-        </div>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
-  // Error state
   if (isError) {
-    return (
-      <div className="flex items-center justify-center h-full bg-slate-900">
-        <div className="flex flex-col items-center gap-3 max-w-md text-center">
-          <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center">
-            <Signal className="h-6 w-6 text-red-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-200">Failed to load observations</h3>
-          <p className="text-sm text-slate-400">{error?.message || 'Unknown error occurred'}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Empty state
-  if (sortedObservations.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full bg-slate-900">
-        <div className="flex flex-col items-center gap-3 max-w-md text-center">
-          <Wifi className="h-12 w-12 text-slate-600" />
-          <h3 className="text-lg font-semibold text-slate-300">No observations found</h3>
-          <p className="text-sm text-slate-500">Try adjusting your filters or check back later.</p>
-        </div>
-      </div>
-    );
+    return <div>Error: {error?.message || 'Unknown error'}</div>;
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-900">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/50">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-300">
-              Showing {sortedObservations.length.toLocaleString()} of {totalCount.toLocaleString()} observations
-            </h3>
-            {sortConfig.length > 0 && (
-              <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
-                <span>Sorted by: {sortConfig.map((s) => s.column).join(', ')}</span>
-                <button
-                  onClick={() => setSortConfig([])}
-                  className="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
-          </div>
-          {isFetchingNextPage && (
-            <div className="flex items-center gap-2 text-xs text-blue-400">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Loading more...
-            </div>
-          )}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      modifiers={[restrictToHorizontalAxis]}
+    >
+      <div className="flex flex-col h-full bg-slate-900">
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/50">
+          {/* Header content */}
         </div>
-      </div>
 
-      {/* Virtual Scrollable Table */}
-      <div ref={parentRef} className="flex-1 overflow-auto">
-        {/* Sticky Header */}
-        <div className="sticky top-0 z-10 bg-slate-900 border-b border-slate-700">
-          <div className="flex text-sm">
-            {visibleColumns.map((columnId) => {
-              const meta = columnMetadata[columnId];
-              const sortIndex = sortConfig.findIndex((s) => s.column === columnId);
-              const config = sortIndex >= 0 ? sortConfig[sortIndex] : null;
-              const SortIcon = config
-                ? config.direction === 'asc'
-                  ? ArrowUp
-                  : ArrowDown
-                : ArrowUpDown;
+        {/* Virtual Scrollable Table */}
+        <div ref={parentRef} className="flex-1 overflow-auto">
+          <table className="w-full" style={{ tableLayout: 'fixed' }}>
+            <thead className="sticky top-0 z-10 bg-slate-900 border-b border-slate-700">
+              {table.getHeaderGroups().map((headerGroup: HeaderGroup<NetworkObservation>) => (
+                <tr key={headerGroup.id}>
+                  <SortableContext
+                    items={columnConfig.columnOrder}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    {headerGroup.headers.map((headerItem: Header<NetworkObservation, unknown>) => {
+                      return (
+                        <DraggableColumnHeader key={headerItem.id} header={headerItem} />
+                      );
+                    })}
+                  </SortableContext>
+                </tr>
+              ))}
+            </thead>
+            <tbody style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+              {virtualItems.map((virtualRow) => {
+                const row = table.getRowModel().rows[virtualRow.index];
+                if (!row) return null;
 
-              return (
-                <div
-                  key={columnId}
-                  className={cn(
-                    'px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase',
-                    meta.sortable && 'cursor-pointer hover:bg-slate-800 transition-colors select-none'
-                  )}
-                  style={
-                    meta.width === 'flex-1'
-                      ? { flex: 1 }
-                      : { width: meta.width, flexShrink: 0 }
-                  }
-                  onClick={meta.sortable ? (e) => handleSort(columnId as SortColumn, e.shiftKey) : undefined}
-                  title={meta.sortable ? 'Click to sort, Shift+Click for multi-column sort' : undefined}
-                >
-                  <div className="flex items-center gap-2">
-                    {meta.label}
-                    {meta.sortable && (
-                      <>
-                        <SortIcon className={cn('h-3 w-3', config ? 'text-blue-400' : 'text-slate-600')} />
-                        {sortConfig.length > 1 && config && (
-                          <span className="text-xs text-blue-400">{sortIndex + 1}</span>
+
+
+                return (
+                  <tr
+                    key={row.id}
+                    className="absolute w-full border-b border-slate-800 hover:bg-slate-800/50 transition-colors text-xs"
+                    style={{
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    {row.getVisibleCells().map((cellItem: Cell<NetworkObservation, unknown>) => {
+                      return (
+                      <td
+                        key={cellItem.id}
+                        style={{ width: cellItem.column.getSize() }}
+                        className="p-4"
+                      >
+                        {flexRender(
+                          cellItem.column.columnDef.cell,
+                          cellItem.getContext()
                         )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                      </td>
+                    )})}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
 
-        {/* Virtual Rows */}
-        <div
-          style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
-            width: '100%',
-            position: 'relative',
-          }}
-        >
-          {virtualItems.map((virtualRow: VirtualItem) => {
-            const obs = sortedObservations[virtualRow.index];
-            if (!obs) return null;
-
-            return (
-              <div
-                key={`${obs.bssid}-${virtualRow.index}`}
-                className="flex border-b border-slate-800 hover:bg-slate-800/50 transition-colors text-sm cursor-pointer"
-                onClick={() => setSelectedNetwork(obs)}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: `${virtualRow.size}px`,
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-                title="Click to view location on map"
-              >
-                {visibleColumns.map((columnId) => {
-                  const meta = columnMetadata[columnId];
-                  return (
-                    <div
-                      key={columnId}
-                      style={
-                        meta.width === 'flex-1'
-                          ? { flex: 1 }
-                          : { width: meta.width, flexShrink: 0 }
-                      }
-                    >
-                      {renderCellContent(columnId, obs)}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-slate-700 bg-slate-800/50">
+          {/* Footer content */}
         </div>
       </div>
-
-      {/* Footer */}
-      <div className="px-4 py-3 border-t border-slate-700 bg-slate-800/50">
-        {isFetchingNextPage ? (
-          <div className="flex items-center justify-center gap-2 text-xs text-blue-400">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Loading more observations...</span>
+      <DragOverlay>
+        {activeId && table ? (
+          <div className="bg-slate-800 p-4 rounded-lg shadow-lg">
+            {table.getHeaderGroups().flatMap((g: HeaderGroup<NetworkObservation>) => g.headers).find((h: Header<NetworkObservation, unknown>) => h.id === activeId)?.id}
           </div>
-        ) : hasNextPage ? (
-          <p className="text-xs text-slate-500 text-center">Scroll down to load more</p>
-        ) : (
-          <p className="text-xs text-slate-500 text-center">
-            ✓ All {totalCount.toLocaleString()} observations loaded
-          </p>
-        )}
-      </div>
-
-      {/* Location Modal */}
-      {selectedNetwork && (
-        <NetworkLocationModal
-          network={selectedNetwork}
-          onClose={() => setSelectedNetwork(null)}
-        />
-      )}
-    </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

@@ -10,7 +10,7 @@
  */
 
 import { useRef, useEffect, useMemo } from 'react';
-import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Loader2, Wifi, Signal, Shield, ShieldAlert, ShieldCheck, ShieldX, ShieldQuestion } from 'lucide-react';
 import { useColumnPreferences } from '@/hooks/useColumnPreferences';
 import { type AccessPoint, flattenAccessPoints, getTotalCount } from '@/hooks/useInfiniteAccessPoints';
@@ -343,7 +343,7 @@ export function AccessPointTableView({ queryResult }: AccessPointTableViewProps)
 
             {/* Virtual Rows */}
             <tbody>
-              {virtualItems.map((virtualRow: VirtualItem) => {
+              {virtualItems.map((virtualRow) => {
                 const ap = allAccessPoints[virtualRow.index];
                 if (!ap) return null;
 

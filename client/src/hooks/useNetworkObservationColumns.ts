@@ -70,7 +70,32 @@ function savePreferences(preferences: ColumnVisibility): void {
   }
 }
 
+const COLUMN_ORDER_STORAGE_KEY = 'shadowcheck_column_order';
+
+function loadColumnOrder(): string[] {
+  try {
+    const stored = localStorage.getItem(COLUMN_ORDER_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Basic validation to ensure it's an array of strings
+      if (Array.isArray(parsed) && parsed.every(item => typeof item === 'string')) {
+        // Migration: ensure 'select' column is always included
+        if (!parsed.includes('select')) {
+          // Add 'select' at the beginning if it's missing
+          return ['select', ...parsed];
+        }
+        return parsed;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load column order:', error);
+  }
+  // Include 'select' column in the default order (at the beginning)
+  return ['select', ...OBSERVATION_COLUMNS.map(col => col.id)];
+}
+
 export function useNetworkObservationColumns() {
+  const [columnOrder, setColumnOrder] = useState<string[]>(loadColumnOrder);
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(loadPreferences);
 
   useEffect(() => {
@@ -107,6 +132,7 @@ export function useNetworkObservationColumns() {
 
   const resetToDefaults = useCallback(() => {
     setColumnVisibility(getDefaultVisibility());
+    setColumnOrder(['select', ...OBSERVATION_COLUMNS.map(col => col.id)]);
   }, []);
 
   const isColumnVisible = useCallback(
@@ -124,6 +150,7 @@ export function useNetworkObservationColumns() {
 
   return {
     columnVisibility,
+    setColumnVisibility,
     toggleColumn,
     showAllColumns,
     hideAllColumns,
@@ -132,5 +159,7 @@ export function useNetworkObservationColumns() {
     isColumnVisible,
     visibleCount,
     totalCount: OBSERVATION_COLUMNS.length,
+    columnOrder,
+    setColumnOrder,
   };
 }

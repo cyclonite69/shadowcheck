@@ -262,7 +262,7 @@ export function SpatialQueryInterfaceV2() {
   // Query presets
   const applyPreset = (preset: string) => {
     switch (preset) {
-      case 'near-home':
+      case 'near-home': {
         const nearHomeQuery = {
           type: 'radius' as const,
           lat: HOME_LAT,
@@ -272,8 +272,9 @@ export function SpatialQueryInterfaceV2() {
         setQuery(nearHomeQuery);
         executeQuery(nearHomeQuery);
         break;
+      }
 
-      case 'local-area':
+      case 'local-area': {
         const localQuery = {
           type: 'radius' as const,
           lat: HOME_LAT,
@@ -283,6 +284,7 @@ export function SpatialQueryInterfaceV2() {
         setQuery(localQuery);
         executeQuery(localQuery);
         break;
+      }
 
       case 'current-location':
         if (userLocation) {

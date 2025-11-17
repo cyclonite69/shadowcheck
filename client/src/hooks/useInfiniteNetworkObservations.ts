@@ -6,24 +6,7 @@
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query';
-
-export interface NetworkObservation {
-  id: string;
-  bssid: string;
-  ssid: string | null;
-  type: string; // W, B, E, L, G
-  frequency: number | null;
-  channel: number | null;
-  encryption: string | null;
-  latitude: string | undefined;
-  longitude: string | undefined;
-  altitude: number | null;
-  accuracy: number | null;
-  observed_at: string;
-  signal_strength: number | null;
-  observation_count: number;
-  manufacturer: string | null;
-}
+import { type NetworkObservation } from '@/types';
 
 export interface NetworkFilters {
   search?: string;
@@ -38,6 +21,9 @@ export interface NetworkFilters {
   radiusLat?: number;
   radiusLng?: number;
   radiusMeters?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+  sortColumns?: Array<{ id: string; desc: boolean }>;
 }
 
 interface NetworksResponse {
@@ -78,7 +64,22 @@ async function fetchNetworkObservations({
   }
 
   if (filters.radioTypes && filters.radioTypes.length > 0) {
-    params.append('radio_types', filters.radioTypes.join(','));
+    // WiGLE type code mapping - based on https://api.wigle.net/csvFormat.html
+    const codeMap: Record<string, string> = {
+      'WiFi': 'W',
+      'BT': 'B',        // Bluetooth Classic
+      'BLE': 'E',       // Bluetooth Low Energy
+      'GSM': 'G',       // GSM cellular
+      'CDMA': 'C',      // CDMA cellular
+      'WCDMA': 'D',     // WCDMA/3G cellular
+      'LTE': 'L',       // LTE/4G cellular
+      'NR': 'N',        // 5G New Radio
+      // Legacy aliases
+      'Bluetooth': 'B',
+      'Cellular': 'C',
+    };
+    const codes = filters.radioTypes.map(type => codeMap[type] || type).join(',');
+    params.append('radio_types', codes);
   }
 
   if (filters.minSignal !== undefined) {
@@ -115,6 +116,13 @@ async function fetchNetworkObservations({
     params.append('radius_meters', filters.radiusMeters.toString());
   }
 
+  if (filters.sortBy) {
+    params.append('sort_by', filters.sortBy);
+  }
+  if (filters.sortDir) {
+    params.append('sort_dir', filters.sortDir);
+  }
+
   const response = await fetch(`/api/v1/networks?${params.toString()}`);
 
   if (!response.ok) {
@@ -133,7 +141,18 @@ export function useInfiniteNetworkObservations({
   enabled = true,
 }: UseInfiniteNetworkObservationsOptions = {}) {
   return useInfiniteQuery({
-    queryKey: ['network-observations', filters, pageSize],
+    queryKey: [
+      'network-observations',
+      filters,
+      pageSize,
+      filters.sortBy,
+      filters.sortDir,
+      filters.dateStart,
+      filters.dateEnd,
+      filters.radiusLat,
+      filters.radiusLng,
+      filters.radiusMeters
+    ],
     queryFn: ({ pageParam = 0 }) =>
       fetchNetworkObservations({ pageParam, filters, pageSize }),
     getNextPageParam: (lastPage, allPages) => {
@@ -148,25 +167,12 @@ export function useInfiniteNetworkObservations({
       return loadedCount;
     },
     initialPageParam: 0,
+    // *** ADD THIS: Reset to page 0 when sort changes ***
+    staleTime: 0, // Don't cache across sort changes
     enabled,
-    staleTime: 30000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });
 }
 
-/**
- * Helper to flatten all pages into a single array
- */
-export function flattenNetworkObservations(pages: NetworksResponse[] | undefined): NetworkObservation[] {
-  if (!pages) return [];
-  return pages.flatMap((page) => page.data);
-}
-
-/**
- * Helper to get total count from response
- */
-export function getTotalNetworkCount(pages: NetworksResponse[] | undefined): number {
-  if (!pages || pages.length === 0) return 0;
-  return pages[0].total_count;
-}
+export { flattenNetworkObservations, getTotalNetworkCount } from '../types';

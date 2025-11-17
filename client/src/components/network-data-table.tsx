@@ -48,7 +48,7 @@ export function NetworkDataTable({ onNetworkToggle, visibleNetworks = new Set() 
   const sortedAndFilteredNetworks = useMemo(() => {
     if (!networks?.data) return [];
 
-    let filtered = (networks.data as unknown as Network[]).filter((network: Network) => 
+    let filtered = (networks.data as any as Network[]).filter((network: Network) => 
       network.ssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
       network.bssid.toLowerCase().includes(searchTerm.toLowerCase()) ||
       network.capabilities.toLowerCase().includes(searchTerm.toLowerCase())

@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,11 +6,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
-import VisualizationPage from "@/pages/visualization";
+import GeospatialIntelligencePage from "@/pages/geospatial-intelligence";
 import SurveillancePage from "@/pages/surveillance";
-import WiGLEViewer from "@/pages/wigle-viewer";
 import { AdminPanel } from "@/components/admin-panel";
-import { AccessPointsPage } from "@/components/AccessPointsPage";
+import { WiFiNetworkTooltipDemo } from "@/components/WiFiNetworkTooltip";
 import { MobileShell } from "@/components/MobileShell";
 import { DesktopShell } from "@/components/DesktopShell";
 import { FloatingActions } from "@/components/FloatingActions";
@@ -38,11 +37,16 @@ function Router() {
             <MobileShell>
               <Switch>
                 <Route path="/dashboard" component={Dashboard} />
-                <Route path="/visualization" component={VisualizationPage} />
-                <Route path="/access-points" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AccessPointsPage /></div>} />
+                <Route path="/geospatial-intelligence" component={GeospatialIntelligencePage} />
+                <Route path="/visualization">
+                  <Redirect to="/geospatial-intelligence" />
+                </Route>
+                <Route path="/access-points">
+                  <Redirect to="/geospatial-intelligence" />
+                </Route>
                 <Route path="/surveillance" component={SurveillancePage} />
-                <Route path="/wigle" component={WiGLEViewer} />
                 <Route path="/admin" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AdminPanel /></div>} />
+                <Route path="/wifi-tooltip-demo" component={WiFiNetworkTooltipDemo} />
                 <Route component={NotFound} />
               </Switch>
             </MobileShell>
@@ -50,11 +54,16 @@ function Router() {
             <DesktopShell>
               <Switch>
                 <Route path="/dashboard" component={Dashboard} />
-                <Route path="/visualization" component={VisualizationPage} />
-                <Route path="/access-points" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AccessPointsPage /></div>} />
+                <Route path="/geospatial-intelligence" component={GeospatialIntelligencePage} />
+                <Route path="/visualization">
+                  <Redirect to="/geospatial-intelligence" />
+                </Route>
+                <Route path="/access-points">
+                  <Redirect to="/geospatial-intelligence" />
+                </Route>
                 <Route path="/surveillance" component={SurveillancePage} />
-                <Route path="/wigle" component={WiGLEViewer} />
                 <Route path="/admin" component={() => <div className="flex-1 px-3 md:px-6 py-4 overflow-y-auto"><AdminPanel /></div>} />
+                <Route path="/wifi-tooltip-demo" component={WiFiNetworkTooltipDemo} />
                 <Route component={NotFound} />
               </Switch>
             </DesktopShell>
