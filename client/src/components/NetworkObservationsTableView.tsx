@@ -540,7 +540,7 @@ export function NetworkObservationsTableView({
     enableMultiSort: true,
     enableSortingRemoval: false,
     enableRowSelection: true,
-    getRowId: (row) => row.bssid,
+    getRowId: (row, index) => index.toString(),
   });
 
   const sensors = useSensors(
