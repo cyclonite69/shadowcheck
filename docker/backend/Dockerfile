@@ -65,6 +65,9 @@ RUN apt-get update && apt-get install -y tini wget && rm -rf /var/lib/apt/lists/
 
 EXPOSE 5000
 
+RUN chown -R 1000:1000 /app
+USER 1000
+
 # Use tini to properly handle signals and reap zombie processes
 # Run the compiled JavaScript output
 ENTRYPOINT ["/usr/bin/tini", "--"]
