@@ -101,6 +101,10 @@ EXPOSE 80
 # Health check
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
+# Create non-root user and set permissions
+RUN useradd -U -u 1000 appuser && \
+    chown -R 1000:1000 /usr/share/nginx/html
+USER 1000
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
 # ==============================================================================
